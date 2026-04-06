@@ -73,7 +73,7 @@ All production-grade decisions across the OCR product line are governed by the C
 - Artifacts are earned, not generated
 - Prompts are data — the input is part of the artifact chain
 
-See `ourSharedEvents/.claude/skills/ccr-protocol.knowledge.md` for full spec.
+See `skills/ccr-protocol.knowledge.md` in this repo for full spec.
 
 ---
 

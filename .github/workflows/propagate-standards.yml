@@ -15,6 +15,7 @@ on:
     branches: [main]
     paths:
       - 'templates/**'
+      - 'skills/**'
       - 'docs/VISION.md'
       - 'docs/DEPENDENCY-MAP.md'
   workflow_dispatch:
@@ -50,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       templates_changed: ${{ steps.changes.outputs.templates }}
+      skills_changed: ${{ steps.changes.outputs.skills }}
       vision_changed: ${{ steps.changes.outputs.vision }}
       depmap_changed: ${{ steps.changes.outputs.depmap }}
       changed_files: ${{ steps.list.outputs.files }}
@@ -63,11 +65,15 @@ jobs:
         run: |
           DIFF=$(git diff --name-only HEAD~1 HEAD)
           echo "templates=false" >> "$GITHUB_OUTPUT"
+          echo "skills=false" >> "$GITHUB_OUTPUT"
           echo "vision=false" >> "$GITHUB_OUTPUT"
           echo "depmap=false" >> "$GITHUB_OUTPUT"
 
           if echo "$DIFF" | grep -q '^templates/'; then
             echo "templates=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$DIFF" | grep -q '^skills/'; then
+            echo "skills=true" >> "$GITHUB_OUTPUT"
           fi
           if echo "$DIFF" | grep -q '^docs/VISION.md'; then
             echo "vision=true" >> "$GITHUB_OUTPUT"
@@ -147,6 +153,12 @@ jobs:
             SUMMARY+="Review \`OCR-docs/docs/VISION.md\` and update this repo's references if needed.\n\n"
           fi
 
+          if [ "${{ needs.detect-changes.outputs.skills_changed }}" = "true" ]; then
+            SUMMARY+="### CCR skills updated\n"
+            SUMMARY+="CCR protocol files in \`OCR-docs/skills/\` have changed.\n"
+            SUMMARY+="Review the updated skills (ccr-protocol, ccr-template, ccr-mvp).\n\n"
+          fi
+
           if [ "${{ needs.detect-changes.outputs.depmap_changed }}" = "true" ]; then
             SUMMARY+="### DEPENDENCY-MAP.md updated\n"
             SUMMARY+="Cross-repo dependencies have changed.\n"
@@ -167,6 +179,10 @@ jobs:
           # so the repo has the latest templates available locally
           mkdir -p target/.ocr-standards
           cp -r ocr-docs/templates/* target/.ocr-standards/
+
+          # Copy CCR skills
+          mkdir -p target/.ocr-standards/skills
+          cp -r ocr-docs/skills/* target/.ocr-standards/skills/
 
           # Copy VISION.md reference
           mkdir -p target/.ocr-standards/docs
