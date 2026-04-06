@@ -1,0 +1,234 @@
+# propagate-standards.yml
+# When OCR-docs standards change, open PRs in all product repos
+# to keep them in sync.
+#
+# Trigger: push to main that touches templates/ or docs/
+# Action: for each product repo, open a PR with the updated templates
+#         and a diff summary so the repo owner can review and merge.
+#
+# This does NOT auto-merge. Every repo gets a PR. Human gate applies.
+
+name: Propagate Standards
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'templates/**'
+      - 'docs/VISION.md'
+      - 'docs/DEPENDENCY-MAP.md'
+  workflow_dispatch:
+    inputs:
+      repos:
+        description: 'Comma-separated repo list (blank = all)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Dry run — log what would happen, no PRs'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  ORG: ourCommunityRituals
+  # All product repos that receive propagated standards
+  ALL_REPOS: >-
+    ourSharedEvents
+    ourWKRP
+    ourSharedGames
+    ourSharedRecords
+    ourSharedPulse
+    ourSharedMagnets
+    ourWhiteList
+
+jobs:
+  detect-changes:
+    name: Detect what changed
+    runs-on: ubuntu-latest
+    outputs:
+      templates_changed: ${{ steps.changes.outputs.templates }}
+      vision_changed: ${{ steps.changes.outputs.vision }}
+      depmap_changed: ${{ steps.changes.outputs.depmap }}
+      changed_files: ${{ steps.list.outputs.files }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed paths
+        id: changes
+        run: |
+          DIFF=$(git diff --name-only HEAD~1 HEAD)
+          echo "templates=false" >> "$GITHUB_OUTPUT"
+          echo "vision=false" >> "$GITHUB_OUTPUT"
+          echo "depmap=false" >> "$GITHUB_OUTPUT"
+
+          if echo "$DIFF" | grep -q '^templates/'; then
+            echo "templates=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$DIFF" | grep -q '^docs/VISION.md'; then
+            echo "vision=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$DIFF" | grep -q '^docs/DEPENDENCY-MAP.md'; then
+            echo "depmap=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: List changed files
+        id: list
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD | tr '\n' ', ')
+          echo "files=$FILES" >> "$GITHUB_OUTPUT"
+
+  propagate:
+    name: Open PRs in product repos
+    needs: detect-changes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        repo:
+          - ourSharedEvents
+          - ourWKRP
+          - ourSharedGames
+          - ourSharedRecords
+          - ourSharedPulse
+          - ourSharedMagnets
+          - ourWhiteList
+    steps:
+      - name: Check if repo is in scope
+        id: scope
+        run: |
+          INPUT_REPOS="${{ github.event.inputs.repos }}"
+          REPO="${{ matrix.repo }}"
+
+          if [ -z "$INPUT_REPOS" ]; then
+            echo "in_scope=true" >> "$GITHUB_OUTPUT"
+          elif echo "$INPUT_REPOS" | grep -q "$REPO"; then
+            echo "in_scope=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "in_scope=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout OCR-docs
+        if: steps.scope.outputs.in_scope == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: ocr-docs
+
+      - name: Checkout target repo
+        if: steps.scope.outputs.in_scope == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.ORG }}/${{ matrix.repo }}
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          path: target
+
+      - name: Build propagation summary
+        if: steps.scope.outputs.in_scope == 'true'
+        id: summary
+        run: |
+          SUMMARY="## Standards Propagation\n\n"
+          SUMMARY+="**Source:** OCR-docs commit ${{ github.sha }}\n"
+          SUMMARY+="**Changed:** ${{ needs.detect-changes.outputs.changed_files }}\n\n"
+
+          if [ "${{ needs.detect-changes.outputs.templates_changed }}" = "true" ]; then
+            SUMMARY+="### Templates updated\n"
+            SUMMARY+="Base templates in \`OCR-docs/templates/\` have changed.\n"
+            SUMMARY+="Review the updated templates and align this repo's files if needed.\n"
+            SUMMARY+="Templates are reference — not auto-applied. Your repo's CLAUDE.md and SKILL.md are product-specific.\n\n"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.vision_changed }}" = "true" ]; then
+            SUMMARY+="### VISION.md updated\n"
+            SUMMARY+="The org-level source of truth has changed.\n"
+            SUMMARY+="Review \`OCR-docs/docs/VISION.md\` and update this repo's references if needed.\n\n"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.depmap_changed }}" = "true" ]; then
+            SUMMARY+="### DEPENDENCY-MAP.md updated\n"
+            SUMMARY+="Cross-repo dependencies have changed.\n"
+            SUMMARY+="Review \`OCR-docs/docs/DEPENDENCY-MAP.md\` for dependencies affecting this repo.\n\n"
+          fi
+
+          SUMMARY+="---\n"
+          SUMMARY+="*This PR was opened by the propagate-standards workflow in OCR-docs.*\n"
+          SUMMARY+="*Review and merge — or close if no changes needed in this repo.*"
+
+          # Write to file to avoid escaping issues
+          echo -e "$SUMMARY" > /tmp/pr-body.md
+
+      - name: Copy updated templates to target
+        if: steps.scope.outputs.in_scope == 'true'
+        run: |
+          # Copy templates into a .ocr-standards/ reference directory
+          # so the repo has the latest templates available locally
+          mkdir -p target/.ocr-standards
+          cp -r ocr-docs/templates/* target/.ocr-standards/
+
+          # Copy VISION.md reference
+          mkdir -p target/.ocr-standards/docs
+          cp ocr-docs/docs/VISION.md target/.ocr-standards/docs/VISION.md
+
+          # Copy DEPENDENCY-MAP.md reference
+          cp ocr-docs/docs/DEPENDENCY-MAP.md target/.ocr-standards/docs/DEPENDENCY-MAP.md
+
+      - name: Check for actual changes
+        if: steps.scope.outputs.in_scope == 'true'
+        id: diff
+        working-directory: target
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Dry run — log only
+        if: |
+          steps.scope.outputs.in_scope == 'true'
+          && steps.diff.outputs.has_changes == 'true'
+          && github.event.inputs.dry_run == 'true'
+        run: |
+          echo "DRY RUN: Would open PR in ${{ env.ORG }}/${{ matrix.repo }}"
+          echo "Changed files in OCR-docs: ${{ needs.detect-changes.outputs.changed_files }}"
+          cd target && git diff --cached --stat
+
+      - name: Create branch and open PR
+        if: |
+          steps.scope.outputs.in_scope == 'true'
+          && steps.diff.outputs.has_changes == 'true'
+          && github.event.inputs.dry_run != 'true'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        run: |
+          BRANCH="ocr-standards/propagate-$(date +%Y%m%d-%H%M%S)"
+          git config user.name "OCR Standards Bot"
+          git config user.email "noreply@ourcommunityrituals.com"
+          git checkout -b "$BRANCH"
+          git commit -m "chore: propagate OCR-docs standards update
+
+          Source: OCR-docs commit ${{ github.sha }}
+          Changed: ${{ needs.detect-changes.outputs.changed_files }}
+
+          Co-Authored-By: OCR Standards Bot <noreply@ourcommunityrituals.com>"
+
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --repo "${{ env.ORG }}/${{ matrix.repo }}" \
+            --base main \
+            --head "$BRANCH" \
+            --title "chore: propagate OCR-docs standards update" \
+            --body-file /tmp/pr-body.md
+
+      - name: No changes needed
+        if: |
+          steps.scope.outputs.in_scope == 'true'
+          && steps.diff.outputs.has_changes == 'false'
+        run: |
+          echo "No changes needed for ${{ matrix.repo }} — already in sync."
