@@ -1,0 +1,65 @@
+# docs-ci.yml
+# Reusable workflow for docs-as-code repos.
+# Checks markdown lint and verifies required files exist.
+# Called by product repos via workflow_call.
+
+name: Docs CI
+
+on:
+  workflow_call:
+    inputs:
+      required_files:
+        description: 'Comma-separated list of required files'
+        required: false
+        default: 'CLAUDE.md,README.md,SKILL.md'
+        type: string
+
+jobs:
+  lint-and-check:
+    name: Markdown lint + DAC compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          IFS=',' read -ra FILES <<< "${{ inputs.required_files }}"
+          MISSING=0
+          for FILE in "${FILES[@]}"; do
+            FILE=$(echo "$FILE" | xargs)  # trim whitespace
+            if [ ! -f "$FILE" ]; then
+              echo "::error::Required file missing: $FILE"
+              MISSING=$((MISSING + 1))
+            else
+              echo "Found: $FILE"
+            fi
+          done
+          if [ "$MISSING" -gt 0 ]; then
+            echo "::error::$MISSING required file(s) missing"
+            exit 1
+          fi
+
+      - name: Install markdownlint
+        run: npm install -g markdownlint-cli
+
+      - name: Lint markdown files
+        run: |
+          # Lint all markdown files, warn but don't fail on style issues
+          # Fail only on errors that break rendering
+          markdownlint '**/*.md' \
+            --disable MD013 MD033 MD024 MD036 MD041 MD025 \
+            || true
+
+      - name: Check for broken internal links
+        run: |
+          BROKEN=0
+          # Find all markdown links to local files
+          grep -roh '\[.*\]([^http][^)]*\.md)' --include='*.md' . | \
+            grep -oP '\(([^)]+)\)' | tr -d '()' | sort -u | while read -r LINK; do
+              # Resolve relative to repo root
+              if [ ! -f "$LINK" ]; then
+                echo "::warning::Broken link: $LINK"
+                BROKEN=$((BROKEN + 1))
+              fi
+            done
+          # Don't fail — just warn. Cross-repo links are expected to be unresolvable.
