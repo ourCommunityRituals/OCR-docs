@@ -5,29 +5,47 @@
 
 ---
 
-## Snapshot: 2026-04-09 (second run)
+## Snapshot: 2026-04-09 (third run — evening)
 
 ### Issue counts — all visible teams
 
 | Team | Total | Backlog | Done | In Progress | Todo | Other |
 |------|-------|---------|------|-------------|------|-------|
-| OurSharedEvents (OSE) | 172 | ~125 | 32 | 2 | 6 | 7 |
-| OurWKRP (OW) | 52 | 51 | 0 | 1 | 0 | 0 |
+| OurSharedEvents (OSE) | 172 | ~101 | 33 | 2 | 6 | 7 |
+| OurWKRP (OW) | 52 | ~27 | 0 (18 actual, not in Linear) | 24+ (bulk move — see right-sizing) | 0 | 0 |
 | OCR-doc | 20 | ~19 | 0 | 0 | 0 | 1 |
 | OurSharedMagnets (OSM) | 2 | 2 | 0 | 0 | 0 | 0 |
-| **Total** | **246** | **201** | **32** | **3** | **6** | **8** |
+| OurSharedRecords (OSR) | 0 | 0 | 0 | 0 | 0 | 0 |
+| OurSharedGames (OSG) | 0 | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **~246** | **~149** | **33** | **26+** | **6** | **8** |
 
-Teams NOT yet in Linear: OSG, OSR, OSP, OWL
+Teams NOT yet in Linear: OSP, OWL  
+⚠️ OW In Progress count is anomalous — bulk sprint move. See log.
 
 ---
 
-### In Progress (as of this run)
+### In Progress (as of this run — right-sized)
 
-| ID | Title | Team | Priority | Days Stalled |
-|----|-------|------|----------|-------------|
-| OSE-12 | P1-7: Secrets + first staging deploy | OSE | High | ~5 days — AC stale |
-| OW-6 | WKRP-6: Mobile Auth — Deep Link + Universal Links | OW | **Urgent** | NEW |
-| OSE-22 | Test Coverage Tracker: Legacy vs Worker | OSE | High | Archived Apr 6 — CLOSE |
+| ID | Title | Team | Priority | Status |
+|----|-------|------|----------|--------|
+| OW-6 | WKRP-9: Infrastructure Deployment | OW | **High** | Automation done, manual steps remain (DNS, staging, Apple Developer) |
+| OSE-12 | P1-7: Secrets + first staging deploy | OSE | High | AC audit done — needs PO sign-off then close |
+
+### Right-sizing applied (OW sprint correction)
+
+**18 OW stories moved to Done** — codebase confirms these are complete (Sprints 1-4). Linear was not reflecting actual state.
+
+**OW-30 moved to Backlog** — CCR gate BLOCKED. See `docs/ccr-gates/OW_GATE_OW30_boundaryReview.md`. 4 unchecked requirements. No code until gate clears.
+
+**Remaining OW backlog moved back to Backlog/Todo** — bulk In Progress was a state change error, not actual concurrent work. See `docs/releases/OW_SPRINT_rightSizing.md` for full breakdown.
+
+**Recommended OW Todo (ready to start, dependencies met):**
+
+| ID | Title | Role | Class | Unblocks |
+|----|-------|------|-------|----------|
+| OW-23 | DJ Attribution + QR Scan | BE | AW | OW-26, OW-27 (sponsor reporting, OSE integration) |
+| OW-22 | OurRecordStories Integration | BE | AW | Beverly archive activation |
+| OW-31 | DJ Profile schema (D1 migration) | BE | AW | DJ profiles — blocked until OW-6 Done |
 
 ---
 
@@ -35,7 +53,8 @@ Teams NOT yet in Linear: OSG, OSR, OSP, OWL
 
 | ID | Title | Team | Impact | Action |
 |----|-------|------|--------|--------|
-| OSE-168 | isPrimary schema bug | OSE | Blocks ALL EPIC-02 sponsor work | **Fix now. Highest priority code task.** |
+| ✅ ~~OSE-168~~ | ~~isPrimary schema bug~~ | ~~OSE~~ | ~~Blocks ALL EPIC-02 sponsor work~~ | **DONE 2026-04-09** |
+| **OW-30** | Event Playlist Linking in sprint — CCR gate BLOCKED | OW | Architectural boundary integrity | 🔴 Stop. Review gate. Move back to Backlog or sign off gate. |
 | OSE-166 | CI license false positive (node-forge) | OSE | Blocks all CI merges | Clear false positive config |
 | OSM-1 | WAF exemption — automated API consumers | OSM | Blocks entire franchise layer | Cloudflare WAF rule |
 | OCR-18 | BIPA legal opinion (Tom) | OCR-doc | Blocks biometric scan data | Legal consultation — non-deferrable |
@@ -81,27 +100,44 @@ Teams NOT yet in Linear: OSG, OSR, OSP, OWL
 
 ---
 
-### June 1 critical path (53 days)
+### June 1 critical path (53 days remaining)
 
 ```
-OSE-168 (isPrimary fix)
-  → EPIC-02 sponsor work unlocked
-  → Sponsor pipeline ready for June 1
+✅ OSE-168 (isPrimary fix) — DONE 2026-04-09
+  → EPIC-02 sponsor work unlocked ✅
 
 OSE-12 (staging deploy, AC audit)
-  → Staging baseline established
-  → Integration testing possible
+  → AC update needed → close in Linear
+  → Staging baseline → integration testing
 
 OSM-1 (WAF exemption)
   → Franchise layer operational
   → Corridor operators can access API
 
-OW-6 (Mobile Auth)
-  → OW contributor onboarding possible
-  → OW-31 (DJ Profile schema) can start
+OW sprint right-sizing
+  → Reduce In Progress to ≤5 stories
+  → Close OW-4/OW-5 (description says Done)
+  → Gate OW-30 back to Backlog pending CCR sign-off
+  → OW-6/OW-7 → OW-8 → OW-10 → OW-15 ordered sequence
+
+OW-31 (DJ Profile schema)
+  → Must reference OCR D1 migration standard before writing
 ```
+
+### New action items (this run)
+
+| Priority | Action | Owner | Status |
+|----------|--------|-------|--------|
+| 🔴 1 | OW-30 CCR gate — move back to Backlog OR formally sign off gate | Matt | OPEN |
+| 🔴 2 | OW sprint review — right-size to ≤5 In Progress | Matt | OPEN |
+| 🟠 3 | Close OW-4 and OW-5 in Linear (description says Done) | Matt | OPEN |
+| 🟠 4 | OSE-12 — update AC, close story | Matt / OSE | OPEN |
+| 🟠 5 | OSE-22 — close in Linear (archived Apr 6) | Matt | OPEN |
+| 🟡 6 | OSR Beverly — create Linear issues for Phase 1 activation | Matt | OPEN |
+| (carry) | OSM-1 WAF exemption | SRE | OPEN |
+| (carry) | OCR-18 BIPA legal call with Tom | Matt | OPEN |
 
 ---
 
-*Last updated: 2026-04-09 (second run)*  
+*Last updated: 2026-04-09 (third run — evening)*  
 *Updated by: Bloodraven (orc-doc-brain-floss)*
