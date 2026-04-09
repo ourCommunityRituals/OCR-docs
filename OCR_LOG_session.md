@@ -4,6 +4,131 @@
 
 ---
 
+## Run: 2026-04-09 (third run — evening)
+
+**Agent:** Bloodraven  
+**Trigger:** Scheduled task — orc-doc-brain-floss  
+**Status:** COMPLETED
+
+### Bail check result
+
+- Last run: 2026-04-09 second run. Done=32, InProgress=3 (OSE-12, OW-6, OSE-22).
+- Current In Progress: **24+ OW issues** — entire OW backlog bulk-moved to In Progress (previous: 1). Bail check FAILS → full scan executed.
+- Done delta: **OSE-168 closed** (completed 2026-04-09T16:51:25) — highest-priority fix in the org. EPIC-02 sponsor work now unblocked.
+- gh pr list: still inaccessible (Windows local paths not reachable from sandbox — persistent limitation).
+
+---
+
+### PASS 1 — VISION INTEGRITY
+
+**VISION.md status:** No structural changes since last sync. Last updated April 5, 2026. Typos from first run previously fixed (against, economic, permeating) are confirmed clean. Product registry intact.
+
+**Corridor check:**
+- Blue Island / RIPH / Eagles Hall ✅ — consistent with VISION.md
+- Beverly — VISION.md states: *"April 9 formal launch = archive collection start."* **OSR still has 0 Linear issues.** Third consecutive run with this flag. Beverly archive activation status unverified.
+
+**Flags detected:**
+
+1. 🔴 **OW-30 entered sprint in violation of CCR gate** — Gate document `docs/ccr-gates/OW_GATE_OW30_boundaryReview.md` explicitly states `Status: BLOCKED pending design review` with 4 unchecked required tasks. OW-30 is now In Progress in Linear. The architectural boundary between OW named identity and OSE anonymous ID is the core constraint of this platform. **This needs human review immediately before any code lands.**
+
+2. 🔴 **OW sprint explosion** — 24+ OW issues simultaneously In Progress (vs 1 last run). Zero Done for OW team. Either a bulk Linear state change or a full sprint start with no capacity model. No established velocity. Several dependency chains violated (OW-10 prerequisite for OW-15; OW-7/session management should precede OW-8/rate limiting; OW-22/CI should precede OW-26/integration tests and OW-25/E2E). Below 95% confidence threshold for any OW completion this sprint.
+
+3. ⚠️ **OW-4 and OW-5 description-vs-status mismatch** — Both stories have "**Status:** DONE" written inside their description fields, but Linear status still reads "In Progress." If these are actually complete, they should be moved to Done to establish OW velocity.
+
+4. ⚠️ **OSE-12 still stale** — Still In Progress, last updated April 4. AC references GOOGLE_SA_CLIENT_EMAIL, GOOGLE_SA_PRIVATE_KEY_PEM, SHEETS_SPREADSHEET_ID (obsolete GAS artifacts). CCR gate audit document exists (`docs/ccr-gates/OSE_GATE_OSE12_acAudit.md`). Story needs AC updated and closed.
+
+5. ⚠️ **OSE-22 housekeeping** — Archived April 6, still In Progress in Linear. Close it.
+
+6. ✅ **OSE-168 DONE** — isPrimary schema bug resolved. EPIC-02 sponsor work unblocked. June 1 critical path advanced.
+
+7. ✅ **VISION.md product registry** — All teams in Linear (OSE, OW, OCR-doc, OSM, OSR, OSG) match VISION.md. No name drift, no architectural contradiction in registry entries.
+
+---
+
+### PASS 2 — SCRUM CCR EFFICIENCY
+
+#### Issue snapshot — 2026-04-09 (third run)
+
+| Status | Count | Delta from run 2 |
+|--------|-------|-----------------|
+| In Progress | 26+ | +23 (OW bulk move) |
+| Done | 33 | +1 (OSE-168) |
+| Backlog | ~199 | -24 (moved to InProgress) |
+| Other | ~8 | 0 |
+| **Total** | **~246** | **0** |
+
+Teams visible: OSE (172), OW (52), OCR-doc (20), OSM (2), OSR (0), OSG (0)
+
+#### CCR Loop 1 — CRITICAL
+
+**Blockers (updated):**
+
+| ID | Title | Blocks | Severity | Change |
+|----|-------|--------|----------|--------|
+| ~~OSE-168~~ | ~~isPrimary schema bug~~ | ~~ALL EPIC-02~~ | ~~🔴 Critical~~ | **RESOLVED ✅** |
+| **OW-30** | Event Playlist Linking — in sprint without CCR gate | Architectural boundary integrity | 🔴 Critical — NEW |
+| OSE-166 | CI license false positive (node-forge) | All OSE CI merges | 🔴 Critical | Unchanged |
+| OSM-1 | WAF exemption — automated API consumers | Entire franchise layer | 🔴 Critical | Unchanged |
+| OCR-18 | BIPA legal opinion (Tom) | Biometric scan data collection | 🔴 Critical — legal | Unchanged |
+| OSE-12 | P1-7 stale AC / staging deploy | Staging baseline, integration testing | 🟠 High | Stale 5+ days |
+
+**Duplication risks (updated):**
+
+1. **OW CI/CD vs OSE CI/CD** — OW-22 is In Progress building GitHub Actions from scratch. OSE has a working pattern. Opportunity: OW-22 should reference OSE's CI as template before diverging.
+2. **OW-28 (OpenAPI/Scalar) vs OSE BRIEF-1** — Still building independently. Shared API doc standard opportunity unresolved.
+3. **OW D1 pattern vs OSE D1 standard** — OCR D1 migration standard now exists (`docs/standards/OCR_STANDARD_d1Migration.md`). OW-31 (DJ Profile schema) should import this standard before migrations are written.
+
+**Contradictions:**
+
+1. **OW-30 in sprint despite CCR gate BLOCKED** — Direct contradiction between gate document and Linear state.
+2. **OW-15 in sprint but its prerequisite OW-10 is also in sprint** — OW-10 (Spotify Search API) must complete before OW-15 (Track Discovery UI) can start. Both being "In Progress" simultaneously is a dependency violation.
+3. **OW-25/OW-26 (E2E + Integration tests) in sprint before OW-22 (CI/CD) is done** — Tests in CI require CI to exist first.
+
+#### CCR Loop 2 — CONSERVATIVE
+
+**OSE — YELLOW (improving):** OSE-168 resolved. EPIC-02 unblocked. OSE-12 still stale and needs close. OSE-166 CI blocker unresolved. June 1 confidence: **65%** — trending up from last run, but staging baseline still not established (OSE-12).
+
+**OW — RED:** 24+ In Progress, 0 Done, no velocity. OW-30 boundary risk now active in sprint. Dependency graph violated (OW-10 → OW-15, OW-22 → OW-25/26). Sprint is over-committed by any standard metric. Below 95% confidence gate on all OW work. **Human review of sprint state required before any OW code merges.**
+
+**OSM — RED:** OSM-1 unchanged. Entire franchise layer still blocked. No movement.
+
+**OCR-doc — YELLOW:** OCR-18 still open. Action items 1-10 largely done (see project status). No new issues.
+
+**OSR — RED:** 0 issues, 3rd consecutive run. Beverly archive was supposed to start today. No activation signal.
+
+**OSG — NOT STARTED:** 0 issues.
+
+#### CCR Loop 3 — RECURSIVE
+
+Loops 1 and 2 agree: **OW-30 in sprint without gate closure is the highest-priority governance issue this run.** OSE-168 resolution was the win. These are the two dominant signals.
+
+Loops conflict on OW sprint health: Loop 1 sees specific violations (dependency order, gate bypass). Loop 2 sees the whole sprint as below threshold. **Resolution: the conflict is the finding — OW sprint needs to be reviewed and right-sized. Recommend:** (a) close OW-30 or gate it back to Backlog pending CCR sign-off, (b) establish a sprint with only stories that can independently move to Done in the next 2 weeks, (c) OW-4 and OW-5 (description says Done) should be formally closed to establish velocity baseline.
+
+**Cross-repo opportunities ranked (updated):**
+
+1. ✅ ~~OSE-168~~ — DONE
+2. **OW-30 CCR gate** — Stop. Boundary review before any code. 🔴
+3. **OW sprint right-sizing** — Reduce In Progress to ≤5 stories. 🔴
+4. **OSE-12 close** — AC audit done, update and close. 🟠
+5. **OSM-1 WAF exemption** — Unblock franchise layer. 🟠
+6. **OCR-18 BIPA** — Legal gate. Non-deferrable. 🟠
+7. **OW D1 standard adoption** — OW-31 should reference OCR D1 standard before migrations.
+8. **OSR Beverly activation** — Issue creation, checklist execution.
+
+---
+
+### Access limitations this run
+- C:\Users\mzdan\dev\ourCommunityRituals\* CLAUDE.md files → NOT READ (Windows paths — persistent)
+- GitHub VISION.md (remote) → NOT READ (private repo — local copy used)
+- gh pr list → NOT RUN (local repos not accessible from sandbox)
+
+### Token usage
+- Tool calls this run: ~18 (within 50 budget)
+
+---
+
+
+
 ## Run: 2026-04-09 (human session — Matt)
 
 **Agent:** Claude (manual session)  
