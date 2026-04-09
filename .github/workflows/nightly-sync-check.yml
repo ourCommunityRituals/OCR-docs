@@ -60,17 +60,17 @@ jobs:
           if [ -f templates/SKILL-template.md ]; then
             SKILL_HASH=$(sha256sum templates/SKILL-template.md | cut -d' ' -f1)
           fi
-          if [ -f templates/ADR-template.md ]; then
-            ADR_HASH=$(sha256sum templates/ADR-template.md | cut -d' ' -f1)
+          if [ -f templates/OCR_TEMPLATE_adr.md ]; then
+            ADR_HASH=$(sha256sum templates/OCR_TEMPLATE_adr.md | cut -d' ' -f1)
           fi
 
           VISION_HASH=""
           DEPMAP_HASH=""
-          if [ -f docs/VISION.md ]; then
-            VISION_HASH=$(sha256sum docs/VISION.md | cut -d' ' -f1)
+          if [ -f docs/OCR_VISION.md ]; then
+            VISION_HASH=$(sha256sum docs/OCR_VISION.md | cut -d' ' -f1)
           fi
-          if [ -f docs/DEPENDENCY-MAP.md ]; then
-            DEPMAP_HASH=$(sha256sum docs/DEPENDENCY-MAP.md | cut -d' ' -f1)
+          if [ -f docs/OCR_DEPENDENCY_crossRepo.md ]; then
+            DEPMAP_HASH=$(sha256sum docs/OCR_DEPENDENCY_crossRepo.md | cut -d' ' -f1)
           fi
 
           for REPO in $REPOS; do
@@ -105,10 +105,10 @@ jobs:
               REPO_STATUS+="  - :warning: \`.ocr-standards/\` — not present (propagate-standards has not run yet)\n"
               REPO_WARN=$((REPO_WARN + 1))
             else
-              # Check if .ocr-standards/docs/VISION.md matches current
-              REMOTE_VISION_HASH=$(gh api "repos/$ORG/$REPO/contents/.ocr-standards/docs/VISION.md" --jq '.sha' 2>/dev/null || echo "MISSING")
+              # Check if .ocr-standards/docs/OCR_VISION.md matches current
+              REMOTE_VISION_HASH=$(gh api "repos/$ORG/$REPO/contents/.ocr-standards/docs/OCR_VISION.md" --jq '.sha' 2>/dev/null || echo "MISSING")
               if [ "$REMOTE_VISION_HASH" = "MISSING" ]; then
-                REPO_STATUS+="  - :warning: \`.ocr-standards/docs/VISION.md\` — missing from standards dir\n"
+                REPO_STATUS+="  - :warning: \`.ocr-standards/docs/OCR_VISION.md\` — missing from standards dir\n"
                 REPO_WARN=$((REPO_WARN + 1))
               else
                 REPO_STATUS+="  - :white_check_mark: \`.ocr-standards/\` present\n"

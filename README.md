@@ -32,7 +32,7 @@ This repo contains no application code. It contains the documents that govern ho
 
 | Document | Location | Purpose |
 |----------|----------|---------|
-| VISION.md | `docs/VISION.md` | Org-level source of truth. All products derive from this. |
+| OCR_VISION.md | `docs/OCR_VISION.md` | Org-level source of truth. All products derive from this. |
 | CLAUDE.md | `CLAUDE.md` | Session protocol for AI-assisted work in this repo. |
 | SKILL.md | `SKILL.md` | Reusable skills for OCR-level coordination work. |
 

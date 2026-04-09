@@ -16,8 +16,9 @@ on:
     paths:
       - 'templates/**'
       - 'skills/**'
-      - 'docs/VISION.md'
-      - 'docs/DEPENDENCY-MAP.md'
+      - 'docs/OCR_VISION.md'
+      - 'docs/OCR_DEPENDENCY_crossRepo.md'
+      - 'docs/standards/**'
   workflow_dispatch:
     inputs:
       repos:
@@ -54,6 +55,7 @@ jobs:
       skills_changed: ${{ steps.changes.outputs.skills }}
       vision_changed: ${{ steps.changes.outputs.vision }}
       depmap_changed: ${{ steps.changes.outputs.depmap }}
+      standards_changed: ${{ steps.changes.outputs.standards }}
       changed_files: ${{ steps.list.outputs.files }}
     steps:
       - uses: actions/checkout@v4
@@ -68,6 +70,7 @@ jobs:
           echo "skills=false" >> "$GITHUB_OUTPUT"
           echo "vision=false" >> "$GITHUB_OUTPUT"
           echo "depmap=false" >> "$GITHUB_OUTPUT"
+          echo "standards=false" >> "$GITHUB_OUTPUT"
 
           if echo "$DIFF" | grep -q '^templates/'; then
             echo "templates=true" >> "$GITHUB_OUTPUT"
@@ -75,11 +78,14 @@ jobs:
           if echo "$DIFF" | grep -q '^skills/'; then
             echo "skills=true" >> "$GITHUB_OUTPUT"
           fi
-          if echo "$DIFF" | grep -q '^docs/VISION.md'; then
+          if echo "$DIFF" | grep -q '^docs/OCR_VISION.md'; then
             echo "vision=true" >> "$GITHUB_OUTPUT"
           fi
-          if echo "$DIFF" | grep -q '^docs/DEPENDENCY-MAP.md'; then
+          if echo "$DIFF" | grep -q '^docs/OCR_DEPENDENCY_crossRepo.md'; then
             echo "depmap=true" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$DIFF" | grep -q '^docs/standards/'; then
+            echo "standards=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: List changed files
@@ -150,7 +156,7 @@ jobs:
           if [ "${{ needs.detect-changes.outputs.vision_changed }}" = "true" ]; then
             SUMMARY+="### VISION.md updated\n"
             SUMMARY+="The org-level source of truth has changed.\n"
-            SUMMARY+="Review \`OCR-docs/docs/VISION.md\` and update this repo's references if needed.\n\n"
+            SUMMARY+="Review \`OCR-docs/docs/OCR_VISION.md\` and update this repo's references if needed.\n\n"
           fi
 
           if [ "${{ needs.detect-changes.outputs.skills_changed }}" = "true" ]; then
@@ -160,9 +166,16 @@ jobs:
           fi
 
           if [ "${{ needs.detect-changes.outputs.depmap_changed }}" = "true" ]; then
-            SUMMARY+="### DEPENDENCY-MAP.md updated\n"
+            SUMMARY+="### OCR_DEPENDENCY_crossRepo.md updated\n"
             SUMMARY+="Cross-repo dependencies have changed.\n"
-            SUMMARY+="Review \`OCR-docs/docs/DEPENDENCY-MAP.md\` for dependencies affecting this repo.\n\n"
+            SUMMARY+="Review \`OCR-docs/docs/OCR_DEPENDENCY_crossRepo.md\` for dependencies affecting this repo.\n\n"
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.standards_changed }}" = "true" ]; then
+            SUMMARY+="### Org standards updated\n"
+            SUMMARY+="Standards in \`OCR-docs/docs/standards/\` have changed.\n"
+            SUMMARY+="This may include: naming convention, test naming, D1 migration standard, org brain sync.\n"
+            SUMMARY+="Review the updated standards and align this repo's files on next meaningful touch.\n\n"
           fi
 
           SUMMARY+="---\n"
@@ -186,10 +199,14 @@ jobs:
 
           # Copy VISION.md reference
           mkdir -p target/.ocr-standards/docs
-          cp ocr-docs/docs/VISION.md target/.ocr-standards/docs/VISION.md
+          cp ocr-docs/docs/OCR_VISION.md target/.ocr-standards/docs/OCR_VISION.md
 
-          # Copy DEPENDENCY-MAP.md reference
-          cp ocr-docs/docs/DEPENDENCY-MAP.md target/.ocr-standards/docs/DEPENDENCY-MAP.md
+          # Copy OCR_DEPENDENCY_crossRepo.md reference
+          cp ocr-docs/docs/OCR_DEPENDENCY_crossRepo.md target/.ocr-standards/docs/OCR_DEPENDENCY_crossRepo.md
+
+          # Copy org standards
+          mkdir -p target/.ocr-standards/standards
+          cp -r ocr-docs/docs/standards/* target/.ocr-standards/standards/
 
       - name: Check for actual changes
         if: steps.scope.outputs.in_scope == 'true'

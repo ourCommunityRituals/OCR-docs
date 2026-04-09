@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR Release Dashboard — June 1 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a; --text: #e2e8f0; --muted: #8892a4;
+    --green: #22c55e; --yellow: #eab308; --red: #ef4444; --blue: #3b82f6;
+    --purple: #a855f7; --orange: #f97316; --cyan: #06b6d4;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'SF Mono','Cascadia Code','Fira Code',monospace; background:var(--bg); color:var(--text); padding:1.5rem; }
+  h1 { font-size:1.4rem; font-weight:700; margin-bottom:0.25rem; }
+  h2 { font-size:1rem; font-weight:600; color:var(--muted); margin-bottom:1rem; border-bottom:1px solid var(--border); padding-bottom:0.5rem; }
+  .header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:1.5rem; }
+  .header-meta { font-size:0.75rem; color:var(--muted); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:1rem; margin-bottom:1.5rem; }
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1.25rem; }
+  .card-wide { grid-column:1/-1; }
+  .stat-row { display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .stat { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:1rem 1.25rem; flex:1; min-width:130px; }
+  .stat-value { font-size:2rem; font-weight:700; line-height:1; }
+  .stat-label { font-size:0.7rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:0.25rem; }
+  .stat-green .stat-value { color:var(--green); }
+  .stat-yellow .stat-value { color:var(--yellow); }
+  .stat-red .stat-value { color:var(--red); }
+  .stat-blue .stat-value { color:var(--blue); }
+  .stat-purple .stat-value { color:var(--purple); }
+  .progress-bar { background:var(--border); border-radius:4px; height:8px; margin:0.5rem 0; overflow:hidden; }
+  .progress-fill { height:100%; border-radius:4px; transition:width 0.3s; }
+  .progress-label { display:flex; justify-content:space-between; font-size:0.75rem; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+  th { text-align:left; padding:0.5rem 0.75rem; color:var(--muted); font-weight:600; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+  th:hover { color:var(--text); }
+  th .sort-arrow { margin-left:0.25rem; font-size:0.6rem; }
+  td { padding:0.5rem 0.75rem; border-bottom:1px solid var(--border); }
+  tr:hover { background:rgba(255,255,255,0.02); }
+  tr.hidden { display:none; }
+  .badge { display:inline-block; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.7rem; font-weight:600; cursor:pointer; }
+  .badge-done { background:rgba(34,197,94,0.15); color:var(--green); }
+  .badge-progress { background:rgba(59,130,246,0.15); color:var(--blue); }
+  .badge-todo { background:rgba(234,179,8,0.15); color:var(--yellow); }
+  .badge-blocked { background:rgba(239,68,68,0.15); color:var(--red); }
+  .badge-human { background:rgba(168,85,247,0.15); color:var(--purple); }
+  .badge-aw { background:rgba(6,182,212,0.15); color:var(--cyan); }
+  .badge-aa { background:rgba(249,115,22,0.15); color:var(--orange); }
+  .badge-ho { background:rgba(168,85,247,0.15); color:var(--purple); }
+  .chart-container { position:relative; height:220px; }
+  .chart-container-wide { position:relative; height:250px; }
+  .chart-container-sm { position:relative; height:180px; }
+  .critical-path { font-size:0.8rem; }
+  .critical-path .node { display:flex; align-items:center; gap:0.5rem; padding:0.4rem 0; }
+  .critical-path .arrow { color:var(--muted); padding-left:1.5rem; font-size:0.7rem; }
+  .critical-path .node-done { color:var(--green); }
+  .critical-path .node-progress { color:var(--blue); }
+  .critical-path .node-blocked { color:var(--red); }
+  .critical-path .node-todo { color:var(--yellow); }
+  .queue-item { display:flex; justify-content:space-between; align-items:center; padding:0.4rem 0; border-bottom:1px solid var(--border); font-size:0.8rem; }
+  .queue-item:last-child { border-bottom:none; }
+  .queue-rank { color:var(--muted); width:1.5rem; }
+  .queue-id { color:var(--cyan); font-weight:600; width:5rem; }
+  .queue-title { flex:1; }
+  .queue-role { color:var(--muted); width:3rem; text-align:right; }
+  .filter-bar { display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; }
+  .filter-btn { background:var(--border); color:var(--muted); border:none; border-radius:4px; padding:0.3rem 0.75rem; font-size:0.7rem; font-family:inherit; cursor:pointer; text-transform:uppercase; letter-spacing:0.03em; }
+  .filter-btn.active { background:var(--blue); color:var(--text); }
+  .filter-btn:hover { color:var(--text); }
+  .dep-graph { position:relative; overflow-x:auto; }
+  .dep-graph svg { display:block; }
+  .dep-node { cursor:default; }
+  .dep-node rect { rx:6; ry:6; stroke-width:1.5; }
+  .dep-node text { font-family:inherit; font-size:11px; fill:var(--text); }
+  .dep-edge { stroke-width:1.5; fill:none; marker-end:url(#arrowhead); }
+  .refresh-indicator { font-size:0.7rem; color:var(--muted); display:inline-block; margin-left:1rem; }
+  .refresh-indicator.loading { color:var(--yellow); }
+  .refresh-indicator.ok { color:var(--green); }
+  .refresh-indicator.err { color:var(--red); }
+  @media (max-width:768px) { .grid { grid-template-columns:1fr; } .stat-row { flex-direction:column; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>OCR Release Dashboard</h1>
+    <div class="header-meta">
+      <span id="release-name"></span>
+      <span class="refresh-indicator" id="refresh-status">loading...</span>
+    </div>
+  </div>
+  <div style="text-align:right">
+    <div class="stat-value" style="font-size:1.8rem;color:var(--yellow)" id="days-remaining"></div>
+    <div class="header-meta">days remaining</div>
+  </div>
+</div>
+
+<div class="stat-row" id="stat-row"></div>
+
+<div class="grid">
+  <div class="card">
+    <h2>Release Progress</h2>
+    <div id="progress-bars"></div>
+  </div>
+  <div class="card">
+    <h2>Burndown — Stories vs Time</h2>
+    <div class="chart-container"><canvas id="chart-burndown"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Story Classification</h2>
+    <div class="chart-container"><canvas id="chart-classification"></canvas></div>
+  </div>
+  <div class="card">
+    <h2>Team Health</h2>
+    <div class="chart-container"><canvas id="chart-teams"></canvas></div>
+  </div>
+  <div class="card card-wide">
+    <h2>Dependency Graph</h2>
+    <div class="dep-graph" id="dep-graph"></div>
+  </div>
+  <div class="card">
+    <h2>Critical Path to June 1</h2>
+    <div class="critical-path" id="critical-path"></div>
+  </div>
+  <div class="card">
+    <h2>Agent Work Queue</h2>
+    <div id="agent-queue"></div>
+  </div>
+  <div class="card">
+    <h2>Human-Only (Needs You)</h2>
+    <div id="human-items"></div>
+  </div>
+  <div class="card">
+    <h2>Standards Established</h2>
+    <div id="standards-list"></div>
+  </div>
+  <div class="card card-wide">
+    <h2>All Stories</h2>
+    <div class="filter-bar" id="filter-bar"></div>
+    <table id="story-table">
+      <thead><tr>
+        <th data-col="id">ID <span class="sort-arrow"></span></th>
+        <th data-col="title">Title <span class="sort-arrow"></span></th>
+        <th data-col="team">Team <span class="sort-arrow"></span></th>
+        <th data-col="role">Role <span class="sort-arrow"></span></th>
+        <th data-col="cls">Class <span class="sort-arrow"></span></th>
+        <th data-col="status">Status <span class="sort-arrow"></span></th>
+        <th data-col="deps">Blocked By</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Session Impact</h2>
+    <div class="chart-container-sm"><canvas id="chart-session"></canvas></div>
+  </div>
+</div>
+
+<div class="header-meta" style="text-align:center;margin-top:1rem;">
+  Auto-refreshes from <code>OCR_DASHBOARD_data.json</code> every 60s. Last update: <span id="last-update">—</span>
+</div>
+
+<script>
+// ============================================================
+// DATA LOADING — auto-refresh from external JSON
+// ============================================================
+let DATA = null;
+let charts = {};
+
+async function loadData() {
+  const el = document.getElementById('refresh-status');
+  el.className = 'refresh-indicator loading';
+  el.textContent = 'refreshing...';
+  try {
+    const resp = await fetch('OCR_DASHBOARD_data.json?t=' + Date.now());
+    DATA = await resp.json();
+    el.className = 'refresh-indicator ok';
+    el.textContent = 'live';
+    document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+    render();
+  } catch (e) {
+    el.className = 'refresh-indicator err';
+    el.textContent = 'offline — using embedded data';
+    if (!DATA) { DATA = getFallbackData(); render(); }
+  }
+}
+
+function getFallbackData() {
+  // Inline fallback if JSON fetch fails (e.g., file:// protocol)
+  return {"release":{"name":"June 1 2026 — Founding Corridor Activation","target":"2026-06-01","triagedAt":"2026-04-09","daysRemaining":53},"teams":[{"code":"OSE","name":"OurSharedEvents","health":"yellow","total":172,"done":33,"inProgress":1,"blocked":1,"backlog":125},{"code":"OW","name":"OurWKRP","health":"green","total":52,"done":0,"inProgress":1,"blocked":1,"backlog":50},{"code":"OCR","name":"OCR-doc","health":"yellow","total":20,"done":2,"inProgress":0,"blocked":0,"backlog":17},{"code":"OSM","name":"OurSharedMagnets","health":"red","total":2,"done":0,"inProgress":0,"blocked":1,"backlog":1}],"classification":{"agentWorkable":11,"agentAssistable":8,"humanOnly":5},"doneThisSession":7,"burndown":[{"date":"2026-04-09","remaining":17,"ideal":24},{"date":"2026-04-16","remaining":null,"ideal":20},{"date":"2026-04-23","remaining":null,"ideal":16},{"date":"2026-04-30","remaining":null,"ideal":12},{"date":"2026-05-07","remaining":null,"ideal":9},{"date":"2026-05-14","remaining":null,"ideal":6},{"date":"2026-05-21","remaining":null,"ideal":3},{"date":"2026-05-28","remaining":null,"ideal":0},{"date":"2026-06-01","remaining":null,"ideal":0}],"stories":[{"id":"OSE-168","title":"isPrimary schema bug","team":"OSE","role":"BE","cls":"AW","status":"done","blockedBy":[],"blocks":["EPIC-02"]},{"id":"OSE-166","title":"CI license false positive (node-forge)","team":"OSE","role":"SRE","cls":"AW","status":"todo","priority":1,"blockedBy":[],"blocks":["OSE-163","OSE-164","OSE-158","OSE-33","OSE-146"]},{"id":"OSM-1","title":"WAF exemption","team":"OSM","role":"SRE","cls":"HO","status":"todo","blockedBy":[],"blocks":["LAUNCH"]},{"id":"OCR-18","title":"BIPA legal opinion (Tom)","team":"OCR","role":"LEGAL","cls":"HO","status":"todo","blockedBy":[],"blocks":[]},{"id":"OSE-12","title":"P1-7: Secrets + staging deploy","team":"OSE","role":"SRE+PO","cls":"AA","status":"done","blockedBy":[],"blocks":[]},{"id":"OSE-22","title":"Test Coverage Tracker","team":"OSE","role":"PO","cls":"AA","status":"done","blockedBy":[],"blocks":[]},{"id":"OSE-167","title":"Eagles Hall technology blackout","team":"OSE","role":"OPS","cls":"HO","status":"done","blockedBy":[],"blocks":[]},{"id":"OSE-163","title":"GAS ghost refs — AppScript","team":"OSE","role":"BE","cls":"AW","status":"todo","priority":2,"blockedBy":["OSE-166"],"blocks":[]},{"id":"OSE-164","title":"GAS ghost refs — GAS/NUSDK","team":"OSE","role":"BE","cls":"AW","status":"todo","priority":3,"blockedBy":["OSE-166"],"blocks":[]},{"id":"OSE-158","title":"Security: upgrade wrangler","team":"OSE","role":"SRE","cls":"AW","status":"todo","priority":4,"blockedBy":["OSE-166"],"blocks":[]},{"id":"OSE-145","title":"Verify dev environment config","team":"OSE","role":"SRE","cls":"AW","status":"todo","priority":6,"blockedBy":[],"blocks":[]},{"id":"OSE-146","title":"MOCK-1: Demo environment","team":"OSE","role":"BE","cls":"AW","status":"todo","priority":7,"blockedBy":["OSE-166"],"blocks":["OSE-147"]},{"id":"OSE-147","title":"MOCK-1: Demo seeding","team":"OSE","role":"BE","cls":"AW","status":"todo","priority":8,"blockedBy":["OSE-146"],"blocks":["OSE-148"]},{"id":"OSE-148","title":"MOCK-1: Demo testing","team":"OSE","role":"QA","cls":"AW","status":"todo","priority":9,"blockedBy":["OSE-147"],"blocks":[]},{"id":"OSE-152","title":"BRIEF-1: CEO briefing app","team":"OSE","role":"FE+SRE","cls":"AA","status":"todo","blockedBy":[],"blocks":[]},{"id":"OSE-24","title":"MVP Production Readiness","team":"OSE","role":"TL+PO","cls":"AA","status":"todo","blockedBy":[],"blocks":["LAUNCH"]},{"id":"OSE-59","title":"INFRA-1: Provision D1 databases","team":"OSE","role":"SRE","cls":"AA","status":"todo","blockedBy":[],"blocks":[]},{"id":"OSE-33","title":"SR-12: Runtime flag gating","team":"OSE","role":"BE","cls":"AW","status":"todo","priority":5,"blockedBy":["OSE-166"],"blocks":[]},{"id":"OW-6","title":"Mobile Auth","team":"OW","role":"BE+FE","cls":"AA","status":"progress","blockedBy":[],"blocks":["OW-31"]},{"id":"OW-30","title":"Event Playlist Linking","team":"OW","role":"TL+BE","cls":"AA","status":"blocked","blockedBy":["CCR-GATE"],"blocks":[]},{"id":"OW-31","title":"DJ Profile schema","team":"OW","role":"BE","cls":"AW","status":"todo","priority":10,"blockedBy":["OW-6"],"blocks":[]},{"id":"OCR-6","title":"Org mock data provider","team":"OCR","role":"TL","cls":"AA","status":"done","blockedBy":[],"blocks":[]},{"id":"OSE-172","title":"Harbor Country campaign operator","team":"OSE","role":"PO+OPS","cls":"HO","status":"todo","blockedBy":[],"blocks":[]},{"id":"OSE-169","title":"Define warm OSE brand","team":"OSE","role":"PO+FE","cls":"AA","status":"todo","blockedBy":[],"blocks":[]}],"criticalPath":[{"id":"OSE-168","label":"isPrimary fix","status":"done"},{"id":"EPIC-02","label":"Sponsor work unlocked","status":"todo"},{"id":"OSE-166","label":"CI license fix","status":"todo"},{"id":"OSE-146","label":"MOCK-1 demo env","status":"todo"},{"id":"OSE-24","label":"MVP Prod Readiness","status":"todo"},{"id":"OW-6","label":"Mobile Auth","status":"progress"},{"id":"OW-31","label":"DJ Profile schema","status":"todo"},{"id":"OSM-1","label":"WAF exemption","status":"blocked"},{"id":"LAUNCH","label":"June 1 activation","status":"todo"}],"standardsCreated":["OCR_STANDARD_namingConvention","OCR_STANDARD_testNaming","OCR_STANDARD_d1Migration","OCR_STANDARD_orgBrainSync","OCR_STANDARD_agentOperatingModel"]};
+}
+
+// ============================================================
+// FILTER / SORT STATE
+// ============================================================
+let activeFilters = { team: null, cls: null, status: null };
+let sortCol = null, sortDir = 1;
+
+function toggleFilter(type, value) {
+  activeFilters[type] = activeFilters[type] === value ? null : value;
+  applyFilters();
+  renderFilterBar();
+}
+
+function applyFilters() {
+  document.querySelectorAll('#story-table tbody tr').forEach(tr => {
+    let show = true;
+    if (activeFilters.team && tr.dataset.team !== activeFilters.team) show = false;
+    if (activeFilters.cls && tr.dataset.cls !== activeFilters.cls) show = false;
+    if (activeFilters.status && tr.dataset.status !== activeFilters.status) show = false;
+    tr.classList.toggle('hidden', !show);
+  });
+}
+
+function sortTable(col) {
+  if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = 1; }
+  const tbody = document.querySelector('#story-table tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+  rows.sort((a, b) => {
+    const av = a.dataset[col] || '', bv = b.dataset[col] || '';
+    return av.localeCompare(bv) * sortDir;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  document.querySelectorAll('#story-table th .sort-arrow').forEach(el => el.textContent = '');
+  const th = document.querySelector(`th[data-col="${col}"] .sort-arrow`);
+  if (th) th.textContent = sortDir === 1 ? '\u25B2' : '\u25BC';
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  const d = DATA;
+  document.getElementById('release-name').textContent = d.release.name;
+  document.getElementById('days-remaining').textContent = d.release.daysRemaining;
+
+  // Stats
+  const total = d.stories.length;
+  const done = d.stories.filter(s => s.status === 'done').length;
+  const aw = d.stories.filter(s => s.cls === 'AW');
+  const awDone = aw.filter(s => s.status === 'done').length;
+  const blocked = d.stories.filter(s => s.status === 'blocked').length;
+
+  const statRow = document.getElementById('stat-row');
+  statRow.innerHTML = '';
+  [
+    { v: total, l: 'Total Stories', c: 'stat-blue' },
+    { v: done, l: 'Done', c: 'stat-green' },
+    { v: aw.length, l: 'Agent-Workable', c: 'stat-blue' },
+    { v: d.classification.humanOnly, l: 'Human-Only', c: 'stat-purple' },
+    { v: blocked, l: 'Blocked', c: 'stat-red' },
+    { v: d.doneThisSession, l: 'Done This Session', c: 'stat-green' },
+  ].forEach(s => {
+    statRow.innerHTML += `<div class="stat ${s.c}"><div class="stat-value">${s.v}</div><div class="stat-label">${s.l}</div></div>`;
+  });
+
+  // Progress
+  const pb = document.getElementById('progress-bars');
+  pb.innerHTML = '';
+  [
+    { l:'Overall', d:done, t:total, c:'var(--green)' },
+    { l:'Agent-Workable', d:awDone, t:aw.length, c:'var(--cyan)' },
+    { l:'Agent-Assistable', d:d.stories.filter(s=>s.cls==='AA'&&s.status==='done').length, t:d.stories.filter(s=>s.cls==='AA').length, c:'var(--orange)' },
+    { l:'Human-Only', d:d.stories.filter(s=>s.cls==='HO'&&s.status==='done').length, t:d.stories.filter(s=>s.cls==='HO').length, c:'var(--purple)' },
+  ].forEach(g => {
+    const pct = g.t ? Math.round((g.d/g.t)*100) : 0;
+    pb.innerHTML += `<div style="margin-bottom:0.75rem"><div class="progress-label"><span>${g.l}</span><span>${g.d}/${g.t} (${pct}%)</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${g.c}"></div></div></div>`;
+  });
+
+  // Burndown
+  if (charts.burndown) charts.burndown.destroy();
+  const bdLabels = d.burndown.map(b => b.date.slice(5));
+  const bdActual = d.burndown.map(b => b.remaining);
+  const bdIdeal = d.burndown.map(b => b.ideal);
+  charts.burndown = new Chart(document.getElementById('chart-burndown'), {
+    type: 'line',
+    data: {
+      labels: bdLabels,
+      datasets: [
+        { label: 'Actual', data: bdActual, borderColor: '#06b6d4', backgroundColor: 'rgba(6,182,212,0.1)', fill: true, tension: 0.3, spanGaps: false, pointRadius: bdActual.map(v => v !== null ? 5 : 0) },
+        { label: 'Ideal', data: bdIdeal, borderColor: '#8892a4', borderDash: [6,4], pointRadius: 0, tension: 0.1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#8892a4', font: { family: 'monospace', size: 10 } }, grid: { color: '#2a2d3a' } },
+        y: { beginAtZero: true, ticks: { color: '#8892a4', font: { family: 'monospace' } }, grid: { color: '#2a2d3a' } }
+      },
+      plugins: { legend: { position: 'bottom', labels: { color: '#8892a4', font: { family: 'monospace', size: 11 } } } }
+    }
+  });
+
+  // Classification doughnut
+  if (charts.cls) charts.cls.destroy();
+  charts.cls = new Chart(document.getElementById('chart-classification'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Agent-Workable', 'Agent-Assistable', 'Human-Only'],
+      datasets: [{ data: [d.classification.agentWorkable, d.classification.agentAssistable, d.classification.humanOnly], backgroundColor: ['#06b6d4','#f97316','#a855f7'], borderWidth: 0 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#8892a4', font: { family: 'monospace', size: 11 } } } } }
+  });
+
+  // Team health
+  if (charts.team) charts.team.destroy();
+  charts.team = new Chart(document.getElementById('chart-teams'), {
+    type: 'bar',
+    data: {
+      labels: d.teams.map(t => t.code),
+      datasets: [
+        { label: 'Done', data: d.teams.map(t => t.done), backgroundColor: '#22c55e' },
+        { label: 'In Progress', data: d.teams.map(t => t.inProgress), backgroundColor: '#3b82f6' },
+        { label: 'Blocked', data: d.teams.map(t => t.blocked), backgroundColor: '#ef4444' },
+        { label: 'Backlog', data: d.teams.map(t => t.backlog), backgroundColor: '#2a2d3a' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, ticks: { color: '#8892a4', font: { family: 'monospace' } }, grid: { display: false } },
+        y: { stacked: true, ticks: { color: '#8892a4', font: { family: 'monospace' } }, grid: { color: '#2a2d3a' } }
+      },
+      plugins: { legend: { position: 'bottom', labels: { color: '#8892a4', font: { family: 'monospace', size: 11 } } } }
+    }
+  });
+
+  // Dependency graph (SVG)
+  renderDepGraph(d.stories);
+
+  // Critical path
+  const cpDiv = document.getElementById('critical-path');
+  cpDiv.innerHTML = '';
+  d.criticalPath.forEach((node, i) => {
+    const icon = {done:'\u2713',progress:'\u25B6',blocked:'\u2717',todo:'\u25CB'}[node.status]||'\u25CB';
+    cpDiv.innerHTML += `<div class="node node-${node.status}">${icon} <strong>${node.id}</strong> ${node.label}</div>`;
+    if (i < d.criticalPath.length-1) cpDiv.innerHTML += `<div class="arrow">\u2502</div>`;
+  });
+
+  // Agent queue
+  const qDiv = document.getElementById('agent-queue');
+  qDiv.innerHTML = '';
+  d.stories.filter(s => s.priority && s.status !== 'done').sort((a,b) => a.priority - b.priority).forEach(s => {
+    qDiv.innerHTML += `<div class="queue-item"><span class="queue-rank">${s.priority}.</span><span class="queue-id">${s.id}</span><span class="queue-title">${s.title}</span><span class="queue-role">${s.role}</span></div>`;
+  });
+
+  // Human items
+  const hDiv = document.getElementById('human-items');
+  hDiv.innerHTML = '';
+  d.stories.filter(s => s.cls === 'HO' && s.status !== 'done').forEach(s => {
+    hDiv.innerHTML += `<div class="queue-item"><span class="queue-id">${s.id}</span><span class="queue-title">${s.title}</span><span class="badge badge-human">${s.role}</span></div>`;
+  });
+
+  // Standards
+  const sDiv = document.getElementById('standards-list');
+  sDiv.innerHTML = '';
+  d.standardsCreated.forEach(s => {
+    sDiv.innerHTML += `<div class="queue-item"><span class="badge badge-done">\u2713</span><span style="margin-left:0.5rem">${s}</span></div>`;
+  });
+
+  // Story table
+  const tbody = document.querySelector('#story-table tbody');
+  tbody.innerHTML = '';
+  const sBadge = s => ({done:'badge-done',progress:'badge-progress',todo:'badge-todo',blocked:'badge-blocked'}[s]||'badge-todo');
+  const cBadge = c => ({AW:'badge-aw',AA:'badge-aa',HO:'badge-ho'}[c]);
+  d.stories.forEach(s => {
+    const deps = (s.blockedBy||[]).join(', ') || '\u2014';
+    tbody.innerHTML += `<tr data-id="${s.id}" data-title="${s.title}" data-team="${s.team}" data-role="${s.role}" data-cls="${s.cls}" data-status="${s.status}" data-deps="${deps}">
+      <td><strong>${s.id}</strong></td>
+      <td>${s.title}</td>
+      <td><span class="badge" onclick="toggleFilter('team','${s.team}')">${s.team}</span></td>
+      <td>${s.role}</td>
+      <td><span class="badge ${cBadge(s.cls)}" onclick="toggleFilter('cls','${s.cls}')">${s.cls}</span></td>
+      <td><span class="badge ${sBadge(s.status)}" onclick="toggleFilter('status','${s.status}')">${s.status}</span></td>
+      <td style="font-size:0.7rem;color:var(--muted)">${deps}</td>
+    </tr>`;
+  });
+
+  renderFilterBar();
+
+  // Session chart
+  if (charts.session) charts.session.destroy();
+  charts.session = new Chart(document.getElementById('chart-session'), {
+    type: 'bar',
+    data: {
+      labels: ['Action Items','Standards','Stories Fixed','Files Renamed','Tests Updated'],
+      datasets: [{ data: [7,5,2,20,86], backgroundColor: ['#22c55e','#3b82f6','#06b6d4','#f97316','#a855f7'], borderWidth: 0 }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      scales: { x: { ticks: { color: '#8892a4', font: { family: 'monospace' } }, grid: { color: '#2a2d3a' } }, y: { ticks: { color: '#8892a4', font: { family: 'monospace' } }, grid: { display: false } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function renderFilterBar() {
+  const bar = document.getElementById('filter-bar');
+  bar.innerHTML = '';
+  const teams = [...new Set(DATA.stories.map(s=>s.team))];
+  const statuses = ['done','progress','todo','blocked'];
+  const classes = ['AW','AA','HO'];
+
+  bar.innerHTML += '<span style="font-size:0.7rem;color:var(--muted);margin-right:0.25rem">TEAM:</span>';
+  teams.forEach(t => { bar.innerHTML += `<button class="filter-btn ${activeFilters.team===t?'active':''}" onclick="toggleFilter('team','${t}')">${t}</button>`; });
+  bar.innerHTML += '<span style="font-size:0.7rem;color:var(--muted);margin:0 0.5rem 0 1rem">CLASS:</span>';
+  classes.forEach(c => { bar.innerHTML += `<button class="filter-btn ${activeFilters.cls===c?'active':''}" onclick="toggleFilter('cls','${c}')">${c}</button>`; });
+  bar.innerHTML += '<span style="font-size:0.7rem;color:var(--muted);margin:0 0.5rem 0 1rem">STATUS:</span>';
+  statuses.forEach(s => { bar.innerHTML += `<button class="filter-btn ${activeFilters.status===s?'active':''}" onclick="toggleFilter('status','${s}')">${s}</button>`; });
+  bar.innerHTML += `<button class="filter-btn" onclick="activeFilters={team:null,cls:null,status:null};applyFilters();renderFilterBar();" style="margin-left:auto">CLEAR</button>`;
+}
+
+// ============================================================
+// DEPENDENCY GRAPH (SVG)
+// ============================================================
+function renderDepGraph(stories) {
+  const container = document.getElementById('dep-graph');
+  // Only show stories with deps or that block others
+  const relevant = stories.filter(s => (s.blocks && s.blocks.length) || (s.blockedBy && s.blockedBy.length));
+  const allIds = new Set();
+  relevant.forEach(s => { allIds.add(s.id); (s.blocks||[]).forEach(b => allIds.add(b)); (s.blockedBy||[]).forEach(b => allIds.add(b)); });
+
+  const nodes = [...allIds];
+  const nodeMap = {};
+  const cols = { done: 0, progress: 1, todo: 2, blocked: 3 };
+  const statusOf = id => { const s = stories.find(x => x.id === id); return s ? s.status : 'todo'; };
+  const colorOf = status => ({done:'#22c55e',progress:'#3b82f6',todo:'#eab308',blocked:'#ef4444'}[status]||'#8892a4');
+
+  // Layout: group by status column, stack vertically
+  const colCounts = [0,0,0,0];
+  nodes.forEach(id => {
+    const st = statusOf(id);
+    const col = cols[st] !== undefined ? cols[st] : 2;
+    const row = colCounts[col]++;
+    nodeMap[id] = { x: 30 + col * 200, y: 30 + row * 50, status: st };
+  });
+
+  const svgW = 860;
+  const svgH = Math.max(180, Math.max(...colCounts) * 50 + 40);
+  let svg = `<svg width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += `<defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8892a4"/></marker></defs>`;
+
+  // Column headers
+  ['Done','In Progress','Todo','Blocked'].forEach((label, i) => {
+    svg += `<text x="${130 + i*200}" y="18" text-anchor="middle" fill="#8892a4" font-family="monospace" font-size="10" font-weight="600">${label}</text>`;
+  });
+
+  // Edges
+  stories.forEach(s => {
+    (s.blocks||[]).forEach(targetId => {
+      const from = nodeMap[s.id], to = nodeMap[targetId];
+      if (from && to) {
+        svg += `<line class="dep-edge" x1="${from.x+80}" y1="${from.y+15}" x2="${to.x}" y2="${to.y+15}" stroke="#8892a4"/>`;
+      }
+    });
+  });
+
+  // Nodes
+  nodes.forEach(id => {
+    const n = nodeMap[id];
+    const c = colorOf(n.status);
+    svg += `<g class="dep-node"><rect x="${n.x}" y="${n.y}" width="160" height="30" fill="var(--surface)" stroke="${c}"/><text x="${n.x+80}" y="${n.y+19}" text-anchor="middle" font-size="11" fill="${c}" font-weight="600">${id}</text></g>`;
+  });
+
+  svg += '</svg>';
+  container.innerHTML = svg;
+}
+
+// ============================================================
+// SORT HANDLERS
+// ============================================================
+document.querySelectorAll('#story-table th[data-col]').forEach(th => {
+  th.addEventListener('click', () => sortTable(th.dataset.col));
+});
+
+// ============================================================
+// INIT + AUTO-REFRESH
+// ============================================================
+loadData();
+setInterval(loadData, 60000);
+</script>
+</body>
+</html>

@@ -18,7 +18,7 @@ The question: do we wait for code to exist before documenting architecture, or d
 
 Docs-as-code scaffold established before code so architecture is documented before inertia sets in.
 
-Every product repo gets three files at creation — CLAUDE.md, SKILL.md, README.md — regardless of whether it has application code. The org-level vision lives in OCR-docs `docs/VISION.md` and is the single source of truth. Product repos derive from it but do not duplicate it.
+Every product repo gets three files at creation — CLAUDE.md, SKILL.md, README.md — regardless of whether it has application code. The org-level vision lives in OCR-docs `docs/OCR_VISION.md` and is the single source of truth. Product repos derive from it but do not duplicate it.
 
 ## Consequences
 

@@ -1,0 +1,71 @@
+{
+  "release": {
+    "name": "June 1 2026 — Founding Corridor Activation",
+    "target": "2026-06-01",
+    "triagedAt": "2026-04-09",
+    "daysRemaining": 53
+  },
+  "teams": [
+    { "code": "OSE", "name": "OurSharedEvents", "health": "yellow", "total": 172, "done": 33, "inProgress": 1, "blocked": 1, "backlog": 125 },
+    { "code": "OW",  "name": "OurWKRP",         "health": "green",  "total": 52,  "done": 0,  "inProgress": 1, "blocked": 1, "backlog": 50 },
+    { "code": "OCR", "name": "OCR-doc",         "health": "yellow", "total": 20,  "done": 2,  "inProgress": 0, "blocked": 0, "backlog": 17 },
+    { "code": "OSM", "name": "OurSharedMagnets", "health": "red",   "total": 2,   "done": 0,  "inProgress": 0, "blocked": 1, "backlog": 1 }
+  ],
+  "classification": { "agentWorkable": 11, "agentAssistable": 8, "humanOnly": 5 },
+  "doneThisSession": 7,
+  "burndown": [
+    { "date": "2026-04-09", "remaining": 17, "ideal": 24 },
+    { "date": "2026-04-16", "remaining": null, "ideal": 20 },
+    { "date": "2026-04-23", "remaining": null, "ideal": 16 },
+    { "date": "2026-04-30", "remaining": null, "ideal": 12 },
+    { "date": "2026-05-07", "remaining": null, "ideal": 9 },
+    { "date": "2026-05-14", "remaining": null, "ideal": 6 },
+    { "date": "2026-05-21", "remaining": null, "ideal": 3 },
+    { "date": "2026-05-28", "remaining": null, "ideal": 0 },
+    { "date": "2026-06-01", "remaining": null, "ideal": 0 }
+  ],
+  "stories": [
+    { "id": "OSE-168", "title": "isPrimary schema bug", "team": "OSE", "role": "BE", "cls": "AW", "status": "done", "blockedBy": [], "blocks": ["EPIC-02"] },
+    { "id": "OSE-166", "title": "CI license false positive (node-forge)", "team": "OSE", "role": "SRE", "cls": "AW", "status": "todo", "priority": 1, "blockedBy": [], "blocks": ["OSE-163","OSE-164","OSE-158","OSE-33","OSE-146"] },
+    { "id": "OSM-1",   "title": "WAF exemption — automated API consumers", "team": "OSM", "role": "SRE", "cls": "HO", "status": "todo", "blockedBy": [], "blocks": ["LAUNCH"] },
+    { "id": "OCR-18",  "title": "BIPA legal opinion (Tom)", "team": "OCR", "role": "LEGAL", "cls": "HO", "status": "todo", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-12",  "title": "P1-7: Secrets + staging deploy", "team": "OSE", "role": "SRE+PO", "cls": "AA", "status": "done", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-22",  "title": "Test Coverage Tracker", "team": "OSE", "role": "PO", "cls": "AA", "status": "done", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-167", "title": "Eagles Hall technology blackout", "team": "OSE", "role": "OPS", "cls": "HO", "status": "done", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-163", "title": "GAS ghost refs — AppScript pattern", "team": "OSE", "role": "BE", "cls": "AW", "status": "todo", "priority": 2, "blockedBy": ["OSE-166"], "blocks": [] },
+    { "id": "OSE-164", "title": "GAS ghost refs — GAS/NUSDK pattern", "team": "OSE", "role": "BE", "cls": "AW", "status": "todo", "priority": 3, "blockedBy": ["OSE-166"], "blocks": [] },
+    { "id": "OSE-158", "title": "Security: upgrade wrangler 4.59.1+", "team": "OSE", "role": "SRE", "cls": "AW", "status": "todo", "priority": 4, "blockedBy": ["OSE-166"], "blocks": [] },
+    { "id": "OSE-145", "title": "OPS-1: Verify dev environment config", "team": "OSE", "role": "SRE", "cls": "AW", "status": "todo", "priority": 6, "blockedBy": [], "blocks": [] },
+    { "id": "OSE-146", "title": "MOCK-1: Configurable demo environment", "team": "OSE", "role": "BE", "cls": "AW", "status": "todo", "priority": 7, "blockedBy": ["OSE-166"], "blocks": ["OSE-147"] },
+    { "id": "OSE-147", "title": "MOCK-1: Demo data seeding", "team": "OSE", "role": "BE", "cls": "AW", "status": "todo", "priority": 8, "blockedBy": ["OSE-146"], "blocks": ["OSE-148"] },
+    { "id": "OSE-148", "title": "MOCK-1: Demo environment testing", "team": "OSE", "role": "QA", "cls": "AW", "status": "todo", "priority": 9, "blockedBy": ["OSE-147"], "blocks": [] },
+    { "id": "OSE-152", "title": "BRIEF-1: CEO briefing app", "team": "OSE", "role": "FE+SRE", "cls": "AA", "status": "todo", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-24",  "title": "MVP Production Readiness Review", "team": "OSE", "role": "TL+PO", "cls": "AA", "status": "todo", "blockedBy": [], "blocks": ["LAUNCH"] },
+    { "id": "OSE-59",  "title": "INFRA-1: Provision D1 databases", "team": "OSE", "role": "SRE", "cls": "AA", "status": "todo", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-33",  "title": "SR-12: Runtime flag gating", "team": "OSE", "role": "BE", "cls": "AW", "status": "todo", "priority": 5, "blockedBy": ["OSE-166"], "blocks": [] },
+    { "id": "OW-6",    "title": "Mobile Auth — Deep Link + Universal Links", "team": "OW", "role": "BE+FE", "cls": "AA", "status": "progress", "blockedBy": [], "blocks": ["OW-31"] },
+    { "id": "OW-30",   "title": "Event Playlist Linking", "team": "OW", "role": "TL+BE", "cls": "AA", "status": "blocked", "blockedBy": ["CCR-GATE"], "blocks": [] },
+    { "id": "OW-31",   "title": "DJ Profile schema (D1 migration)", "team": "OW", "role": "BE", "cls": "AW", "status": "todo", "priority": 10, "blockedBy": ["OW-6"], "blocks": [] },
+    { "id": "OCR-6",   "title": "Org mock data provider", "team": "OCR", "role": "TL", "cls": "AA", "status": "done", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-172", "title": "Harbor Country campaign operator", "team": "OSE", "role": "PO+OPS", "cls": "HO", "status": "todo", "blockedBy": [], "blocks": [] },
+    { "id": "OSE-169", "title": "Define warm OSE brand", "team": "OSE", "role": "PO+FE", "cls": "AA", "status": "todo", "blockedBy": [], "blocks": [] }
+  ],
+  "criticalPath": [
+    { "id": "OSE-168", "label": "isPrimary fix", "status": "done" },
+    { "id": "EPIC-02", "label": "Sponsor work unlocked", "status": "todo" },
+    { "id": "OSE-166", "label": "CI license fix", "status": "todo" },
+    { "id": "OSE-146", "label": "MOCK-1 demo env", "status": "todo" },
+    { "id": "OSE-24",  "label": "MVP Prod Readiness", "status": "todo" },
+    { "id": "OW-6",    "label": "Mobile Auth", "status": "progress" },
+    { "id": "OW-31",   "label": "DJ Profile schema", "status": "todo" },
+    { "id": "OSM-1",   "label": "WAF exemption", "status": "blocked" },
+    { "id": "LAUNCH",  "label": "June 1 activation", "status": "todo" }
+  ],
+  "standardsCreated": [
+    "OCR_STANDARD_namingConvention",
+    "OCR_STANDARD_testNaming",
+    "OCR_STANDARD_d1Migration",
+    "OCR_STANDARD_orgBrainSync",
+    "OCR_STANDARD_agentOperatingModel"
+  ]
+}

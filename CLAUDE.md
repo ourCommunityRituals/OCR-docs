@@ -1,6 +1,6 @@
 # CLAUDE.md — OCR-docs
 
-> **Session protocol**: Read this file → Read `docs/VISION.md` → Understand the full product line → Execute the task at org level.
+> **Session protocol**: Read this file → Read `docs/OCR_VISION.md` → Understand the full product line → Execute the task at org level.
 
 ---
 
@@ -8,7 +8,7 @@
 
 OCR-docs is the org-level brain for OurCommunityRituals LLC. It holds the source-of-truth documentation that all product repos derive from. There is no application code here. Only governance, vision, architecture, and coordination.
 
-If it is not written in `docs/VISION.md` it does not exist at the org level.
+If it is not written in `docs/OCR_VISION.md` it does not exist at the org level.
 
 ---
 
@@ -41,7 +41,7 @@ If it is not written in `docs/VISION.md` it does not exist at the org level.
 Every product repo — whether it has application code or not — maintains:
 
 - `CLAUDE.md` — session protocol and project brain
-- `docs/VISION.md` — product-specific vision derived from org-level VISION.md
+- `docs/OCR_VISION.md` — product-specific vision derived from org-level source of truth
 - `README.md` — public-facing description
 - `SKILL.md` — reusable skills for AI-assisted work
 

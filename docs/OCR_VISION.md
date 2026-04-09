@@ -180,8 +180,8 @@ simultaneously with the business.
 
 Node:     The specific activation point.
 Corridor: The organic geographic thread
-          connecting nodes. The can span across, through, up to, agaisnt, bypass, etc node by what the geography, culture, and econonmic behavior dictate
-Ring:     The self-sustaining local economic loop of the varying levels of      nodes and corridors permenating the economic geography.
+          connecting nodes. They can span across, through, up to, against, bypass, etc node by what the geography, culture, and economic behavior dictate.
+Ring:     The self-sustaining local economic loop of the varying levels of nodes and corridors permeating the economic geography.
 
 Six-layer geographic hierarchy from hyperlocal
 to macro region. Ring closes when the corridor
