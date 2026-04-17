@@ -170,11 +170,11 @@ APPS = [
     },
     {
         "key": "ose-prod", "name": "OSE — Production", "abbr": "OSE prod",
-        "subtitle": "ourSharedEvents · Cloudflare Worker · oursharedevents.com",
+        "subtitle": "ourSharedEvents · Cloudflare Worker · oursharedevents.com (not yet deployed — staging first)",
         "role": "downstream", "lane": "ose",
-        "base": PROD_BASE, "probes": True,
+        "base": PROD_BASE, "probes": False,
         "repo": OSE_REPO, "github": OSE_GITHUB,
-        "suite_keys": [], "drift": True,
+        "suite_keys": [], "drift": False,
     },
     # ── Other downstream apps (repos active; deployment URLs pending) ────────
     {
