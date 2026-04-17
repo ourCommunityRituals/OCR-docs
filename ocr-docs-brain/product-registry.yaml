@@ -1,0 +1,389 @@
+# ============================================================================
+# OCR PRODUCT REGISTRY
+# ============================================================================
+schema_version: 1.0.0
+org: OurCommunityRituals
+legal_entity: OurCommunityRituals LLC
+github_org: https://github.com/OurCommunityRituals
+oureventring:
+  description: 'BigQuery RAG data warehouse. The gravity well. Every product line is a data collection
+    surface feeding this single destination. Write-from-day-one, read-later.
+
+    '
+  pools:
+    general:
+      dataset: oureventring_general
+      regulatory_constraint: none
+      access_control: standard_rbac
+      encryption: platform_default
+      audit_logging: standard
+      aggregate_contribution_method: passthrough
+    hipaa:
+      dataset: oureventring_hipaa
+      regulatory_constraint: HIPAA — Health Insurance Portability and Accountability Act
+      access_control: baa_required
+      encryption: separate_keys
+      audit_logging: mandatory_full
+      aggregate_contribution_method: safe_harbor_18
+    coppa:
+      dataset: oureventring_coppa
+      regulatory_constraint: COPPA — Children's Online Privacy Protection Act
+      access_control: parental_consent_framework
+      encryption: separate_keys
+      audit_logging: mandatory_full
+      aggregate_contribution_method: coppa_aggregation
+    aggregate:
+      dataset: oureventring_aggregate
+      description: 'Fourth layer. De-identified, aggregated contributions from ALL THREE raw pools flow
+        here. This is what the RAG reads. This is where cross-pool community intelligence lives. No PII,
+        no PHI, no individual minor data. Corridor-level behavioral density only.
+
+        '
+      source_pools:
+      - general
+      - hipaa
+      - coppa
+      access_control: standard_rbac
+      encryption: platform_default
+      audit_logging: standard
+products:
+- product_id: ocr-docs
+  product_name: OCR-docs
+  layer: governance
+  repo: OurCommunityRituals/OCR-docs
+  repo_status: active
+  identity_layer: n/a
+  description: 'The Brain. Governance, ADRs, taxonomy, parseable contracts, enforcement schemas. Not a
+    reference library — an enforcement mechanism.
+
+    '
+  regulatory_pools: []
+  data_contributor: false
+  pipeline_activation_phase: 1
+- product_id: ocr-platform-tests
+  product_name: ocr-platform-tests
+  layer: governance
+  repo: OurCommunityRituals/ocr-platform-tests
+  repo_status: planned
+  identity_layer: n/a
+  description: 'Org-level CI/CD. Cross-repo seam contracts, platform E2E smoke, release gate, four-way
+    coherence check (Docs ↔ Code ↔ Tests ↔ Deploy).
+
+    '
+  regulatory_pools: []
+  data_contributor: false
+  pipeline_activation_phase: 1
+- product_id: ose
+  product_name: ourSharedEvents
+  layer: anonymous
+  repo: OurCommunityRituals/ourSharedEvents
+  repo_status: active
+  identity_layer: anonymous
+  description: 'Default app. Backend architecture + frontend triangle. Whitelabel-capable via OSM combinations.
+    The primary data collection surface.
+
+    '
+  regulatory_pools:
+  - general
+  - hipaa
+  - coppa
+  data_contributor: true
+  anonymization_method: full
+  aggregate_contribution_method: passthrough
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - regulatory_pool
+  - product_id
+  pipeline_activation_phase: 1
+  bigquery_datasets:
+    general: oureventring_general
+    hipaa: oureventring_hipaa
+    coppa: oureventring_coppa
+  funnels_to:
+  - oureventring
+  tier_availability:
+    phase1:
+    - free
+    - mid
+    phase2:
+    - free
+    - mid
+    phase3:
+    - free
+    - mid
+    phase4:
+    - free
+    - mid
+    - premium
+    phase5:
+    - free
+    - mid
+    - premium
+- product_id: osm
+  product_name: ourSharedMagnets
+  layer: anonymous
+  repo: OurCommunityRituals/ourSharedMagnets
+  repo_status: active
+  identity_layer: anonymous
+  description: 'Backend test, mock, demo, and whitelabel creation engine. The multiplier — one architecture
+    becomes many products without forking.
+
+    '
+  regulatory_pools:
+  - general
+  - hipaa
+  - coppa
+  data_contributor: true
+  anonymization_method: full
+  aggregate_contribution_method: passthrough
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - regulatory_pool
+  - product_id
+  pipeline_activation_phase: 1
+  bigquery_datasets:
+    general: oureventring_general
+    hipaa: oureventring_hipaa
+    coppa: oureventring_coppa
+  funnels_to:
+  - oureventring
+  tier_availability:
+    phase1:
+    - free
+    phase2:
+    - free
+    - mid
+    phase3:
+    - free
+    - mid
+    phase4:
+    - free
+    - mid
+    phase5:
+    - free
+    - mid
+    - premium
+- product_id: osp
+  product_name: OurSharedPulse
+  layer: pre-tech
+  repo: OurCommunityRituals/ourSharedPulse
+  repo_status: pre-tech
+  identity_layer: pre-tech
+  description: 'Pure consulting. Layered leagues with belts, trophies, community playlists. Attracting
+    layers for everyone. Segway to OSE and OSM.
+
+    '
+  regulatory_pools:
+  - general
+  data_contributor: true
+  anonymization_method: inherited_from_ose
+  aggregate_contribution_method: passthrough
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - product_id
+  pipeline_activation_phase: 1
+  pipeline_route: via_ose
+  bigquery_datasets:
+    general: oureventring_general
+  funnels_to:
+  - ose
+  - osm
+  tier_availability:
+    phase1:
+    - free
+    phase2:
+    - free
+    phase3:
+    - free
+    phase4:
+    - free
+    - mid
+    phase5:
+    - free
+    - mid
+- product_id: osr
+  product_name: OurSharedRecords
+  layer: pre-tech
+  repo: OurCommunityRituals/ourSharedRecords
+  repo_status: pre-tech
+  identity_layer: pre-tech
+  description: 'One story, one record side, why. Live storytelling through music. Dovetails into OSE.
+
+    '
+  regulatory_pools:
+  - general
+  data_contributor: true
+  anonymization_method: inherited_from_ose
+  aggregate_contribution_method: passthrough
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - product_id
+  pipeline_activation_phase: 1
+  pipeline_route: via_ose
+  bigquery_datasets:
+    general: oureventring_general
+  funnels_to:
+  - ose
+  tier_availability:
+    phase1:
+    - free
+    phase2:
+    - free
+    phase3:
+    - free
+    phase4:
+    - free
+    - mid
+    phase5:
+    - free
+    - mid
+- product_id: osg
+  product_name: OurSharedGames
+  layer: pre-tech
+  repo: OurCommunityRituals/ourSharedGames
+  repo_status: pre-tech
+  identity_layer: pre-tech
+  description: 'Anchor game, cards, art table, board games, seasonal table. Get people having somewhere
+    to go on Thursdays. Third space. Dovetails into OSE.
+
+    '
+  regulatory_pools:
+  - general
+  data_contributor: true
+  anonymization_method: inherited_from_ose
+  aggregate_contribution_method: passthrough
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - product_id
+  pipeline_activation_phase: 1
+  pipeline_route: via_ose
+  bigquery_datasets:
+    general: oureventring_general
+  funnels_to:
+  - ose
+  tier_availability:
+    phase1:
+    - free
+    phase2:
+    - free
+    phase3:
+    - free
+    phase4:
+    - free
+    - mid
+    phase5:
+    - free
+    - mid
+- product_id: wkrp
+  product_name: OurWKRP
+  layer: non-anonymous
+  repo: OurCommunityRituals/ourWKRP
+  repo_status: planned
+  identity_layer: non-anonymous
+  description: 'Community free space. Spotify fists-of-5 compete for top playlist. QR code votes tallied
+    at end of night. Winner takes home the belt. All free. Cultural reclaiming against AI. Legal clearance
+    path to Empty Bottle, Reckless.
+
+    '
+  regulatory_pools:
+  - general
+  data_contributor: true
+  anonymization_method: none
+  aggregate_contribution_method: strip_identity_aggregate
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - product_id
+  pipeline_activation_phase: 2
+  bigquery_datasets:
+    general: oureventring_general
+  funnels_to:
+  - oureventring
+  tier_availability:
+    phase1: []
+    phase2:
+    - free
+    phase3:
+    - free
+    phase4:
+    - free
+    - mid
+    phase5:
+    - free
+    - mid
+    - premium
+- product_id: oaw
+  product_name: OAW (OurAirwaves)
+  layer: non-anonymous
+  repo: OurCommunityRituals/ourAirwaves
+  repo_status: planned
+  identity_layer: non-anonymous
+  description: 'DJ and artist community sites paired with OurWKRP. QR scan tallying during sets for credit.
+    Portable reputation that accumulates over time for sponsorship and bigger venues.
+
+    '
+  regulatory_pools:
+  - general
+  data_contributor: true
+  anonymization_method: none
+  aggregate_contribution_method: strip_identity_aggregate
+  data_schema_version: 1.0.0
+  required_tags:
+  - corridor_id
+  - venue_id
+  - event_type
+  - uec_code
+  - product_id
+  pipeline_activation_phase: 3
+  pipeline_route: via_wkrp
+  bigquery_datasets:
+    general: oureventring_general
+  funnels_to:
+  - oureventring
+  tier_availability:
+    phase1: []
+    phase2: []
+    phase3:
+    - free
+    phase4:
+    - free
+    - mid
+    phase5:
+    - free
+    - mid
+    - premium
+- product_id: oot
+  product_name: OOT (OurOpenTable)
+  layer: pre-tech
+  repo: null
+  repo_status: parked
+  identity_layer: pre-tech
+  description: Cross-community meals initiative. Parked for later development.
+  regulatory_pools: null
+  data_contributor: false
+  anonymization_method: null
+  pipeline_activation_phase: null
+  tier_availability: null

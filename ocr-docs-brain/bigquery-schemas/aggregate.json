@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OurEventRing Aggregate Intelligence Layer Schema",
+  "description": "The fourth layer. De-identified, aggregated contributions from ALL THREE raw pools flow here. This is what the RAG reads. This is where cross-pool community intelligence lives. No PII, no PHI, no individual minor data. Corridor-level behavioral density only.",
+  "version": "1.0.0",
+  "dataset": "oureventring_aggregate",
+  "classification": "CONFIDENTIAL — TRADE SECRET",
+  "updated": "2026-04-15",
+
+  "source_pools": {
+    "general": {
+      "contribution_method": "passthrough",
+      "description": "Anonymous data is already de-identified at collection. No transformation required. Flows directly to aggregate tables."
+    },
+    "hipaa": {
+      "contribution_method": "safe_harbor_18",
+      "description": "All 18 Safe Harbor identifiers stripped. Only corridor-level behavioral signal remains. Minimum group size 5.",
+      "legal_review_required": true
+    },
+    "coppa": {
+      "contribution_method": "coppa_aggregation",
+      "description": "No individual minor identifiable. Minimum group size 10. Events below threshold suppressed entirely.",
+      "legal_review_required": true
+    }
+  },
+
+  "tables": {
+    "corridor_intelligence": {
+      "description": "The primary table the RAG queries. Cross-pool corridor-level behavioral density, computed daily from all three source pools after de-identification.",
+      "fields": [
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "date", "type": "DATE", "mode": "REQUIRED" },
+        { "name": "total_events", "type": "INTEGER", "mode": "REQUIRED", "description": "Sum across all contributing pools." },
+        { "name": "total_scans", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "unique_venues", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "unique_event_types", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "category_distribution", "type": "JSON", "mode": "REQUIRED", "description": "Event count by category_id. Cross-pool aggregate." },
+        { "name": "product_distribution", "type": "JSON", "mode": "REQUIRED", "description": "Event count by product_id." },
+        { "name": "pool_contribution_flags", "type": "JSON", "mode": "REQUIRED", "description": "Which pools contributed data for this corridor on this date. Example: {general: true, hipaa: true, coppa: false}. Does NOT reveal counts per pool — only presence." },
+        { "name": "day_of_week", "type": "STRING", "mode": "REQUIRED", "description": "For weekly pattern detection (Thursday density, weekend patterns)." },
+        { "name": "is_recurring_dominant", "type": "BOOLEAN", "mode": "REQUIRED", "description": "Whether >50% of events were recurring instances." },
+        { "name": "sponsor_presence", "type": "BOOLEAN", "mode": "REQUIRED", "description": "Whether any sponsored events occurred. No sponsor identity." },
+        { "name": "computed_at", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED" }
+      ]
+    },
+
+    "trend_signals": {
+      "description": "Derived trend signals computed by Vertex AI (Phase 5). Week-over-week and month-over-month changes in corridor behavior.",
+      "activation_phase": 5,
+      "fields": [
+        { "name": "signal_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "signal_type", "type": "STRING", "mode": "REQUIRED", "description": "growth, decline, emergence, migration, seasonal_shift, venue_gap." },
+        { "name": "category_id", "type": "STRING", "mode": "NULLABLE", "description": "Relevant event category, if signal is category-specific." },
+        { "name": "magnitude", "type": "FLOAT", "mode": "REQUIRED", "description": "Strength of signal (0.0 to 1.0)." },
+        { "name": "confidence", "type": "FLOAT", "mode": "REQUIRED", "description": "Model confidence (0.0 to 1.0)." },
+        { "name": "lookback_days", "type": "INTEGER", "mode": "REQUIRED", "description": "How many days of data the signal is computed from." },
+        { "name": "description", "type": "STRING", "mode": "REQUIRED", "description": "Human-readable signal description for SharedReport rendering." },
+        { "name": "computed_at", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED" }
+      ]
+    },
+
+    "venue_gap_analysis": {
+      "description": "Identifies corridors where demand exists but venue supply doesn't. Premium tier insight.",
+      "activation_phase": 5,
+      "fields": [
+        { "name": "gap_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "category_id", "type": "STRING", "mode": "REQUIRED", "description": "Which event category has unmet demand." },
+        { "name": "demand_score", "type": "FLOAT", "mode": "REQUIRED", "description": "Computed demand from scan patterns and cross-corridor comparison." },
+        { "name": "nearest_supply_corridor", "type": "STRING", "mode": "NULLABLE", "description": "Closest corridor that has this category served." },
+        { "name": "distance_km", "type": "FLOAT", "mode": "NULLABLE" },
+        { "name": "recommendation", "type": "STRING", "mode": "REQUIRED", "description": "Human-readable recommendation for SharedReport." },
+        { "name": "computed_at", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED" }
+      ]
+    },
+
+    "de_identification_audit": {
+      "description": "Audit trail for de-identification pipeline. Proves that data flowing from HIPAA and COPPA pools was properly stripped before entering aggregate layer.",
+      "fields": [
+        { "name": "audit_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "source_pool", "type": "STRING", "mode": "REQUIRED", "description": "hipaa or coppa." },
+        { "name": "source_record_count", "type": "INTEGER", "mode": "REQUIRED", "description": "Records processed in this batch." },
+        { "name": "records_contributed", "type": "INTEGER", "mode": "REQUIRED", "description": "Records that passed de-identification and threshold checks." },
+        { "name": "records_suppressed", "type": "INTEGER", "mode": "REQUIRED", "description": "Records suppressed due to group size threshold." },
+        { "name": "de_identification_method", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "minimum_group_size_applied", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "pipeline_run_timestamp", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "pipeline_version", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "validation_passed", "type": "BOOLEAN", "mode": "REQUIRED" }
+      ]
+    }
+  },
+
+  "rag_access_rules": {
+    "description": "Rules governing how the RAG (Vertex AI) queries this layer.",
+    "rules": [
+      "RAG reads ONLY from oureventring_aggregate. Never from raw pools.",
+      "RAG cannot query by institution_id, baa_entity_id, or any identifier stripped during de-identification.",
+      "RAG outputs (trend signals, venue gaps, recommendations) are tagged with confidence scores.",
+      "Premium tier customers see RAG outputs in SharedReports. Free and Mid do not.",
+      "RAG outputs never reveal which raw pool contributed a specific data point. pool_contribution_flags show presence only, not counts.",
+      "All RAG queries are logged for audit purposes."
+    ]
+  }
+}

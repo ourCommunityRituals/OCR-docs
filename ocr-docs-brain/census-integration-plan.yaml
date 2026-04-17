@@ -1,0 +1,82 @@
+schema_version: "1.0.0"
+description: >
+  Specifies how platform data will be joined to US Census Bureau data
+  for demographic context. Without census integration, anonymous scan
+  data floats in a demographic vacuum. This plan enables representation
+  gap detection and demographic characterization of corridors.
+
+census_source:
+  dataset: "American Community Survey (ACS) 5-Year Estimates"
+  vintage: "2020-2024 (update to latest available at each analysis cycle)"
+  api: "https://api.census.gov/data/"
+  geography_level: "Census Tract"
+  joining_methodology: >
+    Each venue (L1 node) is geocoded to its enclosing census tract via
+    lat/lng point-in-polygon lookup against TIGER/Line tract boundaries.
+    Corridor-level (L3 Zone) demographics are computed as population-weighted
+    averages of the tracts that intersect the corridor boundary.
+
+acs_tables:
+  demographics:
+    - table_id: B01001
+      description: "Age and sex distribution"
+      variables: ["total_population", "age_median", "age_under_18", "age_65_plus"]
+      research_use: "Age representation analysis — are events reaching youth? Seniors?"
+
+    - table_id: B03002
+      description: "Hispanic or Latino origin by race"
+      variables: ["total", "hispanic_latino", "white_alone_not_hispanic", "black_alone", "asian_alone"]
+      research_use: "Racial and ethnic representation — does event attendance reflect corridor demographics?"
+
+    - table_id: B19013
+      description: "Median household income"
+      variables: ["median_income"]
+      research_use: "Economic context — are events concentrated in higher or lower income tracts?"
+
+    - table_id: B25003
+      description: "Tenure (owner vs renter)"
+      variables: ["total_occupied", "owner_occupied", "renter_occupied"]
+      research_use: "Community stability proxy — higher ownership correlates with residential tenure"
+
+    - table_id: B08301
+      description: "Means of transportation to work"
+      variables: ["total_workers", "drove_alone", "public_transit", "walked", "worked_at_home"]
+      research_use: "Mobility context — corridors with high transit use may show different crossing patterns"
+
+    - table_id: B16001
+      description: "Language spoken at home"
+      variables: ["total", "english_only", "spanish", "other_languages"]
+      research_use: "Language accessibility — are events linguistically accessible to the corridor population?"
+
+  housing:
+    - table_id: B25077
+      description: "Median home value"
+      variables: ["median_value"]
+      research_use: "Economic geography — property value context for corridor comparisons"
+
+  education:
+    - table_id: B15003
+      description: "Educational attainment"
+      variables: ["total_25_plus", "high_school", "bachelors", "graduate"]
+      research_use: "Education context — relevant for education department research partnerships"
+
+representation_gap_protocol:
+  description: >
+    When scan data accumulates, compare the geographic distribution of
+    events against the demographic profile of the corridors they serve.
+    Gaps are not failures — they are documented limitations of the sampling
+    frame that must be acknowledged in any published analysis.
+  metrics:
+    - name: "Demographic coverage ratio"
+      definition: "Proportion of census tracts within a corridor that have at least one instrumented venue"
+      threshold: "Flag corridors below 50% tract coverage"
+    - name: "Event type demographic skew"
+      definition: "Compare the demographic profile of tracts with events in a given category vs tracts without"
+      threshold: "Flag categories where participating tracts differ by more than 1 SD from corridor mean on any demographic variable"
+  response_protocol: >
+    Gaps are documented in the research questions registry, not corrected
+    by the platform. The platform does not attempt to achieve demographic
+    representativeness — it documents where it falls short. Representativeness
+    is a research design question, not an engineering problem.
+
+activation_phase: "Post-launch. Requires real event data with venue geocodes."

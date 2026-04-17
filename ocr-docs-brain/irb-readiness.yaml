@@ -1,0 +1,114 @@
+schema_version: "1.0.0"
+description: >
+  Describes the platform's anonymity architecture in language suitable for
+  Institutional Review Board evaluation. This document does NOT claim IRB
+  exemption. It provides the information each institution needs to make
+  its own determination.
+
+platform_identity: "OurSharedEvents (OSE), operated by OurCommunityRituals LLC"
+
+data_collection_overview:
+  what_is_collected: >
+    Anonymous behavioral signals at community events. When an attendee scans
+    a QR code at an event, the platform records: a session-scoped anonymous token,
+    the event ID, the venue ID, the scan type (PRESENCE or BEHAVIORAL), and a
+    timestamp. No name, email, phone number, IP address, device ID, or any other
+    personally identifiable information is attached to the scan record.
+
+  how_it_is_collected: >
+    QR codes are displayed at event venues (on posters, tabletops, or screens).
+    Attendees voluntarily scan the QR code with their phone's camera. No app
+    installation is required. The scan opens a web page that sets a session-scoped
+    browser cookie (HttpOnly, Secure, SameSite=Lax) containing the anonymous token.
+
+  what_is_NOT_collected:
+    - "Name or any form of identity"
+    - "Email address (except in a separate opt-in registration flow)"
+    - "Phone number"
+    - "IP address (not stored in scan records)"
+    - "Device identifier or fingerprint"
+    - "Location data beyond the known venue coordinates"
+    - "Photographs or biometric data"
+
+anonymity_architecture:
+  session_scope: >
+    The anonymous token exists only for the duration of the browser session.
+    Closing the browser destroys the token. The same person attending the same
+    event the following week receives a different token. There is no mechanism
+    to link tokens across sessions, devices, or time.
+
+  two_database_separation: >
+    Scan data (anonymous) and opt-in registration data (contains PII) are stored
+    in physically separate databases (D1 DB and D1 FORMS_DB). There are no foreign
+    keys, joins, or cross-references between them. A query against the scan database
+    cannot retrieve registration data, and vice versa.
+
+  pii_retention_bounds:
+    registrations: "90-day TTL. Automatically deleted by daily lifecycle cron."
+    email_signups: "30-day TTL. Automatically deleted by daily lifecycle cron."
+    survey_responses: "PII fields scrubbed on export. Raw responses retained for event duration only."
+    scan_data: "No PII to retain. Anonymous records stored permanently for longitudinal analysis."
+
+  aggregate_only_reporting: >
+    All external-facing reports (SharedReport for sponsors, public corridor data)
+    contain aggregate counts only. No individual-level records cross the boundary
+    between the scan database and any external surface. Minimum aggregation
+    threshold: data is not reported for groups smaller than 5 scans.
+
+  ci_enforcement: >
+    Architectural Invariant #1 (Anonymous ID) is enforced by a CI gate that
+    fails the build if any PII field appears in the scan database schema.
+    This is a code-level enforcement mechanism, not a policy document.
+
+re_identification_risk_assessment:
+  risk_level: low
+  rationale: >
+    The combination of session-scoped tokens, no cross-session linking, no device
+    identification, and no IP storage makes re-identification through the platform's
+    own data extremely difficult. The primary re-identification risk is external:
+    if an observer at an event notes who scanned a QR code and correlates that
+    observation with a specific scan timestamp, they could potentially link a scan
+    record to a person. This risk exists for any observation in a public space
+    and is not unique to the platform.
+  mitigation: >
+    Scan timestamps are rounded to 15-minute windows in aggregate exports.
+    Individual scan-level timestamps are available only in the raw database,
+    which is not accessible to external parties. The Cloudflare infrastructure
+    layer is being evaluated for additional de-identification measures
+    (identified as a potential side-channel by the technical team).
+
+irb_classification_guidance:
+  note: >
+    The platform does NOT claim IRB exemption. The following information is
+    provided to assist IRB committees in making their own determination.
+  relevant_categories:
+    exempt_category_2: >
+      Research involving observation of public behavior where the information
+      obtained is recorded in such a manner that the identity of the human
+      subjects cannot readily be ascertained, and disclosure of responses
+      outside the research would not reasonably place the subjects at risk.
+      Community events at public venues may qualify under this category.
+      The anonymous architecture supports the "cannot readily be ascertained"
+      criterion, but each IRB must evaluate independently.
+    exempt_category_4: >
+      Research involving the collection or study of existing data, documents,
+      or records if these sources are publicly available or if the information
+      is recorded such that subjects cannot be identified. Aggregate corridor
+      data may qualify. Individual scan records may not, depending on the
+      re-identification risk assessment.
+  institution_specific: >
+    IRB requirements vary by institution. Some IRBs classify observational
+    research in public spaces as exempt. Others require full review for
+    community-level interventions. The platform provides this document as
+    the basis for each institution's independent evaluation.
+
+consent_model:
+  scan_participation: >
+    Voluntary. No attendee is required to scan a QR code. Non-participation
+    has no consequence. No incentive is offered for scanning. The act of
+    scanning is the consent to be counted anonymously.
+  opt_in_registration: >
+    Separate and optional. If an attendee chooses to register for an event,
+    they provide PII (name, email) through a separate form. This data is
+    stored in a separate database with bounded retention. Registration
+    consent is explicit and independent of scan participation.

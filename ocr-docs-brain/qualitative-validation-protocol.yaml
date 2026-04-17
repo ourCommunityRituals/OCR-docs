@@ -1,0 +1,79 @@
+schema_version: "1.0.0"
+description: >
+  Structured observation protocol for the before-period and ongoing field
+  validation. Elevates event observations from anecdotes to qualitative data.
+  Required by sociology and education departments for mixed-methods credibility.
+
+purpose: >
+  Quantitative scan data shows WHAT happened (attendance, crossing, frequency).
+  Qualitative observation shows HOW and WHY — the texture of gathering behavior
+  that scan counts cannot capture. When quantitative and qualitative evidence
+  align, findings are strengthened. When they diverge, the divergence itself
+  is the finding.
+
+observation_protocol:
+
+  pre_event:
+    checklist:
+      - "Venue setup: room layout, table arrangement, signage placement"
+      - "Sponsor visibility: logo placement, rotation screen active Y/N"
+      - "Facilitator present: name, role, preparation observed"
+      - "Weather and external conditions"
+      - "Estimated pre-event foot traffic in venue vicinity"
+
+  during_event:
+    checklist:
+      - "Headcount at 15-minute intervals (manual tally by floor anchor)"
+      - "Arrival pattern: steady stream vs clustered arrival"
+      - "Departure pattern: gradual vs event-end exodus"
+      - "Interaction density: are attendees talking to each other or parallel-playing?"
+      - "Cross-group mixing: do people from different tables/groups interact?"
+      - "QR scanning behavior: who scans, who doesn't, where do they scan, how long?"
+      - "Sponsor engagement: did anyone look at the sponsor display? Ask about it?"
+      - "Unexpected behaviors: anything not anticipated by the event type"
+      - "Age range estimate (bands: youth/young adult/middle/senior)"
+      - "Language(s) heard"
+
+  post_event:
+    checklist:
+      - "Total headcount (final)"
+      - "Duration of event (actual vs scheduled)"
+      - "Facilitator debrief: 2-3 sentences on how it went"
+      - "Notable moments: anything a scan count would miss"
+      - "Comparison to previous session at same venue (if applicable)"
+
+  field_note_format:
+    structure: "Date | Venue | Event type | Observer | Duration | Notes"
+    length: "Minimum 200 words per session. No maximum."
+    storage: "Markdown file in robot-saves/ directory, committed with session save"
+    privacy: "No names. No identifying descriptions. Observer notes only."
+
+before_period_requirements:
+  minimum_sessions: 4
+  minimum_weeks: 8
+  venues: ["Eagles Hall (minimum)", "additional venues as available"]
+  observer: "Floor anchor (P for Eagles) or designated observer"
+  documentation: "Field notes committed to repo within 48 hours of session"
+
+quantitative_qualitative_alignment_checks:
+  description: >
+    After instrumentation begins, run alignment checks between scan data
+    and field observations at overlapping sessions.
+  checks:
+    - name: headcount_scan_ratio
+      description: "Compare floor anchor headcount to scan count at same session"
+      purpose: "Estimates scan adoption rate and bounds selection bias"
+      expected_range: "Scan count should be 30-80% of headcount (lower = lower adoption)"
+
+    - name: arrival_pattern_consistency
+      description: "Does the scan timestamp distribution match observed arrival pattern?"
+      purpose: "Validates that scan timing reflects actual attendance timing"
+
+    - name: interaction_vs_cooccurrence
+      description: "Does observed cross-group interaction correlate with corridor crossing signals?"
+      purpose: "Tests whether corridor crossing (quantitative) maps to actual social bridging (qualitative)"
+
+    - name: qualitative_contradiction_flag
+      description: "Observer notes that scan data tells wrong story"
+      purpose: "Most valuable finding — the data says one thing, the ground truth says another"
+      response: "Document in research questions registry. Do not adjust the data."

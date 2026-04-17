@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OurEventRing COPPA Pool Schema",
+  "description": "BigQuery table schema for the COPPA regulatory pool. Parental consent framework, no behavioral profiling of minors, separate encryption keys.",
+  "version": "1.0.0",
+  "dataset": "oureventring_coppa",
+  "classification": "CONFIDENTIAL — TRADE SECRET — COPPA REGULATED",
+  "updated": "2026-04-15",
+  "legal_requirements": {
+    "parental_consent_required": true,
+    "encryption": "separate_keys",
+    "audit_logging": "mandatory_full",
+    "behavioral_profiling_of_minors": "PROHIBITED",
+    "data_retention_maximum": "as_required_by_program_duration",
+    "deletion_on_request": "mandatory_within_reasonable_time",
+    "third_party_sharing": "PROHIBITED_without_verifiable_parental_consent"
+  },
+
+  "tables": {
+    "events": {
+      "description": "Core event records for COPPA-regulated events (schools, youth programs). No individual minor data stored — event-level only.",
+      "inherits_from": "general.events",
+      "additional_fields": [
+        { "name": "institution_id", "type": "STRING", "mode": "REQUIRED", "description": "School or youth organization identifier." },
+        { "name": "age_group", "type": "STRING", "mode": "REQUIRED", "description": "Age bracket (under_13, 13_to_17, mixed). Never individual ages." },
+        { "name": "parental_consent_batch_id", "type": "STRING", "mode": "NULLABLE", "description": "Reference to batch parental consent record for the program." },
+        { "name": "participant_count", "type": "INTEGER", "mode": "NULLABLE", "description": "Aggregate count only. No individual tracking." }
+      ],
+      "prohibited_fields": [
+        "Individual student names",
+        "Individual student IDs",
+        "Individual behavioral profiles",
+        "Individual device identifiers",
+        "Individual session tracking for minors"
+      ]
+    },
+
+    "qr_scans": {
+      "description": "QR scan events in COPPA context. Scans are counted at aggregate level only. No individual minor session tracking.",
+      "fields": [
+        { "name": "scan_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "event_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "product_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "venue_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "scan_timestamp", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "scan_surface", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "institution_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "uec_code", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "regulatory_pool", "type": "STRING", "mode": "REQUIRED", "description": "Always 'coppa'." },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED" }
+      ],
+      "note": "No anonymous_session_id in COPPA pool. Scans are event-level, not session-level. No individual minor tracking."
+    },
+
+    "consent_records": {
+      "description": "Parental consent tracking for COPPA compliance.",
+      "fields": [
+        { "name": "consent_batch_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "institution_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "program_name", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "consent_method", "type": "STRING", "mode": "REQUIRED", "description": "How consent was obtained (signed_form, email_verification, etc)." },
+        { "name": "consent_date", "type": "DATE", "mode": "REQUIRED" },
+        { "name": "consent_scope", "type": "STRING", "mode": "REQUIRED", "description": "What the consent covers." },
+        { "name": "expiration_date", "type": "DATE", "mode": "NULLABLE" },
+        { "name": "participant_count", "type": "INTEGER", "mode": "REQUIRED", "description": "Number of minors covered. Aggregate only." },
+        { "name": "revocation_date", "type": "DATE", "mode": "NULLABLE", "description": "If consent was revoked." }
+      ]
+    },
+
+    "access_audit_log": {
+      "description": "COPPA-mandated audit log. Every access to minor-related data is logged.",
+      "fields": [
+        { "name": "log_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "action", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "table_name", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "record_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "actor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "actor_role", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "institution_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "timestamp", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "consent_batch_id", "type": "STRING", "mode": "NULLABLE" }
+      ]
+    }
+  },
+
+  "de_identification_pipeline": {
+    "method": "coppa_aggregation",
+    "description": "Aggregation with minimum group thresholds. No individual minor identifiable in output. Groups below threshold are suppressed entirely.",
+    "minimum_aggregation_group_size": 10,
+    "suppression_rule": "If event participant_count < 10, event is excluded from aggregate contribution entirely.",
+    "fields_stripped_before_aggregate": [
+      "institution_id",
+      "parental_consent_batch_id",
+      "age_group detail (collapsed to 'youth' in aggregate)"
+    ],
+    "output_to": "oureventring_aggregate",
+    "output_format": "corridor-level event counts and category distributions only",
+    "legal_review_status": "REQUIRED_BEFORE_ACTIVATION"
+  }
+}

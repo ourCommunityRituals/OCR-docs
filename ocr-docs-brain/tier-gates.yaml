@@ -1,0 +1,236 @@
+# Tier gates — governs feature availability and pricing.
+# Updated: schema v1.1.0 — added sponsor_type_overrides and platform_commitments.
+
+schema_version: 1.1.0
+tiers:
+  free:
+    display_name: Free
+    revenue_layer: 1
+    description: 'Event listing. Basic corridor visibility. You exist on the platform. This is the onramp.
+      Pre-tech products live here by default. Everyone feeds the flywheel at this tier.
+
+      '
+    data_visibility:
+      own_events: true
+      own_scans: true
+      shared_reports: false
+      cross_corridor: false
+      predictive_insights: false
+      aggregate_intelligence: false
+    features:
+      event_creation: true
+      event_listing: true
+      qr_generation: true
+      basic_dashboard: true
+      shared_report_pdf: false
+      shared_report_interactive: false
+      sponsor_views: false
+      map_visualization: false
+      trend_detection: false
+      audience_migration: false
+      venue_signals: false
+      corridor_forecasting: false
+  mid:
+    display_name: Mid
+    revenue_layer: 2
+    description: 'SharedReports, QR attribution, sponsor views. You see what happened. Your sponsor sees
+      what happened. Same data source, role-based render. Evidence-based sponsor retention. This is Layer
+      2 revenue.
+
+      '
+    data_visibility:
+      own_events: true
+      own_scans: true
+      shared_reports: true
+      cross_corridor: false
+      predictive_insights: false
+      aggregate_intelligence: false
+    features:
+      event_creation: true
+      event_listing: true
+      qr_generation: true
+      basic_dashboard: true
+      shared_report_pdf: true
+      shared_report_interactive: true
+      sponsor_views: true
+      map_visualization: true
+      trend_detection: false
+      audience_migration: false
+      venue_signals: false
+      corridor_forecasting: false
+  premium:
+    display_name: Premium
+    revenue_layer: 3
+    description: 'Predictive, cross-corridor, RAG-powered insights. OurEventRing talks back. Trend detection,
+      audience migration patterns, new venue signals, corridor density forecasting. The defensible moat.
+
+      '
+    data_visibility:
+      own_events: true
+      own_scans: true
+      shared_reports: true
+      cross_corridor: true
+      predictive_insights: true
+      aggregate_intelligence: true
+    features:
+      event_creation: true
+      event_listing: true
+      qr_generation: true
+      basic_dashboard: true
+      shared_report_pdf: true
+      shared_report_interactive: true
+      sponsor_views: true
+      map_visualization: true
+      trend_detection: true
+      audience_migration: true
+      venue_signals: true
+      corridor_forecasting: true
+phase_gates:
+  phase1:
+    available_features:
+    - event_creation
+    - event_listing
+    - qr_generation
+    - basic_dashboard
+    - shared_report_pdf
+    bigquery_mode: write_only
+    pools_active:
+    - general
+    pools_provisioned:
+    - hipaa
+    - coppa
+    aggregate_layer: inactive
+    description: 'Infrastructure + BigQuery write pipeline. Silent accumulation. Free tier fully operational.
+      Mid tier SharedReport v1 (PDF export).
+
+      '
+  phase2:
+    available_features:
+    - event_creation
+    - event_listing
+    - qr_generation
+    - basic_dashboard
+    - shared_report_pdf
+    - shared_report_interactive
+    - sponsor_views
+    bigquery_mode: write_only
+    pools_active:
+    - general
+    pools_provisioned:
+    - hipaa
+    - coppa
+    aggregate_layer: inactive
+    description: 'D1 + Agent layer. Structured data generation at scale. Interactive SharedReports available
+      for mid tier.
+
+      '
+  phase3:
+    available_features:
+    - event_creation
+    - event_listing
+    - qr_generation
+    - basic_dashboard
+    - shared_report_pdf
+    - shared_report_interactive
+    - sponsor_views
+    bigquery_mode: write_only
+    pools_active:
+    - general
+    pools_provisioned:
+    - hipaa
+    - coppa
+    aggregate_layer: inactive
+    description: 'React UI. Surfaces that generate behavioral signal. Mobile-first, dark editorial, zero
+      friction.
+
+      '
+  phase4:
+    available_features:
+    - event_creation
+    - event_listing
+    - qr_generation
+    - basic_dashboard
+    - shared_report_pdf
+    - shared_report_interactive
+    - sponsor_views
+    - map_visualization
+    bigquery_mode: read_write
+    pools_active:
+    - general
+    - hipaa
+    - coppa
+    aggregate_layer: active
+    aggregate_sources:
+    - general
+    - hipaa
+    - coppa
+    description: 'Maps + BigQuery reads. The data starts talking back. HIPAA and COPPA pools activated.
+      Aggregate intelligence layer live.
+
+      '
+  phase5:
+    available_features:
+    - event_creation
+    - event_listing
+    - qr_generation
+    - basic_dashboard
+    - shared_report_pdf
+    - shared_report_interactive
+    - sponsor_views
+    - map_visualization
+    - trend_detection
+    - audience_migration
+    - venue_signals
+    - corridor_forecasting
+    bigquery_mode: read_write
+    pools_active:
+    - general
+    - hipaa
+    - coppa
+    aggregate_layer: active
+    aggregate_sources:
+    - general
+    - hipaa
+    - coppa
+    vertex_ai: active
+    description: 'Vertex AI / Predictive Intelligence. The RAG earns its name. Premium tier fully operational.
+      Layer 3 revenue activated.
+
+      '
+enforcement:
+  tier_check:
+    description: 'Every data request passes through tier validation. The requesting customer''s tier must
+      include the feature/visibility they''re requesting.
+
+      '
+    failure_mode: soft_stop
+    failure_action: tier_upgrade_prompt
+    severity: warning
+  phase_check:
+    description: 'Every feature request passes through phase validation. The feature must be in the current
+      phase''s available_features list.
+
+      '
+    failure_mode: soft_stop
+    failure_action: feature_gated_notification
+    severity: warning
+  combined_rule: 'Both tier gate AND phase gate must pass. A premium customer at Phase 2 cannot access
+    map_visualization (Phase 4 feature). A free customer at Phase 4 cannot access shared_reports (mid
+    tier feature). Both gates are evaluated independently and both must clear.
+
+    '
+sponsor_type_overrides:
+  faith_organization:
+    forced_tier: free
+    duration: indefinite
+    rationale: 'Faith organizations (churches, mosques, temples, synagogues, and other religious community
+      institutions) receive free platform access indefinitely. This is a values commitment, not a trial.
+      The commitment is architectural: CI enforces that no pricing change can apply to sponsor_type=faith_organization.'
+    enforced_by: tier-equity.invariant.spec.ts
+platform_commitments:
+  local_always_present: The Local tier is always present. The platform earns up, never prices down. No
+    flag, tier, or phase configuration can remove Local from an event.
+  faith_always_free: Faith organizations receive free platform access indefinitely. Not a trial. Not a
+    promotion. An architectural commitment.
+  accretion_discipline: Over a 12 to 18 month window, Local sponsors accrete at a deliberately low rate
+    as Mid and Premium grow. Growth is not a rush. The corridor dictates pace.

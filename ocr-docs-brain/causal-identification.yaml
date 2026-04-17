@@ -1,0 +1,83 @@
+schema_version: "1.0.0"
+description: >
+  Formalizes the causal identification strategy for the OSE platform.
+  The before/after natural experiment is the strongest research design
+  element the platform offers. Without formalization, it is an anecdote.
+  With formalization, it is a quasi-experimental design.
+
+primary_design:
+  name: interrupted_time_series_with_staggered_rollout
+  description: >
+    OSG and ORS programs run at Eagles Hall before OSE instrumentation.
+    The introduction of OSE (QR scanning, sponsor visibility, SharedReport)
+    is the treatment. The before-period provides baseline observations.
+    Staggered rollout across corridors creates multiple treatment onset
+    dates, strengthening causal identification.
+
+  treatment:
+    definition: "OSE platform instrumentation at a venue"
+    mechanism: "QR code deployment, sponsor logo rotation, SharedReport delivery"
+    onset_dates:
+      eagles_hall: "June 2026 (planned)"
+      other_corridors: "Staggered post-Eagles — dates TBD based on venue readiness"
+    dosage_measure: "Number of instrumented events at venue since treatment onset"
+
+  control:
+    before_period:
+      description: "OSG and ORS running at Eagles Hall before QR instrumentation"
+      start_date: "April 2026"
+      observation_method: "Floor anchor headcounts, session logs, structured observation"
+      data_type: "Qualitative and semi-structured quantitative"
+    untreated_corridors:
+      description: "Corridors not yet instrumented serve as concurrent controls"
+      limitation: "Selection into treatment is non-random — venues that are ready first may differ systematically from those that are not"
+
+  outcome_variables:
+    primary:
+      - variable: event_frequency
+        definition: "Number of events per corridor per month"
+        source: "D1 events table"
+        measurable_from: "Treatment onset"
+      - variable: scan_volume
+        definition: "Total behavioral signals per corridor per month"
+        source: "BigQuery scan_aggregates"
+        measurable_from: "Treatment onset"
+      - variable: corridor_crossing_rate
+        definition: "Proportion of behavioral signals from non-origin corridors"
+        source: "BigQuery scan_aggregates with corridor tagging"
+        measurable_from: "When 2+ corridors are instrumented"
+    secondary:
+      - variable: sponsor_renewal_rate
+        definition: "Proportion of Local-tier sponsors who renew after first SharedReport"
+        source: "D1 sponsors table"
+        measurable_from: "Post Pulse 4 (June 15)"
+      - variable: event_type_diversity
+        definition: "Shannon entropy of event types per corridor per quarter"
+        source: "D1 events table"
+        measurable_from: "After 1 quarter of instrumented operation"
+
+  identification_strategy:
+    primary: interrupted_time_series
+    description: >
+      Compare outcome trajectories before and after treatment onset at
+      each venue. The staggered rollout across corridors creates multiple
+      interruption points, allowing corridor-level fixed effects.
+    threats_to_validity:
+      - threat: maturation
+        description: "Events might have increased naturally over summer regardless of OSE"
+        mitigation: "Temporal controls — compare same-month, different-year if data permits; compare treated vs untreated corridors in same season"
+      - threat: selection
+        description: "Venues that opt in early may be systematically different"
+        mitigation: "Document venue selection criteria; test for observable differences between early and late adopters"
+      - threat: history
+        description: "External events (weather, pandemic, economic shock) affect all corridors"
+        mitigation: "Multiple corridors with staggered onset; corridor-level controls"
+      - threat: instrumentation
+        description: "The measurement tool (QR scanning) changes what is measured — Hawthorne effect"
+        mitigation: "Compare scan-based attendance to independent headcounts during overlap period"
+
+minimum_requirements:
+  before_period_duration: "At least 8 weeks of pre-instrumentation observation"
+  before_period_observations: "At least 4 event sessions with structured observation"
+  concurrent_untreated: "At least 1 corridor not yet instrumented during Eagles treatment period"
+  overlap_period: "At least 4 weeks where both headcount and scan data are collected simultaneously"

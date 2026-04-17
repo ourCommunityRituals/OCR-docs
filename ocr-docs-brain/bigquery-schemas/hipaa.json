@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OurEventRing HIPAA Pool Schema",
+  "description": "BigQuery table schema for the HIPAA regulatory pool. Separate encryption keys, BAA-controlled access, mandatory full audit logging. Same table structure as General with additional compliance fields.",
+  "version": "1.0.0",
+  "dataset": "oureventring_hipaa",
+  "classification": "CONFIDENTIAL — TRADE SECRET — HIPAA REGULATED",
+  "updated": "2026-04-15",
+  "legal_requirements": {
+    "baa_required": true,
+    "encryption": "separate_keys",
+    "audit_logging": "mandatory_full",
+    "access_control": "role_based_with_baa_verification",
+    "retention_policy": "as_specified_in_baa",
+    "breach_notification": "60_day_maximum"
+  },
+
+  "tables": {
+    "events": {
+      "description": "Core event records for HIPAA-regulated events. Inherits General structure with additional compliance fields.",
+      "inherits_from": "general.events",
+      "additional_fields": [
+        { "name": "baa_entity_id", "type": "STRING", "mode": "REQUIRED", "description": "Business Associate Agreement entity identifier." },
+        { "name": "phi_classification", "type": "STRING", "mode": "REQUIRED", "description": "Level of PHI proximity (none, adjacent, direct)." },
+        { "name": "access_log_id", "type": "STRING", "mode": "REQUIRED", "description": "Links to mandatory access audit log." },
+        { "name": "consent_reference", "type": "STRING", "mode": "NULLABLE", "description": "Reference to participant consent record, if applicable." }
+      ]
+    },
+
+    "qr_scans": {
+      "description": "QR scan events in HIPAA context. Same anonymous session pattern but with audit trail.",
+      "inherits_from": "general.qr_scans",
+      "additional_fields": [
+        { "name": "baa_entity_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "access_log_id", "type": "STRING", "mode": "REQUIRED" }
+      ]
+    },
+
+    "access_audit_log": {
+      "description": "HIPAA-mandated audit log. Every read and write to this pool is logged.",
+      "fields": [
+        { "name": "log_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "action", "type": "STRING", "mode": "REQUIRED", "description": "read, write, update, delete, export." },
+        { "name": "table_name", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "record_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "actor_id", "type": "STRING", "mode": "REQUIRED", "description": "Who performed the action." },
+        { "name": "actor_role", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "baa_entity_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "timestamp", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "ip_address_hash", "type": "STRING", "mode": "NULLABLE", "description": "Hashed, not raw." },
+        { "name": "justification", "type": "STRING", "mode": "NULLABLE", "description": "Reason for access, if required by policy." }
+      ]
+    }
+  },
+
+  "de_identification_pipeline": {
+    "method": "safe_harbor_18",
+    "description": "HIPAA Safe Harbor method. Strip all 18 identifiers before data flows to aggregate intelligence layer.",
+    "identifiers_stripped": [
+      "names", "geographic_data_smaller_than_state", "dates_except_year",
+      "phone_numbers", "fax_numbers", "email_addresses", "ssn",
+      "medical_record_numbers", "health_plan_beneficiary_numbers",
+      "account_numbers", "certificate_license_numbers",
+      "vehicle_identifiers", "device_identifiers", "web_urls",
+      "ip_addresses", "biometric_identifiers", "full_face_photos",
+      "any_other_unique_identifying_number"
+    ],
+    "output_to": "oureventring_aggregate",
+    "minimum_aggregation_group_size": 5,
+    "legal_review_status": "REQUIRED_BEFORE_ACTIVATION"
+  }
+}

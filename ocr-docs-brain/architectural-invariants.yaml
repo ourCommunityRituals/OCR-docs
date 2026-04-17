@@ -1,0 +1,119 @@
+# Architectural invariants — CI-enforced contracts.
+# Every invariant has a dedicated test file. Status reflects CI enforcement state.
+
+schema_version: 1.0.0
+description: The ten architectural invariants are the governance-brain-enforced contracts that the CI
+  pipeline validates on every commit. Each invariant has a dedicated test file. An invariant marked "live"
+  is currently enforced in CI; "partial" means the enforcement mechanism exists but is not yet promoted
+  to the 0-architecture suite; "planned" means the test file and mechanism are scheduled but not yet implemented.
+enforcement_gate: ose-platform-tests at org level (CI-enforced)
+invariants:
+- id: 1
+  name: anonymous_id
+  title: Anonymous ID
+  status: live
+  test_file: anonymous-id.invariant.spec.ts
+  enforces: Zero-PII scan system. Two-database separation (DB / FORMS_DB). ose_anon cookie contract (HttpOnly,
+    Secure, SameSite=Lax). No cross-linking.
+  applies_to:
+  - ose
+  - osm
+- id: 2
+  name: hyperlocal_geo_resolution
+  title: Hyperlocal Geo-Resolution
+  status: live
+  test_file: geo-resolution.invariant.spec.ts
+  enforces: sponsor_areas + sponsor_event_types tables. Corridor-level resolution. zip + radius matching.
+  applies_to:
+  - ose
+- id: 3
+  name: uec_encoding
+  title: UEC Encoding
+  status: live
+  test_file: uec-codes.invariant.spec.ts
+  enforces: 7 color-semantic QR codes + 4 extensions. Canonical hex values. URL path semantics.
+  applies_to:
+  - ose
+  - osm
+- id: 4
+  name: ncr_data_accumulation
+  title: NCR Data Accumulation
+  status: live
+  test_file: ncr-accumulation.invariant.spec.ts
+  enforces: poster_deployments lat/lng. scan_aggregates pipeline. Permanent storage (no PII = no TTL).
+  applies_to:
+  - ose
+  - oureventring
+- id: 5
+  name: tier_equity
+  title: Tier Equity / Pricing Governance
+  status: planned
+  test_file: tier-equity.invariant.spec.ts
+  enforces: Pricing tiers govern display priority within events only — never platform access. Same QR
+    system, same form quality, same privacy protection, same real-time counts at every tier. Local stays
+    in at all flag levels.
+  applies_to:
+  - ose
+  - osm
+  depends_on:
+  - tier-gates.yaml
+- id: 6
+  name: inert_monetization_hooks
+  title: Inert Monetization Hooks
+  status: partial
+  test_file: monetization-inert.invariant.spec.ts
+  enforces: 'X-Monetization-Inert: true header on every response. No billing logic executes. Billable
+    units are read-only. Existing CI gate checkMonetizationHooksInert + contract test story-f4-monetization-hooks_MOCK.test.js
+    already enforce; promote to 0-architecture suite.'
+  applies_to:
+  - ose
+  research_note: This invariant is the reason research data can be collected cleanly before revenue activation.
+    Pre-revenue by contract, not by choice.
+- id: 7
+  name: aggregate_only_reporting
+  title: Aggregate-Only Reporting
+  status: planned
+  test_file: aggregate-only.invariant.spec.ts
+  enforces: SharedReport endpoints return aggregates only — never individual records. Closes the privacy
+    story on the output side; the Anonymous ID invariant guards the data; this invariant guards the reports.
+  applies_to:
+  - ose
+- id: 8
+  name: bounded_pii_retention
+  title: Bounded PII Retention
+  status: partial
+  test_file: pii-retention.invariant.spec.ts
+  enforces: All opt-in PII has a finite TTL (expires_at, retention_expires_at). Daily lifecycle cron deletes
+    expired registrations (90d), scrubs survey PII, deletes expired email signups (30d). No PII has unbounded
+    retention. Cron + TTL columns + PRIVACY.md exist; promote unified test to 0-architecture suite.
+  applies_to:
+  - ose
+- id: 9
+  name: tenant_isolation
+  title: Tenant Isolation
+  status: partial
+  test_file: tenant-isolation.invariant.spec.ts
+  enforces: Dual-key pattern (id + brandId) on every multi-tenant table. No cross-tenant data leakage
+    in queries. Brand-scoped URLs maintain isolation. Schema pattern exists; needs the cross-cutting test.
+  applies_to:
+  - ose
+  - osm
+  - oaw
+- id: 10
+  name: deprecation_lock
+  title: Deprecation Lock
+  status: partial
+  test_file: deprecation-lock.invariant.spec.ts
+  enforces: Once a runtime is removed (GAS, Sheets, etc.), CI forbids its re-introduction. Generalizes
+    the existing scripts/guard-no-gas.js and the no-GAS CI gate. Future deprecations (e.g., embedded HTML
+    when Phase 3 Firebase lands) inherit this pattern.
+  applies_to:
+  - ose
+  - osm
+  - wkrp
+  - oaw
+status_summary:
+  live: 4
+  partial: 4
+  planned: 2
+  total: 10

@@ -1,0 +1,175 @@
+# ============================================================================
+# OCR CORRIDOR DEFINITIONS
+# ============================================================================
+# NCR (Node/Corridor/Ring) hierarchy definitions. Schema-validated
+# geographic structure that the platform uses for all corridor-level
+# behavioral tracking and data tagging.
+#
+# Hierarchy: Venue → Sector → Community → Sub-region → Region → Metro → Network
+#
+# Location: OCR-docs repository root
+# Version: 1.0.0
+# Last Updated: 2026-04-15
+# Classification: CONFIDENTIAL — TRADE SECRET
+# ============================================================================
+
+schema_version: "1.0.0"
+methodology: "NCR Ring Emergence Methodology (NCR-1)"
+methodology_status: done
+
+# ============================================================================
+# HIERARCHY DEFINITION
+# ============================================================================
+hierarchy:
+  levels:
+    - level: 1
+      name: venue
+      description: "Individual location. The atomic node. Eagles Hall, RIPH, Empty Bottle."
+      example: "Eagles Hall"
+
+    - level: 2
+      name: sector
+      description: "A walkable cluster of venues. Multiple nodes that share foot traffic."
+      example: "Western Ave corridor between 119th and 127th"
+
+    - level: 3
+      name: community
+      description: "A named community with civic identity. The unit AJ thinks in."
+      example: "Blue Island"
+
+    - level: 4
+      name: sub_region
+      description: "A cluster of adjacent communities with shared behavioral patterns."
+      example: "Southwest Chicago corridor"
+
+    - level: 5
+      name: region
+      description: "A metropolitan sub-area with distinct geographic character."
+      example: "Southside Chicago"
+
+    - level: 6
+      name: metro
+      description: "The full metropolitan area."
+      example: "Chicagoland"
+
+    - level: 7
+      name: network
+      description: "Cross-metro connections. The Harbor Country travel corridor."
+      example: "Chicago–Harbor Country network"
+
+# ============================================================================
+# FOUNDING FIVE CORRIDORS
+# ============================================================================
+founding_corridors:
+
+  - corridor_id: blue_island
+    community_name: "Blue Island"
+    region: "South Suburbs"
+    sub_region: "Southwest Chicago corridor"
+    metro: "Chicagoland"
+    role: proving_ground
+    role_description: >
+      The sole proving ground. All AJ-facing demos, all initial behavioral
+      saturation evidence, all platform validation happens here first.
+    color_hex: "#378ADD"
+    anchor_venues:
+      - venue_id: eagles_hall
+        name: "Eagles Hall"
+        role: "OSE anchor venue"
+      - venue_id: riph
+        name: "Rock Island Public House (RIPH)"
+        role: "Bocce + OurOpenTable + OurRecordStories base"
+    institutional_contact:
+      name: "AJ"
+      title: "Director of Community Development, Blue Island"
+      relationship: "3-year bocce relationship. Primary institutional demo target."
+      demo_target_date: "2026-08-01"
+    status: active
+
+  - corridor_id: beverly
+    community_name: "Beverly"
+    region: "SW Chicago"
+    sub_region: "Southwest Chicago corridor"
+    metro: "Chicagoland"
+    role: anchor_corridor
+    role_description: >
+      The anchor corridor. Deepest personal roots. 25+ years of lived
+      geographic observation. The corridor the platform was born from.
+    color_hex: "#1D9E75"
+    status: planned
+
+  - corridor_id: evergreen_park
+    community_name: "Evergreen Park"
+    region: "South Suburbs"
+    sub_region: "Southwest Chicago corridor"
+    metro: "Chicagoland"
+    role: flagship_corridor
+    role_description: >
+      Chosen for geographic impact. Black/white/Hispanic corridor
+      intersection. Demographic complexity proves platform flexibility.
+    color_hex: "#7F77DD"
+    status: planned
+
+  - corridor_id: oak_lawn
+    community_name: "Oak Lawn"
+    region: "South Suburbs"
+    sub_region: "Southwest Chicago corridor"
+    metro: "Chicagoland"
+    role: flagship_corridor
+    role_description: "Adjacent suburb. Natural expansion from Blue Island/EP."
+    color_hex: "#D4537E"
+    status: planned
+
+  - corridor_id: harbor_country
+    community_name: "Harbor Country"
+    region: "SW Michigan"
+    sub_region: "Lake Michigan shore"
+    metro: "Cross-metro"
+    network: "Chicago–Harbor Country"
+    role: destination_anchor
+    role_description: >
+      The travel element. Ties between Chicago and Harbor area.
+      Poster → pre-event → QR funneling to partner sponsors
+      (lodging, breweries, wineries, dispensaries).
+    color_hex: "#BA7517"
+    status: planned
+
+# ============================================================================
+# RESEARCH COMPARATORS (not activation targets)
+# ============================================================================
+research_comparators:
+
+  - corridor_id: brainerd
+    community_name: "Brainerd"
+    region: "SW Chicago"
+    role: research_comparator
+    role_description: >
+      Working-class Black demographics. Research comparator only.
+      NOT an activation target. Used for census/ACS analysis
+      against active corridors.
+    status: research_only
+
+# ============================================================================
+# FLYWHEEL
+# ============================================================================
+flywheel:
+  description: >
+    Blue Island → behavioral saturation evidence → flagship corridors.
+    AJ cases are Blue Island-specific only. Evidence from Blue Island
+    proves the model. Flagship corridors adopt based on evidence, not pitch.
+  sequence:
+    - step: 1
+      action: "Blue Island proves behavioral density"
+      gate: "AJ demo (August 2026)"
+    - step: 2
+      action: "Evidence package assembled from Blue Island data"
+      gate: "SharedReport + corridor density metrics"
+    - step: 3
+      action: "Beverly and Evergreen Park activate"
+      gate: "Institutional contacts in each corridor"
+    - step: 4
+      action: "Oak Lawn follows adjacency pattern"
+      gate: "Natural expansion from EP/Blue Island"
+    - step: 5
+      action: "Harbor Country travel corridor activates"
+      gate: "Sponsor pipeline (lodging, breweries, wineries)"

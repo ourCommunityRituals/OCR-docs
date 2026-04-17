@@ -1,0 +1,90 @@
+schema_version: "1.0.0"
+description: >
+  Maps each platform signal type to its meaning in each target discipline.
+  A QR scan is not one thing — it is a revealed preference, a co-presence
+  indicator, a civic participation measure, and a dosage count simultaneously.
+  This document ensures the platform never overclaims what a signal proves.
+
+target_disciplines:
+  - economic_geography
+  - sociology
+  - political_science
+  - education
+
+signal_types:
+
+  presence:
+    platform_definition: >
+      Poster or tabletop scan. Proves proximity to a node. Does NOT prove
+      attendance, intention, or corridor crossing. Cannot validate a corridor alone.
+    disciplinary_constructs:
+      economic_geography:
+        construct: awareness_of_event
+        proxy_for: "Market awareness — the individual knows the event exists"
+        does_not_prove: "Attendance, purchase intent, or corridor crossing"
+      sociology:
+        construct: spatial_exposure
+        proxy_for: "Exposure to a community gathering opportunity"
+        does_not_prove: "Social interaction, tie formation, or group membership"
+      political_science:
+        construct: civic_awareness
+        proxy_for: "Awareness that a civic or community activity is occurring"
+        does_not_prove: "Participation, engagement, or civic commitment"
+      education:
+        construct: program_awareness
+        proxy_for: "Awareness of a community program or learning opportunity"
+        does_not_prove: "Enrollment, attendance, learning, or behavior change"
+
+  behavioral:
+    platform_definition: >
+      Event attendance via QR funnel. Proves intentional behavior — someone
+      chose to attend an event at a specific community. Primary signal for
+      corridor validation. Conversion rate (presence pool → behavioral crossings)
+      measures corridor strength.
+    disciplinary_constructs:
+      economic_geography:
+        construct: revealed_preference
+        proxy_for: "The individual valued this event enough to attend — time and transport cost paid"
+        does_not_prove: "Satisfaction, repeat intent, or spending behavior"
+      sociology:
+        construct: co_presence
+        proxy_for: "Physical co-location at a community gathering with other attendees"
+        does_not_prove: "Social interaction, tie formation, bridging capital, or community belonging"
+      political_science:
+        construct: civic_participation
+        proxy_for: "Active participation in a community-organized activity"
+        does_not_prove: "Political engagement, voter behavior, or institutional trust"
+      education:
+        construct: program_dosage
+        proxy_for: "One unit of exposure to a community program"
+        does_not_prove: "Learning, skill acquisition, attitude change, or program effectiveness"
+
+  corridor_crossing:
+    platform_definition: >
+      Behavioral signal observed at a node different from the individual's
+      prior PRESENCE signal origin. Proves geographic movement between nodes
+      for the purpose of event attendance.
+    disciplinary_constructs:
+      economic_geography:
+        construct: spatial_demand_spillover
+        proxy_for: "Willingness to cross geographic boundaries for community goods"
+        does_not_prove: "Economic impact magnitude, spending at destination, or permanent migration"
+      sociology:
+        construct: bridging_social_capital_indicator
+        proxy_for: "Cross-community social exposure — attending events outside one's home area"
+        does_not_prove: "Actual tie formation, trust building, or identity bridging"
+      political_science:
+        construct: jurisdictional_boundary_crossing
+        proxy_for: "Civic behavior that transcends municipal or neighborhood boundaries"
+        does_not_prove: "Cross-jurisdictional political engagement or policy preference alignment"
+      education:
+        construct: cross_community_program_reach
+        proxy_for: "A program's ability to attract participants from outside its immediate geography"
+        does_not_prove: "Program quality, equitable access, or learning transfer across communities"
+
+known_limitations:
+  - "All signals measure the behavior of people who scan QR codes, not all attendees"
+  - "Non-scanners and non-attendees are invisible to the platform"
+  - "Anonymous ID prevents linking multiple scans to the same individual across sessions"
+  - "Co-presence does not imply interaction — the platform measures spatial overlap, not social ties"
+  - "Corridor crossing detection depends on PRESENCE signal at origin — without origin data, crossing cannot be measured"

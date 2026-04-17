@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OurEventRing General Pool Schema",
+  "description": "BigQuery table schema for the General regulatory pool. No PHI, no COPPA constraints. Standard corridor behavioral data.",
+  "version": "1.0.0",
+  "dataset": "oureventring_general",
+  "classification": "CONFIDENTIAL — TRADE SECRET",
+  "updated": "2026-04-15",
+
+  "tables": {
+    "events": {
+      "description": "Core event records. One row per event occurrence.",
+      "fields": [
+        { "name": "event_id", "type": "STRING", "mode": "REQUIRED", "description": "Platform-generated unique event identifier." },
+        { "name": "product_id", "type": "STRING", "mode": "REQUIRED", "description": "Originating product (ose, osm, osp, osr, osg, wkrp, owl)." },
+        { "name": "event_type", "type": "STRING", "mode": "REQUIRED", "description": "Event type ID from event-taxonomy.yaml." },
+        { "name": "uec_code", "type": "STRING", "mode": "REQUIRED", "description": "Universal Event Code from taxonomy." },
+        { "name": "category_id", "type": "STRING", "mode": "REQUIRED", "description": "Category ID from taxonomy." },
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED", "description": "Corridor ID from corridor-definitions.yaml." },
+        { "name": "venue_id", "type": "STRING", "mode": "REQUIRED", "description": "Venue identifier within corridor." },
+        { "name": "event_date", "type": "DATE", "mode": "REQUIRED", "description": "Date of event occurrence." },
+        { "name": "event_time_start", "type": "TIMESTAMP", "mode": "NULLABLE", "description": "Event start time." },
+        { "name": "event_time_end", "type": "TIMESTAMP", "mode": "NULLABLE", "description": "Event end time." },
+        { "name": "is_recurring", "type": "BOOLEAN", "mode": "REQUIRED", "description": "Whether this is a recurring event instance." },
+        { "name": "recurrence_id", "type": "STRING", "mode": "NULLABLE", "description": "Links recurring event instances together." },
+        { "name": "regulatory_pool", "type": "STRING", "mode": "REQUIRED", "description": "Always 'general' in this dataset." },
+        { "name": "tier_at_creation", "type": "STRING", "mode": "REQUIRED", "description": "Customer tier when event was created (free, mid, premium)." },
+        { "name": "sponsor_count", "type": "INTEGER", "mode": "NULLABLE", "description": "Number of sponsors attached to this event." },
+        { "name": "created_at", "type": "TIMESTAMP", "mode": "REQUIRED", "description": "Record creation timestamp." },
+        { "name": "source", "type": "STRING", "mode": "REQUIRED", "description": "Data source (human, agent, import)." },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED", "description": "Schema version this record conforms to." }
+      ]
+    },
+
+    "qr_scans": {
+      "description": "QR code scan events. One row per scan. The behavioral signal engine.",
+      "fields": [
+        { "name": "scan_id", "type": "STRING", "mode": "REQUIRED", "description": "Unique scan identifier." },
+        { "name": "event_id", "type": "STRING", "mode": "REQUIRED", "description": "Event this scan is associated with." },
+        { "name": "product_id", "type": "STRING", "mode": "REQUIRED", "description": "Originating product." },
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED", "description": "Corridor where scan occurred." },
+        { "name": "venue_id", "type": "STRING", "mode": "REQUIRED", "description": "Venue where scan occurred." },
+        { "name": "scan_timestamp", "type": "TIMESTAMP", "mode": "REQUIRED", "description": "When the scan happened." },
+        { "name": "scan_surface", "type": "STRING", "mode": "REQUIRED", "description": "Where the QR was placed (poster, display, public_page, table_card)." },
+        { "name": "sponsor_id", "type": "STRING", "mode": "NULLABLE", "description": "Sponsor associated with this QR placement, if any." },
+        { "name": "anonymous_session_id", "type": "STRING", "mode": "REQUIRED", "description": "Non-reversible session identifier. No PII. Cannot be linked to identity." },
+        { "name": "uec_code", "type": "STRING", "mode": "REQUIRED", "description": "UEC code from the associated event." },
+        { "name": "regulatory_pool", "type": "STRING", "mode": "REQUIRED", "description": "Always 'general' in this dataset." },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED", "description": "Schema version." }
+      ]
+    },
+
+    "funnel_conversions": {
+      "description": "Tracks progression through sponsor funnels. QR scan → landing → action.",
+      "fields": [
+        { "name": "conversion_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "scan_id", "type": "STRING", "mode": "REQUIRED", "description": "Originating scan." },
+        { "name": "event_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "sponsor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "funnel_stage", "type": "STRING", "mode": "REQUIRED", "description": "Stage reached (scan, landing, click, conversion)." },
+        { "name": "conversion_timestamp", "type": "TIMESTAMP", "mode": "REQUIRED" },
+        { "name": "regulatory_pool", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED" }
+      ]
+    },
+
+    "corridor_density": {
+      "description": "Aggregated corridor activity metrics. Computed daily from events and scans.",
+      "fields": [
+        { "name": "corridor_id", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "date", "type": "DATE", "mode": "REQUIRED" },
+        { "name": "total_events", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "total_scans", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "unique_venues", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "unique_event_types", "type": "INTEGER", "mode": "REQUIRED" },
+        { "name": "product_distribution", "type": "JSON", "mode": "NULLABLE", "description": "Breakdown of events by product_id." },
+        { "name": "category_distribution", "type": "JSON", "mode": "NULLABLE", "description": "Breakdown by event category." },
+        { "name": "regulatory_pool", "type": "STRING", "mode": "REQUIRED" },
+        { "name": "schema_version", "type": "STRING", "mode": "REQUIRED" }
+      ]
+    }
+  }
+}

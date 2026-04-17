@@ -1,0 +1,207 @@
+schema_version: "1.0.0"
+description: >
+  Open research questions organized by discipline. Each question is tagged
+  with data requirements and the earliest phase at which it becomes answerable.
+  This registry serves two purposes: it documents what we know we don't know,
+  and it gives academic partners a concrete menu of questions to react to.
+
+disciplines:
+  - economic_geography
+  - sociology
+  - political_science
+  - education
+
+questions:
+
+  # =========================================================================
+  # ECONOMIC GEOGRAPHY
+  # =========================================================================
+  - id: EG-001
+    discipline: economic_geography
+    question: >
+      Does community event attendance generate measurable economic spillover
+      to adjacent businesses along the same corridor?
+    data_required: [scan_aggregates, venue_geocodes, corridor_definitions]
+    minimum_sample: "50+ events across 3+ corridors"
+    earliest_phase: phase2
+    status: open
+
+  - id: EG-002
+    discipline: economic_geography
+    question: >
+      Do corridor crossing patterns follow transportation infrastructure
+      (I-94, Metra lines, bus routes) or social/cultural affinity?
+    data_required: [corridor_crossings, transit_data_external, venue_geocodes]
+    minimum_sample: "100+ corridor crossings across 2+ corridors"
+    earliest_phase: phase2
+    status: open
+
+  - id: EG-003
+    discipline: economic_geography
+    question: >
+      Does the separation_blur_index (boundary clarity between nodes) predict
+      corridor crossing volume? Do blurry boundaries generate more crossing?
+    data_required: [corridor_crossings, separation_blur_index]
+    minimum_sample: "5+ corridors with validated crossings"
+    earliest_phase: phase3
+    status: open
+
+  - id: EG-004
+    discipline: economic_geography
+    question: >
+      Is the 7-level hierarchy (Venue through Network) the correct decomposition
+      for community event behavior, or do results change materially when
+      aggregated at different levels? (MAUP sensitivity)
+    data_required: [scan_aggregates, census_tract_overlay]
+    minimum_sample: "200+ events across all 5 founding corridors"
+    earliest_phase: phase3
+    status: open
+    note: "This is the MAUP test. Must be run before any hierarchy-dependent publication."
+
+  - id: EG-005
+    discipline: economic_geography
+    question: >
+      Does the spiderweb corridor growth hypothesis hold? Do highway corridors
+      actually spawn sub-corridors at intermediate points as event activation
+      increases?
+    data_required: [corridor_definitions, event_activation_logs, venue_geocodes]
+    minimum_sample: "1+ highway corridor with 3+ intermediate node activations"
+    earliest_phase: phase3
+    status: open
+    note: "Hypothesis from ADR-009. Infrastructure captures the data; this question tests the theory."
+
+  # =========================================================================
+  # SOCIOLOGY
+  # =========================================================================
+  - id: SOC-001
+    discipline: sociology
+    question: >
+      Does repeated co-presence at community events (measured by scan frequency)
+      correlate with observable social interaction (measured by qualitative
+      observation)? Or is co-presence a poor proxy for social tie formation?
+    data_required: [scan_aggregates, qualitative_field_notes]
+    minimum_sample: "10+ sessions with both scan data and structured observation"
+    earliest_phase: phase2
+    status: open
+    note: "Critical construct validity test for the sociology lens."
+
+  - id: SOC-002
+    discipline: sociology
+    question: >
+      Does corridor crossing behavior (attending events outside one's home area)
+      indicate bridging social capital as defined by Putnam, or merely geographic
+      convenience?
+    data_required: [corridor_crossings, venue_geocodes, transit_proximity]
+    minimum_sample: "50+ corridor crossings with origin corridor identified"
+    earliest_phase: phase2
+    status: open
+
+  - id: SOC-003
+    discipline: sociology
+    question: >
+      Are there demographic representation gaps in event attendance relative
+      to corridor census demographics? Which community subgroups are
+      systematically underrepresented?
+    data_required: [scan_aggregates, census_tract_overlay, acs_demographics]
+    minimum_sample: "100+ events across 3+ corridors with census overlay"
+    earliest_phase: phase3
+    status: open
+    note: "Cannot identify individual demographics (anonymous). Ecological inference only."
+
+  - id: SOC-004
+    discipline: sociology
+    question: >
+      Does the platform itself change community gathering behavior (Hawthorne
+      effect), or does it merely make existing behavior visible?
+    data_required: [before_period_field_notes, post_instrumentation_scan_data]
+    minimum_sample: "Complete before/after dataset for Eagles Hall"
+    earliest_phase: phase2
+    status: open
+    note: "The before-data period is designed specifically to answer this question."
+
+  # =========================================================================
+  # POLITICAL SCIENCE
+  # =========================================================================
+  - id: PS-001
+    discipline: political_science
+    question: >
+      Does community event density at the corridor level correlate with
+      voter turnout or other civic engagement indicators?
+    data_required: [scan_aggregates, census_tract_overlay, voter_turnout_external]
+    minimum_sample: "3+ election cycles of corridor data"
+    earliest_phase: phase4
+    status: open
+    note: "Long-horizon question. Requires 2+ years of platform data plus external electoral data."
+
+  - id: PS-002
+    discipline: political_science
+    question: >
+      Do events that cross municipal boundaries (Beverly in Chicago vs
+      Evergreen Park as a separate municipality) generate different civic
+      participation patterns than events within a single jurisdiction?
+    data_required: [corridor_crossings, municipal_boundary_overlay, venue_geocodes]
+    minimum_sample: "2+ cross-jurisdictional corridors with validated crossings"
+    earliest_phase: phase2
+    status: open
+
+  - id: PS-003
+    discipline: political_science
+    question: >
+      Does the introduction of OSE instrumentation (the treatment) increase
+      the frequency or diversity of community events? Can the platform be
+      characterized as a civic infrastructure intervention?
+    data_required: [before_period_observations, post_instrumentation_event_logs]
+    minimum_sample: "Complete interrupted time series for 1+ corridors"
+    earliest_phase: phase2
+    status: open
+    note: "Directly tests the causal identification specification."
+
+  # =========================================================================
+  # EDUCATION
+  # =========================================================================
+  - id: ED-001
+    discipline: education
+    question: >
+      Do community programs (OSG games, ORS record stories) that run as
+      recurring events show measurable attendance growth over time, and
+      does that growth differ across corridors?
+    data_required: [scan_aggregates, event_series_logs]
+    minimum_sample: "10+ sessions of a recurring program across 2+ corridors"
+    earliest_phase: phase2
+    status: open
+
+  - id: ED-002
+    discipline: education
+    question: >
+      Does facilitator quality (floor anchor effectiveness) affect event
+      attendance and return rates? Can facilitator effectiveness be measured
+      without identifying individual attendees?
+    data_required: [scan_aggregates, qualitative_field_notes, facilitator_assignment_logs]
+    minimum_sample: "Same event type with 2+ different facilitators"
+    earliest_phase: phase2
+    status: open
+    note: "Requires documenting facilitator assignments without compromising attendee anonymity."
+
+  - id: ED-003
+    discipline: education
+    question: >
+      Do COPPA-pool youth events show different corridor crossing patterns
+      than general-pool adult events? Do families cross corridors differently
+      than individuals?
+    data_required: [scan_aggregates_coppa_pool, corridor_crossings, census_youth_population]
+    minimum_sample: "20+ COPPA-pool events across 2+ corridors"
+    earliest_phase: phase4
+    status: open
+    note: "Requires COPPA legal clearance and youth data handling protocol."
+
+  - id: ED-004
+    discipline: education
+    question: >
+      Can the platform's event taxonomy serve as a curriculum for community-based
+      learning — where students study their own corridor's event patterns as
+      a geography, economics, or civics exercise?
+    data_required: [public_aggregates, corridor_definitions, census_overlay]
+    minimum_sample: "1+ semester of corridor data in a participating school's area"
+    earliest_phase: phase3
+    status: open
+    note: "Requires education department partnership and institutional approval."

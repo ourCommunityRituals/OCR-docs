@@ -1,0 +1,109 @@
+schema_version: "1.0.0"
+description: >
+  Specification for statistical monitoring that activates when real data
+  exists in BigQuery. CI validates this spec is complete. The actual
+  monitoring runs as scheduled BigQuery queries, not in CI.
+
+activation_gate: "First instrumented event with scan data in BigQuery"
+
+monitors:
+
+  - id: SM-001
+    name: spatial_autocorrelation
+    statistic: "Moran's I"
+    description: >
+      Tests whether scan counts at nearby venues are spatially correlated.
+      High Moran's I means venue observations are not independent —
+      standard errors must be adjusted in any published analysis.
+    scope: per_corridor
+    frequency: monthly
+    threshold: "Flag corridor if Moran's I > 0.3 (moderate spatial dependence)"
+    response: "Document in corridor metadata. Adjust standard errors in analysis. Not a platform bug."
+    bigquery_query_type: spatial_join
+    earliest_phase: phase2
+
+  - id: SM-002
+    name: temporal_autocorrelation
+    statistic: "Ljung-Box Q or Durbin-Watson"
+    description: >
+      Tests whether scan counts at recurring events are serially correlated
+      across sessions. Weekly bocce nights likely show high autocorrelation.
+    scope: per_recurring_event
+    frequency: quarterly
+    threshold: "Flag event series if p < 0.05 on Ljung-Box Q test"
+    response: "Document. Use autoregressive models for time-series analysis of that event series."
+    earliest_phase: phase2
+
+  - id: SM-003
+    name: simpsons_paradox_detection
+    statistic: "Sign comparison of within-corridor vs across-corridor trend"
+    description: >
+      Checks whether aggregating scan data across corridors reverses a
+      trend that is visible within individual corridors.
+    scope: cross_corridor
+    frequency: quarterly
+    threshold: "Flag any metric where aggregate trend sign differs from majority of individual corridor trends"
+    response: "Document. Report individual corridor trends alongside aggregate. Never report aggregate alone."
+    earliest_phase: phase3
+
+  - id: SM-004
+    name: power_analysis
+    statistic: "Minimum detectable effect size at p < 0.05, power = 0.80"
+    description: >
+      Given observed effect sizes and variance, what is the minimum
+      difference in corridor crossing rates that the platform can detect?
+    scope: platform_wide
+    frequency: quarterly
+    threshold: "Report the MDE. Flag if MDE > 20% (meaning only very large effects are detectable)"
+    response: "If underpowered, document. Do not claim significance on underpowered comparisons."
+    earliest_phase: phase2
+
+  - id: SM-005
+    name: selection_bias_quantification
+    statistic: "Scan-to-headcount ratio"
+    description: >
+      Compare floor anchor headcount to scan count at sessions where both
+      are collected. The ratio bounds the selection bias.
+    scope: per_venue
+    frequency: per_session_during_overlap
+    threshold: "Scan rate below 20% = high selection bias. Document and caveat all findings from that venue."
+    response: "Report scan adoption rate. Adjust claims to reflect observed adoption."
+    earliest_phase: phase1
+
+  - id: SM-006
+    name: demographic_representation_gap
+    statistic: "Chi-squared or KL divergence between event tract demographics and corridor demographics"
+    description: >
+      Compares the demographic profile of census tracts with events against
+      the demographic profile of the full corridor.
+    scope: per_corridor
+    frequency: quarterly
+    threshold: "Flag corridor if any demographic variable differs by more than 1 SD from corridor mean"
+    response: "Document gap. Do not attempt to correct — the gap is a finding, not a bug."
+    data_dependency: census_integration_plan
+    earliest_phase: phase3
+
+  - id: SM-007
+    name: corridor_validation_power
+    statistic: "Binomial test or Fisher exact test on crossing direction"
+    description: >
+      Tests whether observed corridor crossings are statistically significant
+      or could have occurred by chance.
+    scope: per_corridor
+    frequency: on_validation_attempt
+    threshold: "p < 0.05 for bidirectional test. Corridors that fail remain HYPOTHESIZED."
+    response: "Only corridors passing the statistical test move to VALIDATED status."
+    minimum_crossings: 10
+    earliest_phase: phase2
+
+  - id: SM-008
+    name: maup_sensitivity
+    statistic: "Coefficient of variation across hierarchy levels"
+    description: >
+      Runs the same metric (e.g., corridor crossing rate) at L1, L2, L3, L4
+      and computes how much the result changes. High variation = MAUP sensitivity.
+    scope: platform_wide
+    frequency: annually
+    threshold: "Flag any metric where CV across levels exceeds 0.5"
+    response: "Document which metrics are MAUP-sensitive. Report at most stable level."
+    earliest_phase: phase3
