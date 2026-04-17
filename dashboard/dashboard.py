@@ -44,8 +44,30 @@ from pathlib import Path
 
 # ─── Config ────────────────────────────────────────────────────────────────────
 
-OSE_REPO = Path("C:/Users/mzdan/dev/ourCommunityRituals/ourSharedEvents")
-BRAIN_REPO = Path("C:/Users/mzdan/dev/ourCommunityRituals/OCR-docs")
+def canon_path(p: Path) -> Path:
+    """Resolve to the actual on-disk case, walking up until we find a match.
+    Makes the tool indifferent to `Our` vs `our` casing on folder names
+    (e.g. `OurCommunityRituals` vs `ourCommunityRituals`)."""
+    p = Path(p)
+    if p.exists():
+        try:
+            return Path(os.path.realpath(p))
+        except Exception:
+            return p
+    parent = p.parent
+    if parent == p:
+        return p
+    parent = canon_path(parent)
+    if parent.exists():
+        target = p.name.lower()
+        for child in parent.iterdir():
+            if child.name.lower() == target:
+                return child
+    return p
+
+
+OSE_REPO = canon_path(Path("C:/Users/mzdan/dev/ourCommunityRituals/ourSharedEvents"))
+BRAIN_REPO = canon_path(Path("C:/Users/mzdan/dev/ourCommunityRituals/OCR-docs"))
 DASHBOARD_DIR = BRAIN_REPO / "dashboard"
 STATE_FILE = DASHBOARD_DIR / ".state.json"
 HISTORY_FILE = DASHBOARD_DIR / ".history.json"
@@ -54,7 +76,7 @@ INDEX_HTML = DASHBOARD_DIR / "index.html"
 STAGING_BASE = "https://stg.oursharedevents.com"
 PROD_BASE = "https://oursharedevents.com"
 
-SIBLING_DIR = Path("C:/Users/mzdan/dev/ourCommunityRituals")
+SIBLING_DIR = canon_path(Path("C:/Users/mzdan/dev/ourCommunityRituals"))
 STORIES_FILE = DASHBOARD_DIR / ".stories.json"
 
 GH_ORG = "https://github.com/ourCommunityRituals"
@@ -1981,14 +2003,23 @@ def main() -> int:
 
     DASHBOARD_DIR.mkdir(parents=True, exist_ok=True)
 
+    # Normalize every APPS[*]["repo"] to actual on-disk case so the tool
+    # doesn't care whether folders are `Our…` or `our…`.
+    for app in APPS:
+        app["repo"] = canon_path(app["repo"])
+
+    # Case-insensitive CLI lookups — accept any casing for --app / --run-tests.
+    run_tests_arg = args.run_tests.lower() if args.run_tests else None
+    app_arg = args.app.lower() if args.app else None
+
     # If --run-tests: run first, then regenerate everything
     history = load_history()
     state = load_state()
     note = ""
 
-    if args.run_tests:
+    if run_tests_arg:
         all_feats = inventory_features()
-        targets = [f for f in all_feats if args.run_tests == "all" or f["key"] == args.run_tests]
+        targets = [f for f in all_feats if run_tests_arg == "all" or f["key"].lower() == run_tests_arg]
         if not targets:
             print(f"Unknown suite key: {args.run_tests}. Available: {[f['key'] for f in all_feats]}")
             return 2
@@ -2027,8 +2058,8 @@ def main() -> int:
     }
 
     # Render detail pages
-    if args.app:
-        apps_to_render = [a for a in APPS if a["key"] == args.app]
+    if app_arg:
+        apps_to_render = [a for a in APPS if a["key"].lower() == app_arg]
         if not apps_to_render:
             print(f"Unknown app: {args.app}. Known: {[a['key'] for a in APPS]}")
             return 2
