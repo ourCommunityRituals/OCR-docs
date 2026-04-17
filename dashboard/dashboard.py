@@ -136,8 +136,6 @@ TEST_FEATURES = [
      "dir": "tests/ui/smoke", "run_cmd": "npm run test:ui:smoke", "key": "t4-ui"},
 ]
 
-FEATURE_BY_KEY = {f["key"]: f for f in TEST_FEATURES}
-
 # App definitions — order controls roster order.
 #   `lane` groups multiple app rows into one Story-Flow column
 #     (e.g. ose-staging + ose-prod both map to lane "ose").
@@ -456,9 +454,15 @@ def deployment_state(base: str, repo: Path) -> dict:
 # ─── Test feature inventory ───────────────────────────────────────────────────
 
 TEST_FUNC_RE = re.compile(r"(?m)^\s*(?:it|test|describe)\s*\(")
+# Brain pyramid (Python) declares assertions via `check(name, condition, ...)`
+# inside level0_lint.py … level8_academic.py. Count those so the
+# "Files · ~calls" hint isn't 0 before the suite has ever been run.
+PY_TEST_FUNC_RE = re.compile(r"(?m)^\s*(?:check|assert_\w+)\s*\(")
 
 
-def count_tests_in_dir(dir_path: Path) -> dict:
+def count_tests_in_dir(dir_path: Path, kind: str = "js") -> dict:
+    """Count test files + approximate test() / it() / def test_*() calls.
+    kind: "js" (vitest/playwright .test/.spec) or "py" (brain pyramid)."""
     if not dir_path.exists():
         return {"files": 0, "test_calls": 0, "exists": False}
     files = 0
@@ -467,15 +471,20 @@ def count_tests_in_dir(dir_path: Path) -> dict:
         if not p.is_file():
             continue
         name = p.name.lower()
-        if not (name.endswith(".test.js") or name.endswith(".test.ts")
-                or name.endswith(".spec.js") or name.endswith(".spec.ts")):
+        if kind == "py":
+            matches = name.endswith(".py") and (name.startswith("level") or name.startswith("test_") or name == "run_all.py")
+        else:
+            matches = (name.endswith(".test.js") or name.endswith(".test.ts")
+                       or name.endswith(".spec.js") or name.endswith(".spec.ts"))
+        if not matches:
             continue
-        if "node_modules" in p.parts or "archive" in p.parts:
+        if "node_modules" in p.parts or "archive" in p.parts or "__pycache__" in p.parts:
             continue
         files += 1
         try:
             text = p.read_text(encoding="utf-8", errors="replace")
-            calls += len(TEST_FUNC_RE.findall(text))
+            regex = PY_TEST_FUNC_RE if kind == "py" else TEST_FUNC_RE
+            calls += len(regex.findall(text))
         except Exception:
             pass
     return {"files": files, "test_calls": calls, "exists": True}
@@ -521,17 +530,22 @@ def inventory_features() -> list[dict]:
                 "ose-api.json" if feat["key"] == "t3-newman-api" else "ose-pages.json"
             )
             inv = count_newman_tests(coll)
+        elif feat["key"] == "brain":
+            # Python pyramid: level0_lint.py … level8_academic.py + run_all.py
+            inv = count_tests_in_dir(cwd / feat["dir"], kind="py")
+        elif feat["key"] == "t0-typelint":
+            # No test files — this suite is `tsc --noEmit && eslint`.
+            # Stub a placeholder inventory so the UI doesn't say "0 files".
+            inv = {"files": 0, "test_calls": 0, "exists": True, "placeholder": "tsc --noEmit + eslint"}
         else:
-            if Path(feat["dir"]).parts and Path(feat["dir"]).parts[0] == "ocr-docs-brain":
-                inv = count_tests_in_dir(cwd / feat["dir"])
-            else:
-                inv = count_tests_in_dir(OSE_REPO / feat["dir"])
+            inv = count_tests_in_dir(OSE_REPO / feat["dir"])
         run = cached.get(feat["key"], {})
         rows.append({
             **feat,
             "files": inv.get("files", 0),
             "test_calls": inv.get("test_calls", 0),
             "requests": inv.get("requests"),
+            "placeholder": inv.get("placeholder"),
             "exists": inv.get("exists", False),
             "last_run": run.get("when"),
             "result": run.get("result"),
@@ -665,12 +679,12 @@ def run_cmd(cmd: str, cwd: Path, timeout: int = 900) -> dict:
             encoding="utf-8", errors="replace",
         )
         return {"rc": r.returncode, "stdout": r.stdout[-8000:],
-                "stderr": r.stderr[-2000:], "elapsed_s": int(time.time() - t0)}
+                "stderr": r.stderr[-2000:], "elapsed_s": round(time.time() - t0, 2)}
     except subprocess.TimeoutExpired:
         return {"rc": 124, "stdout": "", "stderr": f"Timed out after {timeout}s",
                 "elapsed_s": timeout}
     except Exception as e:
-        return {"rc": -1, "stdout": "", "stderr": str(e), "elapsed_s": int(time.time() - t0)}
+        return {"rc": -1, "stdout": "", "stderr": str(e), "elapsed_s": round(time.time() - t0, 2)}
 
 
 def parse_test_output(output: str) -> dict:
@@ -1786,6 +1800,8 @@ def render_app_detail(app: dict, features_for_this_app: list[dict],
                 bar = f'<span class="dim mono">{f["files"]} files · ~{f["test_calls"]} calls</span>'
                 if f["key"].startswith("t3-newman") and f.get("requests"):
                     bar = f'<span class="dim mono">{f["requests"]} requests</span>'
+                elif f.get("placeholder"):
+                    bar = f'<span class="dim mono">{e(f["placeholder"])}</span>'
 
             last_run_cell = (
                 f'<span class="mono dim">{e(f["last_run"] or "—")}</span>'
@@ -1857,7 +1873,10 @@ def render_app_detail(app: dict, features_for_this_app: list[dict],
         origin_short = om.get('short', '?')
         compare_html = ""
         if dep.get('commit') and om.get('sha'):
-            compare_url = f"{app['github']}/compare/{dep['commit']}...{om['sha']}"
+            # Resolve deployed short SHA to its full 40-char form so the
+            # GitHub compare URL is symmetric (both long).
+            dep_long = git("rev-parse", dep["commit"], cwd=app["repo"]) or dep["commit"]
+            compare_url = f"{app['github']}/compare/{dep_long}...{om['sha']}"
             compare_html = f' · {link(compare_url, "compare on GitHub")}'
         body_empty = '<tr><td colspan="3" class="dim">No commits — deployment is at origin/main.</td></tr>'
         drift_note = ("⚠️ Worker code changed since last deploy — runtime may be behind."
