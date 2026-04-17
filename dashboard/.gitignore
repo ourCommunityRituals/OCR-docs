@@ -1,0 +1,5 @@
+# Generated artifacts
+dashboard.html
+.state.json
+__pycache__/
+*.pyc
