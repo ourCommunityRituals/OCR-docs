@@ -81,19 +81,60 @@ Get-Service "actions.runner.ourCommunityRituals.*" | Format-Table Name, Status
 - **Least privilege**: the service account only needs to read the runner dir and write to `_work/`. It must NOT have access to user profile files, OneDrive, or unrelated development folders.
 - **Audit expectation**: when a runner is retired, remove it from the org (`gh api orgs/ourCommunityRituals/actions/runners/<id> -X DELETE`) AND delete the service AND delete the install directory. Do not leave orphaned runner dirs on disk.
 
-## 8. Operational runbook
+## 8. Operational runbook — `runner.ps1`
+
+All runner lifecycle operations flow through a single tool at
+`OCR-docs/shared/runner.ps1`. It is non-interactive, idempotent where
+correctness permits, admin-elevation-aware, and safe for scripted
+automation. Every subcommand returns a proper exit code.
+
+| Subcommand | Purpose | Required args | Notes |
+|---|---|---|---|
+| `install`  | Fresh install — download + register + service + start | `-Number <N>`, `-RegistrationToken <token>` | Creates `actions-runner-<N>/`. N must be ≥ 2 (original BLOODRAVEN not managed here). |
+| `convert`  | Retrofit interactive runner to Windows service | `-Name <runner>` | Idempotent — safe re-run. Use to upgrade the original BLOODRAVEN from interactive to service. |
+| `start`    | Start an existing service | `-Name <runner>` | No-op if already Running. |
+| `stop`     | Stop an existing service | `-Name <runner>` | No-op if already Stopped. |
+| `restart`  | Stop + Start | `-Name <runner>` | |
+| `status`   | List all OCR runners + state (read-only) | none | Covers both services and orphaned interactive runners. `-Json` for machine-readable output. |
+| `retire`   | Stop + uninstall service + deregister from GitHub + delete dir | `-Name <runner>`, `-RemovalToken <token>` | Prompts for confirmation. Use `-Force` for automation. Destructive — no undo. |
+
+Minting short-lived tokens for `install` / `retire`:
+
+```powershell
+# Requires gh with admin:org scope
+$regToken   = gh api orgs/ourCommunityRituals/actions/runners/registration-token -X POST --jq .token
+$rmToken    = gh api orgs/ourCommunityRituals/actions/runners/remove-token       -X POST --jq .token
+```
 
 Install a new runner:
 
 ```powershell
-# Requires gh with admin:org scope
-$token = gh api orgs/ourCommunityRituals/actions/runners/registration-token -X POST --jq .token
-powershell -ExecutionPolicy Bypass -File OCR-docs/shared/install-runner.ps1 -Number 2 -RegistrationToken $token
+.\runner.ps1 install -Number 2 -RegistrationToken $regToken
 ```
 
-Script documents the full flow: download correct runner version, extract to `actions-runner-<N>/`, configure with name + labels + runner-group, register as Windows service, start it. Idempotent on re-run.
+Retrofit the interactive BLOODRAVEN to a service:
 
-Retire a runner: see §7 audit expectation. Script `shared/retire-runner.ps1` planned.
+```powershell
+.\runner.ps1 convert -Name BLOODRAVEN
+# (Stop the interactive run.cmd process in its terminal first.)
+```
+
+Check fleet health:
+
+```powershell
+.\runner.ps1 status
+```
+
+Retire a runner safely:
+
+```powershell
+.\runner.ps1 retire -Name BLOODRAVEN-3 -RemovalToken $rmToken
+```
+
+**Automation pattern.** All subcommands are exit-code-clean and
+non-interactive (except `retire` without `-Force`). Pipe into CI, call
+from a dashboard script, or schedule via Task Scheduler — the tool is
+the automation surface, not ad-hoc terminal clicking.
 
 ## 9. Monitoring
 
