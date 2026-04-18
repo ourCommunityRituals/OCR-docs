@@ -14,6 +14,11 @@ on:
         default: 'CLAUDE.md,README.md,SKILL.md'
         type: string
 
+# Pin bash for self-hosted Windows runner (default would be PowerShell).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   lint-and-check:
     name: Markdown lint + DAC compliance
