@@ -21,9 +21,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      # Cache keyed on the exact run_all.py (not a `**` glob) — the
+      # broad glob walks the entire runner workspace on self-hosted
+      # Windows and fails on long paths / permission edge cases.
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: brain-deps-${{ hashFiles('**/run_all.py') }}
+          key: brain-deps-${{ hashFiles('ocr-docs-brain/tests/run_all.py') }}
       - run: pip install pyyaml packaging
-      - run: python3 ocr-docs-brain/tests/run_all.py
+      - name: Run Brain pyramid
+        shell: bash
+        run: python3 ocr-docs-brain/tests/run_all.py
