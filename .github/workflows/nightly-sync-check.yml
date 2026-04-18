@@ -30,7 +30,7 @@ env:
     ourSharedRecords
     ourSharedPulse
     ourSharedMagnets
-    ourWhiteList
+    ourAirwaves
 
 jobs:
   sync-check:
@@ -69,8 +69,8 @@ jobs:
           if [ -f docs/OCR_VISION.md ]; then
             VISION_HASH=$(sha256sum docs/OCR_VISION.md | cut -d' ' -f1)
           fi
-          if [ -f docs/OCR_DEPENDENCY_crossRepo.md ]; then
-            DEPMAP_HASH=$(sha256sum docs/OCR_DEPENDENCY_crossRepo.md | cut -d' ' -f1)
+          if [ -f docs/references/OCR_DEPENDENCY_crossRepo.md ]; then
+            DEPMAP_HASH=$(sha256sum docs/references/OCR_DEPENDENCY_crossRepo.md | cut -d' ' -f1)
           fi
 
           for REPO in $REPOS; do

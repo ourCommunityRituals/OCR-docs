@@ -1,40 +1,6 @@
 # OCR-docs — OurCommunityRituals LLC
 
-Org-level documentation, vision, and coordination for the OCR product line.
-
----
-
-## What this repo is
-
-This is the source of truth for OurCommunityRituals LLC. All product repos derive from the vision and architecture defined here.
-
-This repo contains no application code. It contains the documents that govern how the product line operates, what each product is, how they relate, and where they are going.
-
----
-
-## Product line
-
-| Code | Product | Repo | Purpose |
-|------|---------|------|---------|
-| OCR | OurCommunityRituals LLC | this repo | Holding company. Org brain. Governance. |
-| OSE | OurSharedEvents | `ourCommunityRituals/ourSharedEvents` | The platform. Anonymous ID. Sponsor model. Six surfaces. |
-| OW | OurWKRP | `ourCommunityRituals/ourWKRP` | Community music curation. Named identity. White label tiers. |
-| OSG | OurSharedGames | `ourCommunityRituals/ourSharedGames` | Founding activation format. Anchor game nights. |
-| OSR | OurSharedRecords | `ourCommunityRituals/ourSharedRecords` | Music, story, and archive layer. Oral history. |
-| OSP | OurSharedPulse | `ourCommunityRituals/ourSharedPulse` | Pre-platform consulting. Human-delivered entry point. |
-| OSM | OurSharedMagnets | `ourCommunityRituals/ourSharedMagnets` | Developer and franchise layer. API and white label support. |
-| OER | OurEventRings | — | Intelligence and analytics. Long horizon. |
-| OWL | OurWhiteList | `ourCommunityRituals/ourWhiteList` | Deployment and white label layer. Client fork template. |
-
----
-
-## Key documents
-
-| Document | Location | Purpose |
-|----------|----------|---------|
-| OCR_VISION.md | `docs/OCR_VISION.md` | Org-level source of truth. All products derive from this. |
-| CLAUDE.md | `CLAUDE.md` | Session protocol for AI-assisted work in this repo. |
-| SKILL.md | `SKILL.md` | Reusable skills for OCR-level coordination work. |
+Org-level documentation, vision, and governance for the OCR product line.
 
 ---
 
@@ -44,5 +10,42 @@ This platform is for the person at the bus stop on Western Avenue at 7am.
 
 ---
 
-*Owner: Matt*
-*Status: ACTIVE*
+## What this repo is
+
+The source of truth for OurCommunityRituals LLC. **No application code.** Only the documents that govern the product line.
+
+Start here → [`docs/OCR_VISION.md`](docs/OCR_VISION.md) · everything else in this repo derives from it.
+
+---
+
+## Product line
+
+| Code | Product | Repo | Purpose |
+|------|---------|------|---------|
+| OCR | OurCommunityRituals LLC | this repo | Holding company · org brain · governance |
+| OSE | OurSharedEvents | `ourSharedEvents` | The platform · anonymous ID · sponsor model |
+| OW  | OurWKRP | `ourWKRP` | Community music curation · named identity |
+| OSG | OurSharedGames | `ourSharedGames` | Founding activation format · anchor game nights |
+| OSR | OurSharedRecords | `ourSharedRecords` | Music, story, and archive · oral history |
+| OSP | OurSharedPulse | `ourSharedPulse` | Pre-platform consulting · human-delivered |
+| OSM | OurSharedMagnets | `ourSharedMagnets` | Developer and franchise layer · API + white label |
+| OER | OurEventRings | — | Intelligence and analytics · long horizon |
+| OA | OurAirwaves | `ourAirwaves` | Deployment and white label · client fork template |
+
+---
+
+## Key documents
+
+| Document | Purpose |
+|----------|---------|
+| [`docs/OCR_VISION.md`](docs/OCR_VISION.md) | Org-level source of truth |
+| [`CLAUDE.md`](CLAUDE.md) | Session protocol for AI-assisted work |
+| [`SKILL.md`](SKILL.md) | Reusable skills for OCR-level coordination |
+| [`OCR_STATUS_project.md`](OCR_STATUS_project.md) | Current org-level status snapshot |
+| [`OCR_LOG_session.md`](OCR_LOG_session.md) | Automated sync run log |
+
+Subfolders under `docs/` hold decisions, standards, corridor playbooks, releases, prompts, and CCR gates.
+
+---
+
+*Owner: Matt · Status: ACTIVE*

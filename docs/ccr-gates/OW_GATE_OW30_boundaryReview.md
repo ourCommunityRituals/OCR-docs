@@ -12,7 +12,7 @@
 >
 > This is not a dependency to manage. It is a constraint to enforce. Any proposed integration that would cross this boundary must fail CCR review.
 
-— `docs/OCR_DEPENDENCY_crossRepo.md`
+— `docs/references/OCR_DEPENDENCY_crossRepo.md`
 
 ---
 
