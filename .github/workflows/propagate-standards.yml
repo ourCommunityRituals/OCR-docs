@@ -46,6 +46,14 @@ env:
     ourSharedMagnets
     ourAirwaves
 
+# Pin all `run:` steps to bash. Without this, the self-hosted Windows
+# runner defaults to PowerShell and every bash-syntax script in this
+# workflow fails with "Missing '(' after 'if'" parser errors. Git Bash
+# ships with Git-for-Windows and is already on PATH.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   detect-changes:
     name: Detect what changed

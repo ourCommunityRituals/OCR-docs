@@ -32,6 +32,11 @@ env:
     ourSharedMagnets
     ourAirwaves
 
+# Pin bash for self-hosted Windows runner (default would be PowerShell).
+defaults:
+  run:
+    shell: bash
+
 jobs:
   sync-check:
     name: Audit all repos
