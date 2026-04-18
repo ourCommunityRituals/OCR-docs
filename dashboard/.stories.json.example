@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "source": "hand-maintained (replace with linear-api or gh-actions once wired)",
+  "_schema": {
+    "umbrella": "Label that unifies this story across different app backlogs (since each backlog numbers issues independently). Example: 'epic:schema-v3' or 'cross-app:subscribe-v2'.",
+    "title": "Human-readable summary — shown as the row label",
+    "linear_url": "Canonical Linear issue URL for the umbrella epic (or the Brain-side kickoff issue)",
+    "created_at": "ISO-8601 timestamp of story kickoff",
+    "apps": "Keyed by lane (ocr-brain|ose|wkrp|osg|osm|osp|osr|oa). Each value: { status, branch, pr_url, ci_url, note }",
+    "status_values": ["pass", "fail", "running", "pending", "skipped", "na"]
+  },
+  "stories": [
+    {
+      "umbrella": "epic:governance-v3",
+      "title": "Propagate governance schema v3 to all downstream apps",
+      "linear_url": "https://linear.app/oursharedevents/issue/OCR-42",
+      "created_at": "2026-04-15T09:00:00Z",
+      "apps": {
+        "ocr-brain": {
+          "status": "pass",
+          "branch": "feat/governance-v3",
+          "pr_url": "https://github.com/ourCommunityRituals/OCR-docs/pull/83",
+          "ci_url": "https://github.com/ourCommunityRituals/OCR-docs/actions/runs/111222",
+          "note": "Brain contract check green · 511/511"
+        },
+        "ose": {
+          "status": "running",
+          "branch": "chore/apply-governance-v3",
+          "pr_url": "https://github.com/ourCommunityRituals/ourSharedEvents/pull/91",
+          "ci_url": "https://github.com/ourCommunityRituals/ourSharedEvents/actions/runs/111301",
+          "note": "T0 gate running on self-hosted"
+        },
+        "wkrp": {
+          "status": "fail",
+          "branch": "chore/apply-governance-v3",
+          "pr_url": "https://github.com/ourCommunityRituals/ourWKRP/pull/14",
+          "ci_url": "https://github.com/ourCommunityRituals/ourWKRP/actions/runs/111309",
+          "note": "Contract test failing — STORIES.md schema mismatch"
+        },
+        "osg": { "status": "pending", "note": "Queued — waits for wkrp fix" },
+        "osm": { "status": "pending" },
+        "osp": { "status": "pending" },
+        "osr": { "status": "pending" },
+        "oa":  { "status": "na", "note": "Repo excluded — OurAirwaves rename in flight" }
+      }
+    },
+    {
+      "umbrella": "cross-app:subscribe-v2",
+      "title": "Newsletter subscribe v2 (shared by OSE + OSP)",
+      "linear_url": "https://linear.app/oursharedevents/issue/OCR-51",
+      "created_at": "2026-04-17T14:20:00Z",
+      "apps": {
+        "ocr-brain": {
+          "status": "pass",
+          "note": "Brain doc update merged"
+        },
+        "ose": {
+          "status": "pass",
+          "pr_url": "https://github.com/ourCommunityRituals/ourSharedEvents/pull/93",
+          "note": "Shipped to staging"
+        },
+        "osp": {
+          "status": "running",
+          "pr_url": "https://github.com/ourCommunityRituals/ourSharedPulse/pull/2",
+          "ci_url": "https://github.com/ourCommunityRituals/ourSharedPulse/actions/runs/111444"
+        },
+        "wkrp": { "status": "na" },
+        "osg":  { "status": "na" },
+        "osm":  { "status": "na" },
+        "osr":  { "status": "na" },
+        "oa":   { "status": "na" }
+      }
+    }
+  ]
+}
