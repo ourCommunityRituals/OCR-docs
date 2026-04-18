@@ -35,7 +35,7 @@ env:
 jobs:
   sync-check:
     name: Audit all repos
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Checkout OCR-docs
         uses: actions/checkout@v4

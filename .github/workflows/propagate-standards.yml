@@ -49,7 +49,7 @@ env:
 jobs:
   detect-changes:
     name: Detect what changed
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     outputs:
       templates_changed: ${{ steps.changes.outputs.templates }}
       skills_changed: ${{ steps.changes.outputs.skills }}
@@ -97,7 +97,7 @@ jobs:
   propagate:
     name: Open PRs in product repos
     needs: detect-changes
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
