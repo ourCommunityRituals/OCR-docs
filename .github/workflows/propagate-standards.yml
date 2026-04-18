@@ -17,7 +17,7 @@ on:
       - 'templates/**'
       - 'skills/**'
       - 'docs/OCR_VISION.md'
-      - 'docs/OCR_DEPENDENCY_crossRepo.md'
+      - 'docs/references/OCR_DEPENDENCY_crossRepo.md'
       - 'docs/standards/**'
   workflow_dispatch:
     inputs:
@@ -44,7 +44,7 @@ env:
     ourSharedRecords
     ourSharedPulse
     ourSharedMagnets
-    ourWhiteList
+    ourAirwaves
 
 jobs:
   detect-changes:
@@ -81,7 +81,7 @@ jobs:
           if echo "$DIFF" | grep -q '^docs/OCR_VISION.md'; then
             echo "vision=true" >> "$GITHUB_OUTPUT"
           fi
-          if echo "$DIFF" | grep -q '^docs/OCR_DEPENDENCY_crossRepo.md'; then
+          if echo "$DIFF" | grep -q '^docs/references/OCR_DEPENDENCY_crossRepo.md'; then
             echo "depmap=true" >> "$GITHUB_OUTPUT"
           fi
           if echo "$DIFF" | grep -q '^docs/standards/'; then
@@ -108,7 +108,7 @@ jobs:
           - ourSharedRecords
           - ourSharedPulse
           - ourSharedMagnets
-          - ourWhiteList
+          - ourAirwaves
     steps:
       - name: Check if repo is in scope
         id: scope
@@ -168,7 +168,7 @@ jobs:
           if [ "${{ needs.detect-changes.outputs.depmap_changed }}" = "true" ]; then
             SUMMARY+="### OCR_DEPENDENCY_crossRepo.md updated\n"
             SUMMARY+="Cross-repo dependencies have changed.\n"
-            SUMMARY+="Review \`OCR-docs/docs/OCR_DEPENDENCY_crossRepo.md\` for dependencies affecting this repo.\n\n"
+            SUMMARY+="Review \`OCR-docs/docs/references/OCR_DEPENDENCY_crossRepo.md\` for dependencies affecting this repo.\n\n"
           fi
 
           if [ "${{ needs.detect-changes.outputs.standards_changed }}" = "true" ]; then
@@ -202,7 +202,9 @@ jobs:
           cp ocr-docs/docs/OCR_VISION.md target/.ocr-standards/docs/OCR_VISION.md
 
           # Copy OCR_DEPENDENCY_crossRepo.md reference
-          cp ocr-docs/docs/OCR_DEPENDENCY_crossRepo.md target/.ocr-standards/docs/OCR_DEPENDENCY_crossRepo.md
+          # Source moved to docs/references/ in OCR-docs; sibling destination
+          # kept flat so existing repo layouts remain unchanged.
+          cp ocr-docs/docs/references/OCR_DEPENDENCY_crossRepo.md target/.ocr-standards/docs/OCR_DEPENDENCY_crossRepo.md
 
           # Copy org standards
           mkdir -p target/.ocr-standards/standards

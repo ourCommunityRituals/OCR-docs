@@ -3,10 +3,13 @@ on:
   pull_request:
     paths:
       - 'ocr-docs-brain/**'
+      - '.github/workflows/brain-validate.yml'
   push:
     branches: [main]
     paths:
       - 'ocr-docs-brain/**'
+      - '.github/workflows/brain-validate.yml'
+  workflow_dispatch:
 
 concurrency:
   group: brain-${{ github.ref }}
@@ -21,9 +24,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: brain-deps-${{ hashFiles('**/run_all.py') }}
-      - run: pip install pyyaml packaging
-      - run: python3 ocr-docs-brain/tests/run_all.py
+      # No pip cache — hashFiles() fails on self-hosted Windows
+      # (traversal bug under _work dir). `pip install pyyaml packaging`
+      # is two tiny packages; not worth the cache layer's complexity.
+      - name: Install Brain pyramid deps
+        shell: bash
+        run: pip install --disable-pip-version-check pyyaml packaging
+      - name: Run Brain pyramid
+        shell: bash
+        run: python3 ocr-docs-brain/tests/run_all.py

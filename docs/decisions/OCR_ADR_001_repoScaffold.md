@@ -10,7 +10,7 @@
 
 ## Context
 
-Most product repos in the OCR product line exist at the design stage. Only OSE and OW have implementation code. The remaining repos — OSG, OSR, OSP, OSM, OWL — have no application code yet.
+Most product repos in the OCR product line exist at the design stage. Only OSE and OW have implementation code. The remaining repos — OSG, OSR, OSP, OSM, OA — have no application code yet.
 
 The question: do we wait for code to exist before documenting architecture, or do we scaffold the documentation structure now?
 

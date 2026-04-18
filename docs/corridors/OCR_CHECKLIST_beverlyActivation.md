@@ -78,7 +78,7 @@ The formal archive collection start date has arrived. The OSR repo exists with d
 
 ## Dependencies
 
-Per `docs/OCR_DEPENDENCY_crossRepo.md`:
+Per `docs/references/OCR_DEPENDENCY_crossRepo.md`:
 
 ```
 OSE (new corridor event created)

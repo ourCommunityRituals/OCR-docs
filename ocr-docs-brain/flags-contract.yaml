@@ -1,0 +1,465 @@
+# Flags contract — governs the shared feature-flag surface across OCR apps.
+# Runtime binding: @ocr/flags package. This YAML is the source of truth;
+# the package implements it. Apps consume the package; the package conforms
+# to this contract. Brain version wins — drift triggers CI failure.
+#
+# DRAFT v0.1 — awaiting review. Open questions marked OQ:N inline.
+
+schema_version: 0.1.0
+status: draft
+owners:
+  contract: OCR-docs/ocr-docs-brain
+  runtime:  '@ocr/flags (packages/flags in ourCommunityRituals workspace)'
+
+purpose: 'Single source of truth for feature-flag keys, scope precedence, tier presets, and
+  storage-adapter contract used by every OCR app that gates behavior. Apps do not define
+  flag keys locally — they reference this contract via the runtime binding.
+
+  '
+
+# ─── Two-axis model (IMPORTANT) ────────────────────────────────────────────
+# Sponsor pricing tiers and flag preset levels are SEPARATE axes. They
+# intersect but do not equal each other.
+#
+#   Sponsor pricing (tier-gates.yaml):  local | mid | premium
+#   Flag presets (this contract):        free  | mid | enterprise
+#
+# A sponsor on "premium" pricing may have an event running under the
+# "enterprise" flag preset; a sponsor on "local" pricing runs under "free".
+# Do not merge the two dimensions. Doing so breaks faith_organization
+# rules (pricing concept) and event-scoped overrides (flag concept).
+axes:
+  sponsor_pricing:
+    source: tier-gates.yaml
+    values: [local, mid, premium]
+    concern: 'What sponsors pay for. Commerce dimension.'
+  flag_presets:
+    source: this contract (tier_presets section)
+    values: [free, mid, enterprise]
+    concern: 'Which feature bundle the flag system applies. Capability dimension.'
+
+# ─── Scope precedence ──────────────────────────────────────────────────────
+# First match wins. Same rule OSE currently implements; lifted here as a contract.
+scope_precedence:
+  order:
+    - event     # scope='event', scope_id=<event_id>
+    - global    # scope='global', scope_id='' (empty string — SQLite NULL != NULL in UNIQUE)
+    - default   # no row present → flag is ON (backwards-compatible, fail-open)
+  default_state: on
+  rationale: 'Default-ON preserves behavior for apps that predate a flag. Flags become gates only
+    when explicitly turned off. Turning a flag ON in code without a seeded row must never break
+    an older deployment.
+
+    '
+
+# ─── Flag key catalog ──────────────────────────────────────────────────────
+# Lifted from OSE feature-flags.ts (17 keys). Every key must belong to exactly
+# one domain. Adding a key requires a Brain PR and a CI-verified tier preset update.
+flag_keys:
+  forms:
+    forms.register:      { description: 'Event registration form' }
+    forms.checkin:       { description: 'Event check-in form' }
+    forms.survey:        { description: 'Post-event survey form' }
+    forms.email-signup:  { description: 'Email capture form (list building)' }
+  config:
+    config.self-serve:       { description: 'Customer-facing self-serve configuration UI' }
+    config.event-settings:   { description: 'Per-event settings editor' }
+  analytics:
+    analytics.shared-report: { description: 'SharedReport view access' }
+    report.export-json:      { description: 'JSON export of SharedReport data' }
+    report.advanced-metrics: { description: 'Advanced metrics block in SharedReport' }
+    report.export-pdf:       { description: 'PDF export of SharedReport' }
+    report.custom-window:    { description: 'Custom date-range window for SharedReport' }
+    report.portfolio:        { description: 'Portfolio SharedReport (cross-event)' }
+  assets:
+    assets.file-upload:  { description: 'Customer asset upload (images, logos)' }
+    assets.custom-qr:    { description: 'Custom-branded QR generation' }
+  branding:
+    branding.white-label:    { description: 'White-label branding (remove OCR chrome)' }
+    branding.custom-domain:  { description: 'Custom domain for customer site' }
+    branding.color-palette:  { description: 'Custom color palette' }
+
+  # Events domain — event-scoped eligibility and qualifying conditions.
+  # Evaluator treats these as normal flags; admin handlers enforce
+  # qualifying conditions when SETTING them (e.g., adult_only + faith_sponsor
+  # checked before enabling faith-free-marketing).
+  events:
+    events.faith-sponsor:
+      description: 'Event is sponsored by a faith_organization.'
+    events.adult-only:
+      description: 'Event is adult-only (18+).'
+    events.faith-free-marketing:
+      description: 'Adult-only faith-organization events receive free marketing opportunities at
+        base level. Enforced by flag. Qualifying conditions (events.faith-sponsor AND events.adult-only)
+        are checked by the admin handler when setting this flag; evaluator reads it as-is.'
+
+  # Phase 4+ placeholders — features named now so adapters can seed storage
+  # shape, but all default to false in every preset until Phase 4 lands.
+  # Activation flow per product vision:
+  #   PreEvent Ads → Event traffic → PostEvent funnel → next Event
+  #   + compounding Event/Sponsor history → Community Intelligence (OurEventRing RAG)
+  intelligence:
+    intelligence.map-visualization:
+      description: 'Geographic SharedReport overlay. Phase 4+.'
+    intelligence.trend-detection:
+      description: 'Pattern detection across event stream. Phase 4+.'
+    intelligence.audience-migration:
+      description: 'PreEvent → Event → PostEvent funnel signal per attendee cohort. Phase 4+.'
+    intelligence.venue-signals:
+      description: 'Venue-level behavioral signal surfacing new community hubs. Phase 4+.'
+    intelligence.corridor-forecasting:
+      description: 'Density forecasting across NCR hierarchy. Phase 4+.'
+    intelligence.event-history-compounding:
+      description: 'Sponsor/Event self-history compounding — deeper insight per repeat event. Phase 4+.'
+    intelligence.community-intelligence:
+      description: 'OurEventRing RAG-powered cross-corridor intelligence. Phase 5 gate.'
+
+# ─── Tier presets ──────────────────────────────────────────────────────────
+# Flag preset names — kept on the FLAG axis (free/mid/enterprise), NOT the
+# sponsor-pricing axis (local/mid/premium). See axes section above.
+#
+# Presets seed global flag rows. Per-event overrides (an enterprise capability
+# in current OSE) are expressed as scope=event rows, not preset values.
+#
+# Phase 4+ intelligence.* keys are present but default false in every preset
+# until Phase 4 lands. events.* keys default false; set per-event only.
+tier_presets:
+  free:
+    description: 'Registration + check-in only. Basic JSON export. No advanced features.'
+    flags:
+      forms.register:                        true
+      forms.checkin:                         true
+      forms.survey:                          false
+      forms.email-signup:                    false
+      config.self-serve:                     false
+      config.event-settings:                 false
+      analytics.shared-report:               false
+      report.export-json:                    true
+      report.advanced-metrics:               false
+      report.export-pdf:                     false
+      report.custom-window:                  false
+      report.portfolio:                      false
+      assets.file-upload:                    false
+      assets.custom-qr:                      false
+      branding.white-label:                  false
+      branding.custom-domain:                false
+      branding.color-palette:                false
+      events.faith-sponsor:                  false
+      events.adult-only:                     false
+      events.faith-free-marketing:           false
+      intelligence.map-visualization:        false
+      intelligence.trend-detection:          false
+      intelligence.audience-migration:       false
+      intelligence.venue-signals:            false
+      intelligence.corridor-forecasting:     false
+      intelligence.event-history-compounding: false
+      intelligence.community-intelligence:   false
+  mid:
+    description: 'All 4 form types. Self-serve config. SharedReports with advanced metrics + PDF.'
+    flags:
+      forms.register:                        true
+      forms.checkin:                         true
+      forms.survey:                          true
+      forms.email-signup:                    true
+      config.self-serve:                     true
+      config.event-settings:                 true
+      analytics.shared-report:               true
+      report.export-json:                    true
+      report.advanced-metrics:               true
+      report.export-pdf:                     true
+      report.custom-window:                  true
+      report.portfolio:                      false
+      assets.file-upload:                    false
+      assets.custom-qr:                      false
+      branding.white-label:                  false
+      branding.custom-domain:                false
+      branding.color-palette:                false
+      events.faith-sponsor:                  false
+      events.adult-only:                     false
+      events.faith-free-marketing:           false
+      intelligence.map-visualization:        false
+      intelligence.trend-detection:          false
+      intelligence.audience-migration:       false
+      intelligence.venue-signals:            false
+      intelligence.corridor-forecasting:     false
+      intelligence.event-history-compounding: false
+      intelligence.community-intelligence:   false
+  enterprise:
+    description: 'File upload, white-label, custom domain, portfolio reports, per-event overrides.'
+    flags:
+      forms.register:                        true
+      forms.checkin:                         true
+      forms.survey:                          true
+      forms.email-signup:                    true
+      config.self-serve:                     true
+      config.event-settings:                 true
+      analytics.shared-report:               true
+      report.export-json:                    true
+      report.advanced-metrics:               true
+      report.export-pdf:                     true
+      report.custom-window:                  true
+      report.portfolio:                      true
+      assets.file-upload:                    true
+      assets.custom-qr:                      true
+      branding.white-label:                  true
+      branding.custom-domain:                true
+      branding.color-palette:                true
+      events.faith-sponsor:                  false   # event-scoped, never a global default
+      events.adult-only:                     false   # event-scoped, never a global default
+      events.faith-free-marketing:           false   # event-scoped; set on qualifying events only
+      intelligence.map-visualization:        false   # Phase 4+
+      intelligence.trend-detection:          false   # Phase 4+
+      intelligence.audience-migration:       false   # Phase 4+
+      intelligence.venue-signals:            false   # Phase 4+
+      intelligence.corridor-forecasting:     false   # Phase 4+
+      intelligence.event-history-compounding: false  # Phase 4+
+      intelligence.community-intelligence:   false   # Phase 5
+
+# ─── Tier-gates cross-reference ────────────────────────────────────────────
+# Flag-level gating is finer-grained than tier-gates.yaml feature-level gating.
+# This section pins the mapping so the two contracts cannot drift silently.
+#
+# Cross-axis note: a tier-gates "feature" is a sponsor-pricing-tier capability;
+# the flag it maps to is what actually gates behavior at runtime. Both gates
+# must pass (per tier-gates.yaml enforcement.combined_rule).
+tier_gates_mapping:
+  'tier-gates.features.shared_report_pdf':         ['report.export-pdf']
+  'tier-gates.features.shared_report_interactive': ['analytics.shared-report', 'report.advanced-metrics', 'report.custom-window']
+  'tier-gates.features.sponsor_views':             ['report.portfolio']
+  'tier-gates.features.map_visualization':         ['intelligence.map-visualization']
+  'tier-gates.features.trend_detection':           ['intelligence.trend-detection']
+  'tier-gates.features.audience_migration':        ['intelligence.audience-migration']
+  'tier-gates.features.venue_signals':             ['intelligence.venue-signals']
+  'tier-gates.features.corridor_forecasting':      ['intelligence.corridor-forecasting']
+  # Platform commitment link:
+  # tier-gates.sponsor_type_overrides.faith_organization (forced_tier: free)
+  #   → pricing-side rule (commerce)
+  # events.faith-free-marketing
+  #   → flag-side rule (capability: free marketing for adult-only faith events)
+  # Both must be true simultaneously to deliver free-marketing behavior.
+
+# ─── Value type constraint (SECURITY) ──────────────────────────────────────
+# Flag values are booleans. Nothing else. Not strings, not JSON blobs, not
+# secrets, not URLs, not tokens. A flag that needs "configuration" is a
+# separate concern and belongs in config, not flags. This rule is enforced
+# at the schema layer (Level 2) and the adapter layer (write-path guard).
+value_type:
+  allowed: [boolean]
+  rationale: 'Treating flags as booleans eliminates an entire class of injection and
+    information-leak risks, keeps evaluators O(1), and makes caching trivial. Configuration
+    that is not boolean lives elsewhere.'
+
+# ─── Performance constraints ───────────────────────────────────────────────
+# Adapters must conform to these performance envelopes. Level 5 (Boundary)
+# tests measure and fail if exceeded. Budgets are soft targets for v1 but
+# hard stops in CI once a baseline is captured.
+performance:
+  resolve_all_flags:
+    budget_ms: 50          # single-digit ms expected on D1; 50 ms is the alert threshold
+    round_trips: 1         # exactly one storage round-trip per evaluation
+    rationale: 'N+1 across 24 flag keys would be catastrophic at scale. Evaluator must batch-fetch.'
+  apply_tier:
+    round_trips: 1         # D1 batch() or equivalent; adapters without batch must document
+  single_flag_lookup:
+    budget_ms: 10
+    caching: 'Adapter MAY cache, evaluator MUST NOT. Cache invalidation is adapter-local.'
+
+# ─── Observability contract ────────────────────────────────────────────────
+# Fail-open must be visible. A silent fail-open is a security incident, not a
+# feature. Every adapter emits structured events on fallback.
+observability:
+  fail_open_event:
+    emit_on: 'any read-path exception caught by evaluator (table missing, connection lost, etc.)'
+    level: warn
+    fields: [adapter_id, flag_key, error_class, event_id_hash]
+    pii: forbidden
+    rationale: 'Fail-open preserves availability but can mask outages. Observability turns
+      fail-open from a silent risk into a monitored state.'
+  write_audit:
+    emit_on: 'every setFlag, applyTier, removeEventFlag call'
+    level: info
+    fields: [adapter_id, scope, scope_id_hash, flag_key, new_value, actor_hash]
+    pii: 'forbidden — scope_id_hash and actor_hash are one-way'
+    rationale: 'Audit trail is required for tier_equity and deprecation_lock invariant enforcement.'
+
+# ─── Storage adapter contract ──────────────────────────────────────────────
+# The evaluator is identity-mode agnostic. Adapters implement storage and carry
+# identity-mode enforcement (anonymous_id, tenant_isolation invariants).
+#
+# Every adapter in the registry MUST pass the shared behavior-spec test suite
+# (packages/flags/tests/adapter-spec.ts). The suite is the quality gate —
+# shipping a new adapter means making the suite green.
+storage_adapter:
+  required_operations:
+    - name: getEventFlag
+      signature: '(flagKey: string, eventId: string) => Promise<boolean | null>'
+      returns: 'null if no row; boolean otherwise'
+    - name: getGlobalFlag
+      signature: '(flagKey: string) => Promise<boolean | null>'
+      returns: 'null if no row; boolean otherwise'
+    - name: listFlags
+      signature: "(opts?: { scope?: 'global'|'event'; eventId?: string }) => Promise<FlagRow[]>"
+    - name: setFlag
+      signature: "(flagKey, enabled, scope?: 'global'|'event', scopeId?: string) => Promise<void>"
+    - name: removeEventFlag
+      signature: '(eventId: string, flagKey: string) => Promise<boolean>'
+    - name: batchApplyTier
+      signature: '(tier: Tier) => Promise<{ tier: string; applied: number }>'
+      notes: 'Batch write all global preset values in a single round-trip. D1 uses db.batch();
+        in-memory adapter just loops.'
+
+  adapter_registry:
+    memory:
+      runtime: any
+      identity_modes: [anonymous, non-anonymous]
+      source: 'packages/flags/src/adapters/memory.ts'
+      storage: 'Map<string, boolean>'
+      purpose: 'Tests, demos, mock BE, OSM whitelabel runs, OW interim before DB chosen.'
+      performance_caveats: 'No persistence. Reset on process boot. Not for production.'
+    sqlite:
+      runtime: node
+      identity_modes: [anonymous, non-anonymous]
+      source: 'packages/flags/src/adapters/sqlite.ts'
+      storage: 'better-sqlite3 file or :memory: mode'
+      purpose: 'Local dev across all Node-based apps; OCR-platform-tests harness; any app
+        without a remote DB commitment.'
+    d1:
+      runtime: cloudflare-worker
+      identity_modes: [anonymous]
+      source: 'packages/flags/src/adapters/d1.ts (lifted from OSE)'
+      storage: 'Cloudflare D1 via injected D1Database reference'
+      purpose: 'Cloudflare Worker apps (OSE today; any future OCR Worker).'
+      schema_owner: 'this contract (Brain) — tables match flag_storage_schema below'
+    postgres:
+      runtime: node
+      identity_modes: [anonymous, non-anonymous]
+      source: 'packages/flags/src/adapters/postgres.ts'
+      storage: 'node-postgres (pg) — OW target; any future server-BE OCR app'
+      purpose: 'Non-anonymous arch apps (OW target); shared multi-tenant deployments.'
+
+  # Every adapter ships with the same logical table. Adapters may add columns
+  # but may not remove or rename. Schema is versioned per-adapter migrations.
+  flag_storage_schema:
+    logical_table: feature_flags
+    columns:
+      - name: id
+        type: string
+        constraints: [primary_key]
+      - name: scope
+        type: string
+        constraints:
+          - not_null
+          - enum: [global, event]
+      - name: scope_id
+        type: string
+        constraints: [not_null, default_empty_string_for_global]
+      - name: flag_key
+        type: string
+        constraints: [not_null]
+      - name: enabled
+        type: boolean
+        constraints: [not_null]
+      - name: updated_at
+        type: string
+        constraints: [not_null, iso8601_utc]
+    unique_index: [scope, scope_id, flag_key]
+    scope_id_convention: 'Global rows use empty string, NOT NULL. SQLite treats each NULL as
+      unique in UNIQUE constraints; empty string is deterministic. Other engines follow the
+      same convention for cross-adapter parity.'
+    schema_version: 1
+
+# ─── Consumer registry ─────────────────────────────────────────────────────
+# Which products consume this contract and via which adapter. Mirrors
+# product-registry.yaml identity_layer; must not contradict it.
+consumers:
+  ose:
+    product_id: ose
+    identity_mode: anonymous
+    adapter: d1
+    status: migrating  # currently owns the code in-repo; will consume @ocr/flags post-carve
+  osm:
+    product_id: osm
+    identity_mode: both          # spans anonymous + non-anonymous per reference_app_identity_map
+    adapter: memory              # primary; can compose with d1 when mocking OSE
+    status: planned
+  ow:
+    product_id: wkrp
+    identity_mode: non-anonymous
+    adapter: memory              # interim until OW's BE storage is chosen
+    status: planned
+  oa:
+    product_id: oaw              # OQ:4 — confirm product_id in product-registry
+    identity_mode: non-anonymous
+    adapter: none                # FE whitelabel only today; consumes resolved flags from OW
+    status: planned
+
+# ─── Invariants this contract touches ──────────────────────────────────────
+# Declared dependencies on architectural-invariants.yaml. Violations must fail
+# the 10-level pyramid at Level 0 (Security) or Level 7 (Contract).
+invariant_dependencies:
+  tier_equity:
+    invariant: 'A faith_organization sponsor is forced to free tier; no flag preset may contradict.
+      Adult-only faith events additionally receive free marketing via events.faith-free-marketing.'
+    enforcement: 'Pricing side: tier-gates.yaml sponsor_type_overrides.faith_organization forces the
+      pricing tier. Flag side: events.faith-free-marketing is the base-level capability gate. Admin
+      handler validates qualifying conditions (events.faith-sponsor AND events.adult-only) before
+      setting events.faith-free-marketing=true. Evaluator is condition-free and reads the flag as-is,
+      so adapters stay identity-mode agnostic.'
+  tenant_isolation:
+    invariant: 'Event-scoped flags for event X must never be readable by event Y.'
+    enforcement: 'Adapter must parameterize scope_id; string concatenation prohibited.'
+  anonymous_id:
+    invariant: 'Anonymous-ID arch must not receive non-anonymous identifiers via flag context.'
+    enforcement: 'Evaluator accepts only eventId (opaque string). No user_id, email, or PII permitted
+      in flag-resolution input. Adapters enforce.'
+  deprecation_lock:
+    invariant: 'Removing a flag_key requires a documented deprecation window.'
+    enforcement: 'Level 4 regression — removing a key from flag_keys without a deprecated_keys entry
+      fails the pyramid.'
+
+# ─── Enforcement ───────────────────────────────────────────────────────────
+# Mirrors tier-gates.yaml style. Failure modes match OSE's current fail-open
+# behavior for default-ON compatibility.
+enforcement:
+  schema_validation:
+    description: 'Brain CI parses this YAML and validates every flag_key appears in tier_presets for
+      all tiers, and every tier_presets entry corresponds to a declared flag_key.'
+    failure_mode: hard_stop
+    severity: error
+  runtime_binding_parity:
+    description: '@ocr/flags package ships a generated constants file from this YAML. Drift between
+      YAML and package source fails CI.'
+    failure_mode: hard_stop
+    severity: error
+  consumer_conformance:
+    description: 'Each consuming app declares its adapter + identity_mode here. product-registry.yaml
+      identity_layer must match. Mismatch fails Level 7 contract test.'
+    failure_mode: hard_stop
+    severity: error
+  fail_open_default:
+    description: 'If the storage adapter throws (e.g., table missing pre-migration), the evaluator
+      returns ON. This is by design — new deployments must never be worse than no flag system.'
+    failure_mode: soft_stop
+    failure_action: allow_feature
+    severity: warning
+
+# ─── Resolutions ───────────────────────────────────────────────────────────
+resolved:
+  R1: 'Flag presets stay free/mid/enterprise. Sponsor pricing stays local/mid/premium
+    (tier-gates.yaml). Two axes, never merged. See axes section.'
+  R2: 'Phase 4+ features added as intelligence.* placeholder keys. All default false until
+    Phase 4+ activation.'
+  R3: 'Ship all four adapters in v1: memory, sqlite, d1, postgres. Sets the template for every
+    future shared OCR package. Shared package covers every likely runtime from day one; apps
+    swap by config, not by cross-repo PRs. Cost ~200 LOC; benefit is ecosystem-wide.'
+  R4: 'product_id "oaw" confirmed in product-registry.yaml. consumers.oa is correct as authored.'
+  R5: 'faith_organization free-marketing enforced via events.faith-free-marketing flag at base
+    level. Evaluator is context-free; admin handler validates qualifying conditions
+    (adult-only + faith-sponsor) on write.'
+  R6: 'Contract does not gate event-scope by tier. Event-scope reads are universally honored by
+    the evaluator. WHO may write event-scope rows is each app''s admin-handler concern. Keeps
+    evaluator dumb; accommodates events.faith-free-marketing at free tier without a special case.'
+
+# All initial open questions resolved. New questions will accumulate here as
+# implementation surfaces them.
+open_questions: []

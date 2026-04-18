@@ -3,7 +3,13 @@
 
 > **Purpose.** Make the org brain easier to read cold. Preserve every fact. No deletions — only restructuring, renaming, and merging of near-duplicates.
 >
-> **Status.** DRAFT. Nothing is overwritten. All proposed changes exist as `*_v2.md` drafts alongside the originals. Matt approves file-by-file before any replacement.
+> **Status (2026-04-18).** Partially executed.
+>
+> - ✅ **Phase 1 — v2 promotion (done 2026-04-18):** `CLAUDE_v2.md`, `README_v2.md`, and `docs/OCR_VISION_v2.md` promoted to canonical names, overwriting v1. `docs/OCR_ADR_001_repoScaffold.md` moved to `docs/decisions/`. `docs/uec-system.jsx` renamed to `docs/OCR_REFERENCE_uecSystem.jsx`. `docs/OCR_DEPENDENCY_crossRepo.md` moved to `docs/references/` (workflows + standards doc + 2 prose refs updated to match).
+> - ⏳ **Phase 2 — status/log dedup (open):** `OCR_STATUS_project.md` vs `PROJECT-STATUS.md` and `OCR_LOG_session.md` vs `SESSION-LOG.md` still live as near-duplicates. Choose authoritative source per pair and archive the other.
+> - ⏳ **Phase 3 — VISION structural polish (open):** product registry wall-of-prose → scannable table, run-on doctrine paragraph split, top-level section order. Not critical for the code-enforced pieces; purely readability.
+>
+> When Phase 2 and 3 are complete, archive this file.
 
 ---
 
@@ -186,9 +192,9 @@ Matt added two first-class architectural concepts to VISION_v2 after the initial
    - **§6.1 Architecture layer** — the four-file DAC pattern (CLAUDE.md, OCR_VISION.md, README.md, SKILL.md) reframed as architectural invariant rather than documentation habit.
    - **§6.2 Invariant layers** — taxonomies and contracts stable across deployments.
      - **§6.2.1 Sponsors** — canonical 9-vertical enum (Bars, Schools, Hospitals, Recreational Centers, Business Meetings/Conventions, Sports, Art/Cultural, Political Rallies, Research Opportunities).
-   - **§6.3 Vertical applications — the OSM + OWL flywheel** — OSM = back of the flywheel (API, skills, CI, institutional knowledge); OWL = front of the flywheel (fork template, onboarding, environment schema). Together they hydrate a vertical app (e.g., a Schools app, a Hospitals app) without bespoke engineering.
+   - **§6.3 Vertical applications — the OSM + OA flywheel** — OSM = back of the flywheel (API, skills, CI, institutional knowledge); OA = front of the flywheel (fork template, onboarding, environment schema). Together they hydrate a vertical app (e.g., a Schools app, a Hospitals app) without bespoke engineering.
 
-2. **Product registry detail for OSM and OWL** updated to reference their flywheel positions (§6.3).
+2. **Product registry detail for OSM and OA** updated to reference their flywheel positions (§6.3).
 
 3. **§10 Open decisions** grew to include:
    - Additional invariant layers pending (venues, participants, archive records, data flow).
@@ -201,15 +207,15 @@ Matt added two first-class architectural concepts to VISION_v2 after the initial
 
 Matt provided the full OW (OurWKRP) architectural definition. Three substantial changes:
 
-1. **§7 OW detail expanded** — OW is the non-anonymous-ID counterpart to OSE: same architecture, separate DB, named identity, voluntary, free, community-based. Added the Fists-of-5 team unit, the Spotify→Apple-Developer-license trajectory, the DJ profile model (deployed via OWL), the QR-referral → SharedReports pipeline (anonymous OR named per code, Friday cadence, compounding), white-label tiers, anchor (RIPH), and venue targets.
+1. **§7 OW detail expanded** — OW is the non-anonymous-ID counterpart to OSE: same architecture, separate DB, named identity, voluntary, free, community-based. Added the Fists-of-5 team unit, the Spotify→Apple-Developer-license trajectory, the DJ profile model (deployed via OA), the QR-referral → SharedReports pipeline (anonymous OR named per code, Friday cadence, compounding), white-label tiers, anchor (RIPH), and venue targets.
 
 2. **New §6.4 Platform symmetry — OSE and OW** — codifies the parallel-platform rule. OSE and OW share architecture and brand but hold opposite invariants on the identity axis. Side-by-side comparison table. **Resolves the long-standing CLAUDE.md "OSE+OW converge" open decision** — convergence means shared architecture, not merged DBs.
 
-3. **§6.3 OWL flywheel role expanded** — OWL serves at every scale: corridor, vertical, venue, AND individual creator. Every DJ profile is effectively a single-person OWL deployment. The flywheel front works the same way regardless of scale.
+3. **§6.3 OA flywheel role expanded** — OA serves at every scale: corridor, vertical, venue, AND individual creator. Every DJ profile is effectively a single-person OA deployment. The flywheel front works the same way regardless of scale.
 
 **Open decisions updated.** The OSE+OW convergence question is now ✅ resolved. Three new open items added: Apple Developer license status, OW cross-arts expansion roadmap, QR routing rules (anonymous vs. named decision policy). Participants invariant placeholder updated to include Fists-of-5 alongside OSP's tier structure.
 
-**CLAUDE_v2.md updated.** Architectural boundaries section now enforces the parallelism rule, the OW named-identity model, the OWL-at-every-scale rule, and the per-record (not per-database) cross-platform feature rule. Pointer to §6.4 added.
+**CLAUDE_v2.md updated.** Architectural boundaries section now enforces the parallelism rule, the OW named-identity model, the OA-at-every-scale rule, and the per-record (not per-database) cross-platform feature rule. Pointer to §6.4 added.
 
 ### 2026-04-14 — OER / BigQuery RAG + naming convention as invariant (Matt)
 
@@ -219,13 +225,13 @@ Matt locked in OER's actual identity and elevated naming convention from a reorg
 
 2. **§6.1 expanded with file/folder naming as architectural invariant.** The `OCR_<TYPE>_<subject>.md` camelCase pattern, established type vocabulary (VISION, STATUS, LOG, ADR, DEPENDENCY, STANDARD, DECISION, PROMPT, CHECKLIST, RELEASE, GATE), and the canonical `docs/` subfolder taxonomy (decisions, standards, corridors, releases, prompts, ccr-gates) are now binding. Rationale captured: naming is data interoperability — predictable shapes let OER ingestion, sync agents, and cross-repo audits work without bespoke configuration.
 
-3. **New §6.5 Data flow — OER as the BigQuery RAG.** OER's identity is now explicit: BigQuery RAG, set up at the org level. Ingestion sources table (OSE, OW, OWL, OSM, future qualifiers) with what flows from each. Defines the qualifying privacy gate (anonymous-by-construction OR named-with-explicit-voluntary-attribution). States the query model: products do not query each other's DBs directly; they emit, OER ingests, OER answers. Closes with the simplicity discipline applied to ingestion specifically — overkill is the failure mode.
+3. **New §6.5 Data flow — OER as the BigQuery RAG.** OER's identity is now explicit: BigQuery RAG, set up at the org level. Ingestion sources table (OSE, OW, OA, OSM, future qualifiers) with what flows from each. Defines the qualifying privacy gate (anonymous-by-construction OR named-with-explicit-voluntary-attribution). States the query model: products do not query each other's DBs directly; they emit, OER ingests, OER answers. Closes with the simplicity discipline applied to ingestion specifically — overkill is the failure mode.
 
 4. **§7 OER detail rewritten** to lead with its real identity (BigQuery RAG layer, set up org-level) and the product table row updated accordingly (data model now reads "BigQuery / RAG" instead of "Derived").
 
 5. **§10 Open decisions:**
    - ✅ The BigQuery question is now RESOLVED.
-   - **New:** Define the qualifying privacy gate criteria at field level (which OW records carry consent metadata, how OWL strips client PII, what OSM telemetry is allowed).
+   - **New:** Define the qualifying privacy gate criteria at field level (which OW records carry consent metadata, how OA strips client PII, what OSM telemetry is allowed).
    - **New:** OER ingestion threshold — what archive depth triggers activation; per-source schemas, cadence, retention.
 
 **CLAUDE_v2.md updated** to enforce: OER as the universal RAG sink, the qualifying-privacy gate as binding, the naming convention as architectural, and the simplicity-over-completeness discipline. Pointer to §6.5 added.
