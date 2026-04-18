@@ -2,30 +2,46 @@
 """
 run_all.py — Brain test pyramid runner
 ========================================
-Executes all test levels in order. Level 0 (lint) is a gate:
-if lint fails, nothing else runs. All other levels run to completion
-and report aggregated results.
+Executes all test levels in order. Level 0 (security) is a gate:
+if security fails, nothing else runs. Lint at Level 1 is also a gate.
+All other levels run to completion and report aggregated results.
+
+Canonical pyramid order (every app repo conforms to this shape):
+  0=SECURITY → 1=LINT → 2=SCHEMA → 3=UNIT → 4=REGRESSION
+  → 5=BOUNDARY → 6=INTEGRATION → 7=CONTRACT → 8=PACT → 9=ACADEMIC
 
 Usage:
-  python3 tests/run_all.py            # run all levels
-  python3 tests/run_all.py --level 3  # run up to level 3
-  python3 tests/run_all.py --from 5   # run levels 5+
+  python3 tests/run_all.py                # run all levels
+  python3 tests/run_all.py --security-only  # run Level 0 only and stop
+  python3 tests/run_all.py --level 3      # run up to level 3
+  python3 tests/run_all.py --from 5       # run levels 5+
 """
-import argparse, subprocess, sys, time
+import argparse, os, subprocess, sys, time
 from pathlib import Path
+
+# Fix Windows console cp1252 encoding + line-buffering on self-hosted runners.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
+    sys.stderr.reconfigure(encoding='utf-8', line_buffering=True)
+except Exception:
+    pass
+# Ensure subprocesses (the level scripts) also use UTF-8 stdout even if they
+# don't reconfigure themselves.
+os.environ.setdefault('PYTHONIOENCODING', 'utf-8')
 
 TESTS_DIR = Path(__file__).parent
 
 LEVELS = [
-    (0, 'level0_lint.py',        'LINT',                   True),   # gate=True: blocks all subsequent
-    (1, 'level1_schema.py',      'SCHEMA',                 False),
-    (2, 'level2_unit.py',        'UNIT',                   False),
-    (3, 'level3_regression.py',  'REGRESSION',             False),
-    (4, 'level4_boundary.py',    'BOUNDARY',               False),
-    (5, 'level5_integration.py', 'INTEGRATION',            False),
-    (6, 'level6_contract.py',    'CONTRACT (provider)',     False),
-    (7, 'level7_pact.py',        'PACT (consumer-driven)', False),
-    (8, 'level8_academic.py',    'ACADEMIC FOUNDATIONS',    False),
+    (0, 'level0_security.py',    'SECURITY',               True),   # gate=True: blocks all subsequent
+    (1, 'level1_lint.py',        'LINT',                   True),   # gate=True: blocks all subsequent
+    (2, 'level2_schema.py',      'SCHEMA',                 False),
+    (3, 'level3_unit.py',        'UNIT',                   False),
+    (4, 'level4_regression.py',  'REGRESSION',             False),
+    (5, 'level5_boundary.py',    'BOUNDARY',               False),
+    (6, 'level6_integration.py', 'INTEGRATION',            False),
+    (7, 'level7_contract.py',    'CONTRACT (provider)',     False),
+    (8, 'level8_pact.py',        'PACT (consumer-driven)', False),
+    (9, 'level9_academic.py',    'ACADEMIC FOUNDATIONS',    False),
 ]
 
 
@@ -51,8 +67,8 @@ def run_level(num, script, label, gate=False):
 
     if result.returncode != 0 and gate:
         print()
-        print(f'  GATE FAILURE at Level {num}. Subsequent levels will not run.')
-        print(f'  Fix lint issues first.')
+        print(f'  GATE FAILURE at Level {num} ({label}). Subsequent levels will not run.')
+        print(f'  Fix Level {num} issues before proceeding.')
         print()
         # Print the failing details
         for line in lines:
@@ -66,11 +82,16 @@ def main():
     ap = argparse.ArgumentParser(description='Brain test pyramid runner')
     ap.add_argument('--level', type=int, help='Run up to this level (inclusive)')
     ap.add_argument('--from', type=int, dest='from_level', help='Run from this level (inclusive)')
+    ap.add_argument('--security-only', action='store_true', help='Run Level 0 (security) only and stop')
     ap.add_argument('--verbose', '-v', action='store_true', help='Show full output of failing levels')
     args = ap.parse_args()
 
-    max_level = args.level if args.level is not None else 99
-    min_level = args.from_level if args.from_level is not None else 0
+    if args.security_only:
+        max_level = 0
+        min_level = 0
+    else:
+        max_level = args.level if args.level is not None else 99
+        min_level = args.from_level if args.from_level is not None else 0
 
     print()
     print(f'{"="*76}')

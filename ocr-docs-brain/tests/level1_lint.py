@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Level 0 — LINT
+Level 1 — LINT
 ===============
 Syntax, encoding, formatting, structural rules.
-If these fail, nothing above this layer can be trusted.
-Runs first. Blocks all other layers on failure.
+Runs after Level 0 (security) passes.
 """
 import json, re, sys, yaml
 from pathlib import Path
@@ -135,7 +134,7 @@ for f in REQUIRED_YAML + REQUIRED_JSON:
 passed = sum(1 for _, s, _ in results if s == 'PASS')
 failed = sum(1 for _, s, _ in results if s == 'FAIL')
 print(f'{"="*76}')
-print(f'  LEVEL 0 — LINT')
+print(f'  LEVEL 1 — LINT')
 print(f'{"="*76}')
 for name, status, detail in results:
     m = '[PASS]' if status == 'PASS' else '[FAIL]'

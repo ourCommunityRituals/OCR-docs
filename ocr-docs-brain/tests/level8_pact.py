@@ -208,7 +208,7 @@ shared_pacts()
 passed = sum(1 for _, s, _ in results if s == 'PASS')
 failed = sum(1 for _, s, _ in results if s == 'FAIL')
 print(f'{"="*76}')
-print(f'  LEVEL 7 — PACT (consumer-driven)')
+print(f'  LEVEL 8 — PACT (consumer-driven)')
 print(f'{"="*76}')
 for name, status, detail in results:
     m = '[PASS]' if status == 'PASS' else '[FAIL]'

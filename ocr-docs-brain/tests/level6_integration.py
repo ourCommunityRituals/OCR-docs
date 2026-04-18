@@ -9,6 +9,15 @@ If these fail, individual files are correct but the brain as a whole is incohere
 import json, sys, yaml
 from pathlib import Path
 
+# Fix Windows console cp1252 encoding + enable line buffering so output streams
+# correctly on self-hosted Windows runners (e.g. Bloodraven). Handles the `→`
+# character that appears in some detail strings.
+try:
+    sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
+    sys.stderr.reconfigure(encoding='utf-8', line_buffering=True)
+except Exception:
+    pass
+
 BRAIN = Path(__file__).parent.parent if (Path(__file__).parent.parent / 'product-registry.yaml').exists() \
     else Path(__file__).parent / 'ocr-docs-brain'
 
@@ -202,7 +211,7 @@ check('bigquery_schemas_complete', bq_schemas)
 passed = sum(1 for _, s, _ in results if s == 'PASS')
 failed = sum(1 for _, s, _ in results if s == 'FAIL')
 print(f'{"="*76}')
-print(f'  LEVEL 5 — INTEGRATION')
+print(f'  LEVEL 6 — INTEGRATION')
 print(f'{"="*76}')
 for name, status, detail in results:
     m = '[PASS]' if status == 'PASS' else '[FAIL]'
