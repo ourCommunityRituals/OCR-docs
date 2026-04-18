@@ -115,10 +115,23 @@ ROUTES = [
 ]
 
 # Test pyramid — every suite known to any app.
+# CANONICAL ORDER: L0 SECURITY runs FIRST on every surface (security gates lint,
+# never the other way around). Per-app suite_keys lists must list L0 entries
+# before any T0/lint entry.
 TEST_FEATURES = [
     {"tier": "Brain", "name": "Brain Test Pyramid (OCR-docs)",
      "dir": "ocr-docs-brain/tests", "run_cmd": "py ocr-docs-brain/tests/run_all.py",
      "cwd": str(BRAIN_REPO), "key": "brain"},
+    # L0 — SECURITY (gate; runs before anything else, every app)
+    {"tier": "L0", "name": "L0 Security — OSE Pyramid Gate",
+     "dir": "tests", "run_cmd": "py tests/level0_security.py", "key": "l0-ose-security"},
+    {"tier": "L0", "name": "L0 Security — WKRP Pyramid Gate",
+     "dir": "tests", "run_cmd": "py tests/level0_security.py",
+     "cwd": str(SIBLING_DIR / "ourWKRP"), "key": "l0-wkrp-security"},
+    {"tier": "L0", "name": "L0 Security — Smoke (XSS + Auth)",
+     "dir": "tests/e2e/1-smoke",
+     "run_cmd": "npx playwright test --config=playwright.e2e-smoke.config.ts tests/e2e/1-smoke/security-smoke.spec.js",
+     "key": "t2-security-smoke"},
     {"tier": "T0", "name": "Gate — Unit (Vitest)",
      "dir": "tests/unit", "run_cmd": "npm test", "key": "t0-unit"},
     {"tier": "T0", "name": "Gate — Contract",
@@ -130,10 +143,6 @@ TEST_FEATURES = [
      "dir": "workers/oursharedevents/src",
      "run_cmd": "npx tsc --noEmit && npx eslint config/ scripts/ tests/unit/ tests/contract/",
      "key": "t0-typelint"},
-    {"tier": "T2", "name": "Smoke — Security XSS + Auth",
-     "dir": "tests/e2e/1-smoke",
-     "run_cmd": "npx playwright test --config=playwright.e2e-smoke.config.ts tests/e2e/1-smoke/security-smoke.spec.js",
-     "key": "t2-security-smoke"},
     {"tier": "T2", "name": "Smoke — IAC Health + Fail-Fast",
      "dir": "tests/api/smoke",
      "run_cmd": "npx playwright test --config=playwright.smoke.config.ts tests/api/smoke/api-health.spec.ts tests/api/smoke/fail-fast-gates.spec.ts",
@@ -183,8 +192,9 @@ APPS = [
         "base": STAGING_BASE, "probes": True,
         "repo": OSE_REPO, "github": OSE_GITHUB,
         "suite_keys": [
+            "l0-ose-security", "t2-security-smoke",
             "t0-unit", "t0-contract", "t0-d1-schema", "t0-typelint",
-            "t2-security-smoke", "t2-iac-smoke",
+            "t2-iac-smoke",
             "t3-newman-api", "t3-newman-pages",
             "t4-arch", "t4-journey", "t4-ui",
         ],
@@ -205,7 +215,7 @@ APPS = [
         "role": "downstream", "lane": "wkrp",
         "base": None, "probes": False,
         "repo": SIBLING_DIR / "ourWKRP", "github": WKRP_GITHUB,
-        "suite_keys": [], "drift": False,
+        "suite_keys": ["l0-wkrp-security"], "drift": False,
     },
     # ── Stubs: repos initialized, awaiting first build ───────────────────────
     {

@@ -207,7 +207,7 @@ if rqr:
 passed = sum(1 for _, s, _ in results if s == 'PASS')
 failed = sum(1 for _, s, _ in results if s == 'FAIL')
 print(f'{"="*76}')
-print(f'  LEVEL 8 — ACADEMIC FOUNDATIONS')
+print(f'  LEVEL 9 — ACADEMIC FOUNDATIONS')
 print(f'{"="*76}')
 for name, status, detail in results:
     m = '[PASS]' if status == 'PASS' else '[FAIL]'

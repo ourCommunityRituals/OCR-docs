@@ -152,7 +152,7 @@ for cat in et.get('categories', []):
 passed = sum(1 for _, s, _ in results if s == 'PASS')
 failed = sum(1 for _, s, _ in results if s == 'FAIL')
 print(f'{"="*76}')
-print(f'  LEVEL 1 — SCHEMA')
+print(f'  LEVEL 2 — SCHEMA')
 print(f'{"="*76}')
 for name, status, detail in results:
     m = '[PASS]' if status == 'PASS' else '[FAIL]'
