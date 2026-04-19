@@ -57,14 +57,16 @@ jobs:
 
       - name: Check for broken internal links
         run: |
-          BROKEN=0
-          # Find all markdown links to local files
-          grep -roh '\[.*\]([^http][^)]*\.md)' --include='*.md' . | \
-            grep -oP '\(([^)]+)\)' | tr -d '()' | sort -u | while read -r LINK; do
-              # Resolve relative to repo root
-              if [ ! -f "$LINK" ]; then
-                echo "::warning::Broken link: $LINK"
-                BROKEN=$((BROKEN + 1))
-              fi
-            done
-          # Don't fail — just warn. Cross-repo links are expected to be unresolvable.
+          # Don't fail — just warn. Cross-repo links are expected unresolvable.
+          # Use -oE (ERE); -oP needs UTF-8 locale which Git-bash on Windows
+          # self-hosted does not provide.
+          grep -roh '\[.*\]([^http][^)]*\.md)' --include='*.md' . \
+            | grep -oE '\(([^)]+)\)' \
+            | tr -d '()' \
+            | sort -u \
+            | while read -r LINK; do
+                if [ ! -f "$LINK" ]; then
+                  echo "::warning::Broken link: $LINK"
+                fi
+              done \
+            || true
