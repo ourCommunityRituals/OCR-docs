@@ -1,0 +1,246 @@
+# Event-phase contract — governs the canonical temporal phase resolver
+# consumed by every OCR sibling that surfaces events to humans.
+#
+# Runtime binding: future @ocr/event-phase package. Today's reference
+# implementation lives in ourSharedEvents/workers/oursharedevents/src/domain/
+# event-phase.ts (lifted into the package by OCR-24 / INFRA-7 / EPIC-05).
+# Apps consume the package; the package conforms to this contract.
+# Brain version wins — drift triggers CI failure.
+#
+# DRAFT v0.1 — first consumer is OSE (OSE-242 ships 2026-04-26-ish).
+# Drift-detection check is a no-op until a second consumer (WKRP, OSM, OSP,
+# OSR, OSG, OAW, OER) ships its own phase logic; arms automatically then.
+
+schema_version: 0.1.0
+status: draft
+owners:
+  contract: OCR-docs/ocr-docs-brain
+  runtime:  '@ocr/event-phase (planned via OCR-24); currently OSE-internal at workers/oursharedevents/src/domain/event-phase.ts'
+
+purpose: 'Single source of truth for the temporal phase of an event (pre_event / event /
+  post_event) across every OCR sibling that renders events. Surfaces compute phase locally
+  via the canonical resolver; cross-surface coherence is verifiable. Distinct from the
+  admin lifecycle state (draft / ready / active / archived) governed by event-state.ts —
+  state is admin-managed; phase is auto-derived. Surfaces consume both jointly.
+
+  '
+
+# ─── Relationship to event-state.ts (OSE-199) ─────────────────────────────
+# state and phase are ORTHOGONAL axes. Status answers "is this event in
+# operational play?". Phase answers "where in time is this event?".
+#
+# Surfaces consume both:
+#   Admin event-list  → status (badge) + phase (sub-label)
+#   Poster            → state-machine gates render, phase decides countdown vs live vs recap
+#   Display           → phase decides "LIVE NOW" vs countdown vs post-event recap
+#   Public (mobile)   → phase decides 5W content vs check-in vs survey/recap
+#   SharedReport      → phase = post_event gates full-report rendering
+#
+# Mismatches between status and phase are PERMITTED but observable
+# (admin can mark an event 'archived' even though time-wise it'd be 'event';
+# the resolver returns 'post_event' because status forces it).
+relationship_to_status:
+  status_axis_source: 'event-state.ts (OSE-199); D1 events.status column'
+  phase_axis_source: 'this contract; computed at request time via canonical resolver'
+  joint_consumption: 'Surfaces read both jointly. State machine gates rendering allowance; phase guides what to render within the allowed window.'
+
+# ─── The canonical signature ──────────────────────────────────────────────
+# Every adapter must export a function with this exact signature. The
+# brain pyramid Level 2 schema check verifies the export shape against this
+# spec when a sibling registers itself in product-registry.yaml as a
+# phase-consumer.
+canonical_signature:
+  function_name: computeEventPhase
+  input:
+    name: event
+    type: object
+    required_fields:
+      status:
+        type: string
+        notes: 'Lowercase admin lifecycle state. Per event-state.ts: draft | ready | active | archived. Resolver tolerates unknown values with a warn log.'
+      start_date:
+        type: 'string | null'
+        notes: 'ISO 8601 datetime string, or null. Nullable: events without scheduled start.'
+      end_date:
+        type: 'string | null'
+        notes: 'ISO 8601 datetime string, or null. Nullable: events without scheduled end.'
+  optional_param:
+    name: now
+    type: Date
+    default: 'new Date()'
+    rationale: 'Injectable for testability. Production call sites omit; tests pass a frozen clock.'
+  output:
+    type: EventPhase
+    values: [pre_event, event, post_event]
+
+# ─── Decision 1 — Status gates, time refines ──────────────────────────────
+# Confirmed by Co-Architect 2026-04-26. The full rule:
+phase_derivation_rule:
+  status_draft:
+    phase: pre_event
+    reason: 'Event is being created; users have not seen it. Always pre.'
+    overrides_time: true
+  status_ready:
+    phase: pre_event
+    reason: 'Approvals pending. Not yet live. Always pre.'
+    overrides_time: true
+  status_active:
+    derive_from_time: true
+    rule: |
+      now < start_date              → pre_event
+      start_date ≤ now ≤ end_date   → event
+      now > end_date                → post_event
+  status_archived:
+    phase: post_event
+    reason: 'Hidden from public surfaces (per event-state.ts RENDERABLE_SURFACES). Treated as past.'
+    overrides_time: true
+  status_unknown:
+    phase: 'computed (treated as active for time derivation)'
+    side_effect: 'console.warn — drift signal'
+    rationale: 'Forward-compatibility: a future status value (e.g. ''paused'') should not crash the resolver; surfaces depending on event-state.ts will have already gated rendering separately.'
+
+# ─── Decision 3 — Null/malformed date handling ────────────────────────────
+# Confirmed by Co-Architect 2026-04-26.
+null_handling:
+  both_dates_null_status_active:
+    phase: event
+    reason: 'no_dates_status_active'
+    rationale: 'Admin marked event live without scheduling. Trust admin.'
+    side_effect: none
+  start_set_end_null_status_active:
+    rule: |
+      now < start_date → pre_event
+      now ≥ start_date → event (no auto post_event without end_date)
+    reason: 'partial_dates_after_start'
+    rationale: 'No end_date means event has no scheduled end; admin must transition to archived to mark conceptually post.'
+  start_null_end_set_status_active:
+    phase: event
+    reason: 'malformed_dates_status_fallback'
+    rationale: 'Unusual configuration; status fallback to event with warn log.'
+    side_effect: 'console.warn'
+  malformed_string_either_field:
+    phase: 'event (status_active fallback)'
+    reason: 'malformed_dates_status_fallback'
+    side_effect: 'console.warn'
+
+# ─── Required helpers per adapter ─────────────────────────────────────────
+# Beyond the core resolver, every adapter must export:
+required_helpers:
+  - name: explainEventPhase
+    purpose: 'Same input as computeEventPhase; returns { phase, reason } object. Reason is one of the named codes (status_pre, time_within, etc.). Used by admin event-list for tooltip/audit display and by tests for assertion clarity.'
+  - name: assertSurfaceCoherence
+    purpose: 'Cross-surface coherence check. Takes [{surface, phase}] tuples; returns ok=true on agreement, ok=false with divergence list on drift. Used by L2 integration tests and SRE drift-detection probes.'
+  - name: VALID_EVENT_PHASES
+    purpose: 'Readonly array of phase values for runtime validation.'
+  - name: EVENT_PHASE_LABELS
+    purpose: 'Human-readable labels per phase. UI reuses for badges / pills.'
+
+# ─── Drift detection (the brain pyramid hook) ─────────────────────────────
+# A Level 2 schema check (brain pyramid) validates that any product
+# registered in product-registry.yaml with `consumes_event_phase: true`
+# (future field, OCR-24 era) exports the canonical signature + required
+# helpers. Today only OSE consumes; check is a no-op. Arms automatically
+# when WKRP / OSM / etc. set the registry flag.
+drift_detection:
+  level: 2
+  pyramid_check_id: phase_resolver_signature_match
+  state: 'no_op_until_second_consumer'
+  arms_on: 'product-registry.yaml entry with consumes_event_phase: true'
+  failure_mode: 'CI fails the consumer''s repo; brain holds the contract; consumer must update its adapter to match.'
+
+# ─── Sub-state is local; canonical phase is the only cross-sibling truth ──
+# Per OQ:2 (closed 2026-04-26): the canonical phase enum is pre/event/post.
+# Siblings that need finer-grained state (e.g. WKRP `current_set` /
+# `time_until_next_set`; OAW `dj_active`; OOT `seating` / `between_courses`)
+# DERIVE that state LOCALLY from `now`, the canonical phase, and the
+# sibling's own domain data. They MUST NOT extend the EventPhase enum.
+#
+# Why this matters: cross-sibling coherence (verified by drift-detection at
+# Level 2) requires every consumer agree on phase. Sub-state is by
+# definition NOT cross-sibling — it's local domain richness.
+#
+# A sibling that proposes a 4th universal phase value triggers a contract
+# amendment review (brain PR), not a local extension.
+sub_state:
+  canonical_enum_is_immutable: true
+  canonical_values: [pre_event, event, post_event]
+  local_extension_allowed: 'Yes — siblings derive sibling-specific sub-state from (now, phase, domain). Never widen the enum.'
+  examples:
+    wkrp: 'current_set, time_until_next_set, encore_imminent — derived from now and set_schedule[]'
+    oaw:  'dj_active, set_credits_accrued — derived from now and set_assignments[]'
+    oot:  'seating_phase, between_courses — derived from now and meal_schedule[]'
+  amendment_path: 'A 4th universal phase requires brain PR + Co-Architect review. Sibling-specific values are NOT a path to enum widening.'
+
+# ─── Multi-day events (canonical, NOT deferred) ───────────────────────────
+# Confirmed by Co-Architect 2026-04-26: the phase model supports multi-day
+# events as a first-class case, not an edge. Multi-day events are the
+# substrate of "relationship building" — engagement compounds over time
+# while the event remains in the `event` phase.
+#
+# Resolver behaviour for multi-day events:
+#   - `start_date` and `end_date` may be any duration apart (hours, days,
+#     weeks). The resolver does not interpret duration — it computes
+#     phase from `now` ∈ [start, end] regardless of span length.
+#   - During a multi-day event, EVERY day from `start_date` 00:00 through
+#     `end_date` 23:59 (or however the timestamps are stored) resolves to
+#     phase = 'event'. Surfaces render the same "live" affordances each day.
+#   - `pre_event` precedes day 1; `post_event` follows the final day.
+#
+# No sub-phases inside `event` (e.g. day-1 / day-2 / final-day) are part of
+# the canonical model. If a sibling needs day-level granularity (e.g. WKRP
+# multi-night festivals), it derives day_index locally from `now` and
+# `start_date`; the canonical phase remains the 3-value enum.
+multi_day_support: canonical
+multi_day_examples:
+  weekend_festival:
+    start_date: '2026-08-15T17:00:00Z'  # Friday evening
+    end_date:   '2026-08-17T23:00:00Z'  # Sunday late-night
+    phases_over_time:
+      - { now: '2026-08-15T16:59:00Z', phase: pre_event }
+      - { now: '2026-08-15T18:00:00Z', phase: event }
+      - { now: '2026-08-16T12:00:00Z', phase: event }   # day 2
+      - { now: '2026-08-17T22:00:00Z', phase: event }   # day 3
+      - { now: '2026-08-17T23:01:00Z', phase: post_event }
+
+# ─── Time zone handling (resolved) ────────────────────────────────────────
+# Confirmed by Co-Architect 2026-04-26: BE is UTC end-to-end; FE converts
+# to local time at render. Resolver is timezone-naïve and that is correct.
+timezone:
+  backend: 'UTC. All persisted timestamps (start_date, end_date, created_at, etc.) are UTC ISO 8601 strings.'
+  frontend: 'Surfaces convert to event.timezone (or visitor local) at render time. Resolver receives UTC now (Date defaults to system clock — Cloudflare Workers run UTC).'
+  resolver_invariant: 'computeEventPhase performs UTC-naïve numeric comparison via Date primitives. Callers MUST NOT pass a localised Date; tests pass `new Date(iso)` which JS interprets as UTC for `Z`-suffixed strings.'
+
+# ─── Open questions ───────────────────────────────────────────────────────
+# Each OQ has a status: closed (decided) or open (deferred to a specific story).
+open_questions:
+  OQ:1:
+    question: 'Does the @ocr/event-phase package, when extracted (OCR-24), live alongside @ocr/pool-contract or as a separate package?'
+    status: open_for_OCR-24
+    co_architect_lean: 'Separate package. Concerns differ — pool-contract is BigQuery dataset routing; event-phase is temporal domain logic. Bundling violates the single-responsibility principle that motivated the split into multiple @ocr/* packages in the first place.'
+    decided_by: OCR-24 (INFRA-7 @ocr/* package scaffold)
+  OQ:2:
+    question: 'Should non-anonymous siblings (WKRP, OAW) have a different phase set or extend the same?'
+    status: closed
+    answer: 'Same. All siblings share the canonical 3-value EventPhase enum. The temporal model is identity-agnostic. BE differentiates by identity layer (anonymous vs non-anonymous PII handling, anon-id generation, etc.) but the phase a surface consumes is the same shape regardless of whether the underlying user is anonymous or named.'
+    decided_at: '2026-04-26'
+    decided_by: Co-Architect
+  OQ:3:
+    question: 'For events that span multiple days, is end_date = the last day''s end, or do we need a multi-day phase model?'
+    status: closed
+    answer: 'Multi-day is canonical, not an edge case. See `multi_day_support: canonical` section above. The current 3-phase model handles multi-day natively because `start_date ≤ now ≤ end_date` is duration-agnostic. Sibling-specific day-level granularity (if needed) is derived locally; the canonical contract is unchanged.'
+    decided_at: '2026-04-26'
+    decided_by: Co-Architect
+    rationale: 'Multi-day events are the substrate for relationship building over time — the platform is fundamentally multi-day-shaped, not single-day-shaped.'
+  OQ:4:
+    question: 'Time zone handling — UTC backend, local frontend?'
+    status: closed
+    answer: 'Yes. BE is UTC end-to-end; FE converts to event.timezone or visitor local at render. Resolver stays UTC-naïve. See `timezone:` section above.'
+    decided_at: '2026-04-26'
+    decided_by: Co-Architect
+
+# ─── Provenance ───────────────────────────────────────────────────────────
+provenance:
+  ccr4_audit: 'OSE CCR-4 SCRUM Audit 2026-04-25 — gap #2 (canonical resolver) + bundled #1 (cross-surface coherence test).'
+  story_id: OSE-242
+  rescoped_at: '2026-04-26'
+  rescoped_by: Co-Architect
