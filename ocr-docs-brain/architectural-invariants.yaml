@@ -112,8 +112,29 @@ invariants:
   - osm
   - wkrp
   - oaw
+- id: 11
+  name: self_hosted_runner_bash_resolution
+  title: Self-Hosted Runner Bash Resolution
+  status: partial
+  test_file: runner-environment.invariant.spec.ts
+  enforces: 'On Windows self-hosted runners (Bloodraven + any sibling instances), `bash` MUST resolve
+    to Git Bash (C:\Program Files\Git\usr\bin\bash.exe), NEVER to the WSL/Microsoft Store shim at
+    C:\Users\<user>\AppData\Local\Microsoft\WindowsApps\bash.EXE. WSL bash interprets backslashes
+    in Windows paths as escape characters, corrupting any `shell: bash` workflow step script-file
+    path. Enforced by: (a) provisioning script tools/runner/provision-runner.ps1 which writes a
+    canonical PATH into each runner''s .env file (Git Bash first); (b) CI gate
+    .github/workflows/runner-env-validation.yml which runs first on every PR and fails fast with
+    actionable error message if the assigned runner is misconfigured; (c) runbook
+    tools/runner/README.md. Status partial — gate exists, provisioning is procedural rather than
+    automatic on `config.cmd` registration. Promote to live once the provisioner is invoked
+    automatically from a runner-setup script.'
+  applies_to:
+  - ose
+  - osm
+  - wkrp
+  - oaw
 status_summary:
   live: 4
-  partial: 4
+  partial: 5
   planned: 2
-  total: 10
+  total: 11
