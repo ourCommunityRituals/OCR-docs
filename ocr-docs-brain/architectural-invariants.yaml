@@ -133,8 +133,53 @@ invariants:
   - osm
   - wkrp
   - oaw
+- id: 12
+  name: runner_pool_readiness_probe
+  title: Runner Pool Readiness Probe
+  status: partial
+  test_file: runner-pool-readiness.invariant.spec.ts
+  enforces: 'Self-hosted runner pools MUST be self-healing on a 1-minute cadence with a 5-minute
+    watchdog. Concrete contract: (a) scheduled task "Runner Readiness Probe (1-min)" runs
+    tools/runner/janitor.ps1 -EnsureReady every 60 seconds — prunes orphan job children, kills
+    Workers exceeding per-workflow dwell caps (T0 Gate=10min, S0 Security=15min, T4 Functional=60min,
+    default=15min), bounces Listeners stuck on broker errors (SocketException 995 /
+    TaskAgentJobNotFoundException / BrokerServer ERR within last 3 min AND no Running-job
+    dispatch in that window). (b) Scheduled task "Runner Probe Watchdog (5-min)" runs
+    tools/runner/verify-probe-alive.ps1 reading actions-runner/_probe-heartbeat.txt — emits
+    RUNNER_PROBE_DEAD if the timestamp is stale, covering the case where the probe itself stops
+    (PowerShell breaks, task disabled, disk full). (c) Pool-wide outage detection: when ALL
+    runners share the same broker-error signature within 5 min, SUPPRESS per-runner bounces and
+    emit GITHUB_SIDE_OUTAGE — bouncing into a dead upstream broker burns the circuit-breaker
+    budget. (d) Circuit breaker: 3 bounces of the same runner in 60 min → STOP bouncing, emit
+    RUNNER_POOL_DEGRADED. State persists in actions-runner/_janitor-state.json. (e) Queue-idle
+    signal MUST be corroboration-gated, not a unilateral bounce trigger — an upstream queue
+    (CodeQL on ubuntu-latest, environment-approval blocks, workflow_run waiters) is not proof
+    of a local broker problem. A bounce requires a recent broker error in THIS Listener''s diag
+    log within 10 min as corroboration. The unilateral version of this signal caused all 3
+    Bloodraven runners to trip the circuit breaker against healthy idle Listeners during PR #159
+    — see Test-QueueIdleCorroborated regression test for the lock-in. (f) Six structured log
+    signals must be emitted to actions-runner/_janitor.log: RUNNER_JANITOR (per-runner cycle),
+    RUNNER_POOL_READINESS (pool summary), RUNNER_POOL_DEGRADED (circuit tripped),
+    GITHUB_SIDE_OUTAGE (upstream broker dead), RUNNER_PROBE_ALIVE (watchdog OK),
+    RUNNER_PROBE_DEAD (watchdog alarm). Log is auto-rotated at LogMaxMB (default 5 MB).
+    (g) Pure-logic regression suite at tools/runner/janitor.tests.ps1 (22 cases minimum) MUST
+    pass before any change to the janitor is merged — covers circuit breaker state machine, UTC
+    parse safety, per-workflow dwell lookups, broker-error parsing, queue-idle corroboration.
+    Installation is via tools/runner/install-janitor-tasks.ps1 (no UAC required —
+    LogonType Interactive + RunLevel Limited). Status partial — scheduled tasks must be
+    installed manually after `config.cmd` registration. Promote to live once the installer is
+    auto-invoked from a runner-setup script alongside provision-runner.ps1 (the same gap as
+    invariant 11). Without this invariant, stuck-runner incidents waste ~60 min of pool throughput
+    per occurrence + multiply the agent supervision-token cost of every PR loop.'
+  applies_to:
+  - ose
+  - osm
+  - wkrp
+  - oaw
+  depends_on:
+  - self_hosted_runner_bash_resolution
 status_summary:
   live: 4
-  partial: 5
+  partial: 6
   planned: 2
-  total: 11
+  total: 12
