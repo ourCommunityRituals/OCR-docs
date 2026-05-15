@@ -178,8 +178,43 @@ invariants:
   - oaw
   depends_on:
   - self_hosted_runner_bash_resolution
+- id: 13
+  name: brain_enforcement_location
+  title: Brain Enforcement Code Lives Next to Brain Content
+  status: live
+  test_file: audit_brain_enforcement_location.py
+  enforces: 'Any script, test, or check whose purpose is to enforce the shape of OCR-docs/ocr-docs-brain/*.yaml
+    (the parseable contracts governing the fleet) MUST live inside OCR-docs/ocr-docs-brain/scripts/
+    or OCR-docs/ocr-docs-brain/tests/. It MUST NOT live in the workspace root (ourCommunityRituals/packages/,
+    ourCommunityRituals/tools/), in any individual application repo''s .github/scripts/ or source
+    tree, or in a separate ci-scripts repo. Rationale: the Brain is the single source of truth for
+    OCR governance; splitting governance content from governance enforcement turns every contract
+    change into a cross-repo coordination problem. Co-location means one PR, one review, one diff.
+    Boundary test: enforcement code answers "is this shape correct?"; consumer code answers "give
+    me the value at this path." Consumer code is allowed outside OCR-docs (e.g., the propagator
+    reading product-registry.yaml, @ocr/flags generating TypeScript from flags-contract.yaml at
+    build time). Enforced by: (a) human-readable standard at docs/standards/OCR_STANDARD_brainEnforcementLocation.md
+    propagated to every app repo''s docs/standards/ so developers see the rule wherever they''re
+    working; (b) nightly audit at .github/workflows/brain-location-audit.yml that runs
+    ocr-docs-brain/scripts/audit_brain_enforcement_location.py against the workspace root and
+    every app repo listed in product-registry.yaml, opens a Linear ticket on violations; (c) this
+    invariant entry serving as the parseable source of truth for compliance reporting. History:
+    in April 2026 the brain-conformance script was centralized into the workspace root at
+    packages/ocr-ci-scripts/check_brain_contract.py. This produced noisy false-failures on stub-repo
+    propagator PRs throughout April-May (OSM PRs #9, #10, #11). The fix relocated the script into
+    OCR-docs alongside the Brain content. This invariant prevents the same mistake from recurring.'
+  applies_to:
+  - ocr-docs
+  - ose
+  - osm
+  - wkrp
+  - oaw
+  - osg
+  - osr
+  - osp
+  exceptions: []
 status_summary:
-  live: 4
+  live: 5
   partial: 6
   planned: 2
-  total: 12
+  total: 13
