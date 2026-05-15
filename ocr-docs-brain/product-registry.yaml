@@ -128,6 +128,13 @@ products:
   layer: anonymous
   repo: OurCommunityRituals/ourSharedMagnets
   repo_status: active
+  # OSM is a stub repo today — receives propagation, but has no application
+  # code that would reference dataset names, required tags, or invariant
+  # tests. The brain conformance check (packages/ocr-ci-scripts/
+  # check_brain_contract.py) honors this flag and skips code-presence
+  # checks for repos where code_present is false. Flip to `true` (or
+  # remove the line) when OSM onboards real code per its phase plan.
+  code_present: false
   identity_layer: anonymous
   description: 'Backend test, mock, demo, and whitelabel creation engine. The multiplier — one architecture
     becomes many products without forking.
