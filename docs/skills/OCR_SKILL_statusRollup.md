@@ -10,11 +10,11 @@
 
 ## Purpose
 
-A Claude Code skill (`/status-rollup`) that **auto-regenerates** `ourCommunityRituals/STATUS.md` weekly from authoritative sources, so the fleet snapshot stops going stale.
+A Claude Code skill (`/status-rollup`) that **auto-regenerates** `OCR-docs/STATUS.md` weekly from authoritative sources, so the fleet snapshot stops going stale.
 
 The pain it solves: `OCR-docs/PROJECT-STATUS.md` and `OCR-docs/OCR_STATUS_project.md` are **33–36 days stale** as of 2026-05-15. Neither has a refresh ritual; both drift because they're hand-maintained. The fix is not "be more disciplined about updating them" — the fix is to make the snapshot a **derived artifact**, regenerated from primary sources.
 
-This skill IS the regeneration mechanism. The output `STATUS.md` at workspace root becomes the single answer to "where are we right now?" and any drift is fixable by re-running the skill.
+This skill IS the regeneration mechanism. The output `STATUS.md` at OCR-docs root becomes the single answer to "where are we right now?" and any drift is fixable by re-running the skill.
 
 ---
 
@@ -34,7 +34,7 @@ This skill IS the regeneration mechanism. The output `STATUS.md` at workspace ro
 
 ## Output shape
 
-A single `STATUS.md` at workspace root. Maximum 200 lines. Scannable, not encyclopedic.
+A single `STATUS.md` at OCR-docs root. Maximum 200 lines. Scannable, not encyclopedic.
 
 ```markdown
 # OCR Fleet Status — Week of YYYY-MM-DD
@@ -87,7 +87,7 @@ The Friday automation is the load-bearing case. Manual invocations are for ad-ho
 - **Auth:** Linear API token via Doppler (per `feedback_no_onedrive_paths.md` + `reference_doppler.md` doctrine — token lives in `ourcommunityrituals/dev_personal`).
 - **SharedReport read:** via the OSE read API (Session 5 deliverable — `GET /api/v2/events/:id/shared-report` + the batch endpoint if WKRP-readiness ratified).
 - **Git reads:** local clone or remote `gh api` — local clone is faster for the 9 surfaces.
-- **Output write:** the skill writes `STATUS.md` at workspace root and stages it for commit; the operator commits and pushes (per `feedback_no_auto_prod_deploy.md`, no auto-deploy).
+- **Output write:** the skill writes `STATUS.md` at OCR-docs root and stages it for commit; the operator commits and pushes (per `feedback_no_auto_prod_deploy.md`, no auto-deploy).
 - **Failure isolation:** any single source failure (Linear API down, one repo unreachable) degrades the output gracefully — the skill writes a `## Status: degraded` section naming what was missing, doesn't abort.
 
 ## Why this is a sketch, not a build
@@ -115,10 +115,10 @@ Build phase begins when OSE-272 Session 5 is on `main`. ETA pending Session 4 ra
 ## References
 
 - Gap: `CURRENT_STATE_INVENTORY.md` G1
-- Routing rationale: `OPERATING_SYSTEM.md §3` (workspace root)
+- Routing rationale: `OPERATING_SYSTEM.md §3` (OCR-docs root; sibling of this file's parent)
 - Cadence rule: `OPERATING_SYSTEM.md §5`
 - Doctrine that constrains the skill:
   - `feedback_no_auto_prod_deploy.md` — skill stages output, operator commits
   - `feedback_self_hosted_only.md` — any CI that runs the skill uses self-hosted runners
-  - `feedback_no_onedrive_paths.md` — output paths are `ourCommunityRituals/STATUS.md`, never OneDrive
+  - `feedback_no_onedrive_paths.md` — output paths are `OCR-docs/STATUS.md`, never OneDrive
   - `feedback_verify_brain.md` — skill verifies Brain contract state at run time, not from cached YAML
