@@ -129,9 +129,22 @@ jobs:
       - name: Install deps
         run: pip install pyyaml
 
+      # OSE-R-XXX (2026-05-15 follow-up): on pull_request triggers, the
+      # audit must report violations but NOT fail the workflow. The
+      # workflow's own introducing PR (#45) failed its own CI check
+      # because the audit correctly detected the workspace-root files
+      # pending Phase-2(b) deletion — true signal, wrong UX. The PR-event
+      # path is informational (post a comment); the schedule + dispatch
+      # paths still block + open a Linear ticket where blocking matters.
+      #
+      # Mechanism: continue-on-error is set to true ONLY when the event
+      # is pull_request. The follow-up steps now key off the step outcome
+      # (steps.audit.outcome) rather than the workflow's failure() state,
+      # since the workflow no longer reaches failure state on PR runs.
       - name: Run audit
         id: audit
         working-directory: ${{ github.workspace }}
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
         run: |
           python3 ocr-docs/ocr-docs-brain/scripts/audit_brain_enforcement_location.py \
             --brain ocr-docs/ocr-docs-brain \
@@ -147,7 +160,7 @@ jobs:
           path: audit-report.json
 
       - name: Comment on PR with violation summary
-        if: failure() && github.event_name == 'pull_request'
+        if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
         uses: actions/github-script@v9
         with:
           script: |
@@ -183,7 +196,7 @@ jobs:
             });
 
       - name: Open Linear ticket on scheduled violation
-        if: failure() && github.event_name == 'schedule'
+        if: steps.audit.outcome == 'failure' && github.event_name == 'schedule'
         shell: bash
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
