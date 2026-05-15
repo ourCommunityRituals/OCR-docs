@@ -58,18 +58,38 @@ If a story changes both an API and a UI surface, it ships tests on BOTH surfaces
 **A reader 6 months from now must be able to read a test name once and know what it does.** Therefore Postman items, Playwright tests, AND vitest tests use one format:
 
 ```
-<PRODUCT-PREFIXED-STORY-ID> | <method + path> (<condition>) | <assertion>
+<PRODUCT-PREFIXED-STORY-ID> | <LAYER> | <method + path> (<condition>) | <assertion>
 ```
 
-Three pipe-delimited segments. **Same string in every layer** where the scenario is testable from both perspectives. The matching name across layers is a feature — it lets you cross-reference one scenario tested from multiple angles.
+Four pipe-delimited segments. **Same string in every runner that tests the same scenario at the same layer** — vitest and Postman both test `API` layer, so their names match exactly when the scenario is identical. Playwright tests `FE` layer, so its name differs only by the qualifier. The matching name across runners (same layer) and the differing-by-qualifier name (across layers) is the feature — it lets you cross-reference any scenario across runners AND distinguish which layer of behavior is being verified.
 
 ### Anatomy
 
 | Segment | Answers | Examples |
 |---------|---------|----------|
 | **`<PRODUCT-PREFIXED-STORY-ID>`** | Which product + which story | `OSE-272`, `OSE-R-001`, `OW-15`, `OA-7`, `OSM-12` |
+| **`<LAYER>`** | Which layer of behavior is tested (framework-agnostic) | `API`, `FE` |
 | **`<method + path> (<condition>)`** | What surface + in what state | `GET /admin (unauthenticated)`, `POST /api/v2/events/shared-reports/batch (WKRP service token)`, `GET /forms/:eventId (mobile 375px viewport)` |
 | **`<assertion>`** | What should be true | `401 HTML sign-in page`, `returns 200 with reports map`, `card fits within viewport width`, `a11y skip-link + semantic main + focus` |
+
+### Layer qualifiers
+
+The qualifier names **the layer of behavior being tested, not the runner**. A vitest test that calls `SELF.fetch('/admin')` is `API` because it's exercising the HTTP contract — even though vitest is the runner. A Playwright test that opens a browser to `/admin` is `FE` because it's exercising browser-rendered behavior. **Framework-agnostic.**
+
+| Qualifier | What it tests | Runners that typically produce it |
+|---|---|---|
+| **`API`** | HTTP endpoint contract — request goes in, response comes out, no rendering | Postman/Newman, curl, vitest with `SELF.fetch()`, Playwright API mode, supertest |
+| **`FE`** | Browser-rendered behavior — DOM, navigation, viewport, accessibility, click flows | Playwright, Cypress, Puppeteer, real-browser smoke checks |
+| _(no qualifier)_ | Pure unit test of an internal function — no HTTP, no DOM | Vitest direct function calls (`expect(phaseToPool(4)).toBe('hipaa')`); use sparingly; if a test maps to `API` or `FE` behavior, prefer those qualifiers |
+
+When a scenario is verifiable at both layers (e.g., `GET /admin (unauthenticated)` produces a 401 — both the API contract AND the browser experience), ship two tests with the same product+story+surface+condition+assertion but different qualifiers:
+
+```
+OSE-R-001 | API | GET /admin (unauthenticated) | 401 HTML sign-in page
+OSE-R-001 | FE  | GET /admin (unauthenticated) | 401 HTML sign-in page
+```
+
+The API test verifies the response shape. The FE test verifies the browser renders the response correctly. Both are necessary; both are explicitly different by the layer qualifier.
 
 ### Why product-prefixed IDs are non-negotiable
 
@@ -86,40 +106,49 @@ This matches the existing OCR naming spine (`OSE_UNIT_...`, `OW_MIGRATION_...`) 
 ### Rules
 
 - **Product-prefixed story ID first** — non-negotiable; see above
+- **Layer qualifier second** — `API` or `FE` (or omitted for pure unit tests); names the layer of behavior, not the runner
 - **Present tense in the assertion**: "returns 401 HTML sign-in page" / "card fits within viewport width" — not "should return" / "tries to" / "will display"
 - **Condition in parens after the surface** — keep the surface + state as a single recognizable token: `GET /admin (unauthenticated)`
 - **No abbreviations that don't tell the story**: write "unauthenticated" not "unauth"; write "authenticated" not "authed"
 - **Plain English in the assertion**: not raw codes (`UNAUTH`, `INVALID_BODY`) and not implementation detail (`returns null`, `throws`)
 - **One scenario per test**: if you find yourself writing "and" twice on either side, split into separate tests
-- **No `-PW-NN` / numeric suffixes**: ordering is irrelevant; the name itself disambiguates. Two tests can never have the same name; if they would, your condition or assertion is wrong
+- **No `-PW-NN` / numeric suffixes**: ordering is irrelevant; the name itself disambiguates. Two tests can never have the same name (within a layer); if they would, your condition or assertion is wrong
 - **No arrows** (`→`, `=>`, `-->`): some CI dashboards, log aggregators, and grep tools don't render Unicode arrows cleanly. The pipe + parens carry the same semantics portably
 
 ### Reference implementation (OSE-R-001)
 
-The same test names appear in Postman items and Playwright tests where the scenario is testable in both — only the runner differs. A reviewer comparing Newman output to Playwright output can match each scenario line-by-line.
+API-layer tests (vitest with `SELF.fetch()` + Postman items) share **identical name strings** when they test the same scenario — only the runner differs. FE-layer tests (Playwright) differ from the API-layer test of the same scenario only by the qualifier (`API` vs `FE`).
 
-| Postman item (Newman output) | Playwright test (Playwright output) |
-|---|---|
-| `OSE-R-001 \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | `OSE-R-001 \| GET /admin (unauthenticated) \| 401 HTML sign-in page` |
-| `OSE-R-001 \| GET /admin (Accept: application/json) \| 401 JSON error` | _(not applicable — Playwright is a browser)_ |
-| `OSE-R-001 \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | `OSE-R-001 \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` |
-| `OSE-R-001 \| POST /api/v2/admin/events (unauthenticated) \| 401 JSON (no HTML leak)` | _(not applicable — Playwright is a browser)_ |
-| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| heading + lede + CTAs render` |
-| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| brand matches landing (logo + nav)` |
-| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| a11y skip-link + semantic main + focus` |
-| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| robots noindex meta present` |
-| _(curl can't test viewport)_ | `OSE-R-001 \| GET /admin (mobile 375px viewport) \| card fits within viewport width` |
-| _(curl can't test viewport)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| no admin dashboard content leaked` |
+| Layer | Test name | Runners |
+|---|---|---|
+| API | `OSE-R-001 \| API \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | Vitest, Postman/Newman |
+| FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | Playwright |
+| API | `OSE-R-001 \| API \| GET /admin (Accept: application/json) \| 401 JSON error` | Vitest, Postman |
+| API | `OSE-R-001 \| API \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | Vitest, Postman |
+| FE | `OSE-R-001 \| FE \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | Playwright |
+| API | `OSE-R-001 \| API \| POST /api/v2/admin/events (unauthenticated) \| 401 JSON (no HTML leak)` | Postman |
+| FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| heading + lede + CTAs render` | Playwright |
+| FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| brand matches landing (logo + nav)` | Playwright |
+| FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| a11y skip-link + semantic main + focus` | Playwright |
+| FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| robots noindex meta present` | Playwright |
+| FE | `OSE-R-001 \| FE \| GET /admin (mobile 375px viewport) \| card fits within viewport width` | Playwright |
+| FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| no admin dashboard content leaked` | Playwright |
 
-When a scenario is testable in BOTH Postman and Playwright (response shape, status, headers), use the **exact same name string**. When it's only testable in one (visual layout → Playwright only; raw API contract from a non-browser → Postman only), still use the format so the output stays scannable.
+**Cross-runner contract**: when a scenario is verifiable in BOTH vitest (`SELF.fetch`) AND Postman (Newman) at the API layer, the test name string is **byte-identical** across the two runners.
+
+**Cross-layer contract**: when a scenario is verifiable at BOTH API and FE layers (the same outcome appears in the response AND in the rendered DOM), ship two tests with the same product+story+surface+condition+assertion but different qualifiers (`API` vs `FE`).
 
 ### Vitest variant
 
-Vitest tests internal Worker behavior — different audience (devs debugging unit tests) but the same naming for consistency. The describe block names the story; inner tests use the unified format:
+Vitest is just a runner — the qualifier is determined by what the test exercises. Most OSE vitest tests use `SELF.fetch()` and therefore carry the `API` qualifier. Pure-function unit tests carry no qualifier (or carry one explicitly only if the team adopts a `UNIT` convention later).
 
 ```typescript
 describe('OSE-R-001 admin front-door', () => {
-  test('OSE-R-001 | GET /admin (unauthenticated) | 401 HTML sign-in page', async () => {
+  test('OSE-R-001 | API | GET /admin (unauthenticated) | 401 HTML sign-in page', async () => {
+    const res = await SELF.fetch('https://test.local/admin', {
+      headers: { Accept: 'text/html' },
+    });
+    expect(res.status).toBe(401);
     // ...
   });
 });
@@ -127,13 +156,13 @@ describe('OSE-R-001 admin front-door', () => {
 
 ### What about non-HTTP tests?
 
-For tests that don't have an HTTP method + path (a pure function, a DB helper, a UI component in isolation), substitute the surface for the method+path slot:
+For tests that exercise a pure function, a DB helper, or a UI component in isolation (no HTTP, no browser), substitute the surface for the method+path slot and omit the layer qualifier:
 
 - `OSE-R-NNN | mintSignedLinkToken() (valid event ID + secret) | returns HMAC token`
 - `OSE-R-NNN | escapeHtml() (string with < > & quotes) | returns entity-encoded string`
 - `OW-R-NNN | <EventCard> component (event in pre_event phase) | renders RSVP CTA`
 
-The surface slot adapts (function call, component, query name); the rest of the format holds.
+The surface slot adapts; the product-prefixed ID and the assertion structure hold. If pure-unit testing becomes common enough to warrant its own qualifier, add `UNIT` to the layer list in a future revision.
 
 ---
 
