@@ -94,7 +94,7 @@ OSE_GATE_OSE12_acAudit.md
 
 #### ADRs — exception (MADR format)
 
-Architecture Decision Records are an **exception** to the `{Product}_{DocType}_{what}_{why}.md` rule. As of 2026-05-15 (routing-matrix adoption — see `ourCommunityRituals/OPERATING_SYSTEM.md §3`), ADRs use the MADR convention `ADR-NNN-kebab-case-title.md` and live in `docs/adr/` (per-repo) or `OCR-docs/docs/adr/` (fleet-wide).
+Architecture Decision Records are an **exception** to the `{Product}_{DocType}_{what}_{why}.md` rule. As of 2026-05-15 (routing-matrix adoption — see `OCR-docs/OPERATING_SYSTEM.md §3`), ADRs use the MADR convention `ADR-NNN-kebab-case-title.md` and live in `docs/adr/` (per-repo) or `OCR-docs/docs/adr/` (fleet-wide).
 
 ```
 ourSharedEvents/docs/adr/ADR-001-anonymous-identity-architecture.md   # per-repo

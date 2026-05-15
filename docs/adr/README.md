@@ -2,7 +2,7 @@
 
 This directory holds **fleet-wide** ADRs — decisions that apply across the OCR product line, not to one product repo alone. Single-repo ADRs live in the respective repo at `<repo>/docs/adr/`.
 
-The routing rule is encoded in [`OPERATING_SYSTEM.md §3`](../../../OPERATING_SYSTEM.md) at the workspace root:
+The routing rule is encoded in [`OPERATING_SYSTEM.md §3`](../../OPERATING_SYSTEM.md) at the OCR-docs root:
 
 | Scope | Lives at |
 |-------|----------|
