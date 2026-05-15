@@ -58,44 +58,58 @@ If a story changes both an API and a UI surface, it ships tests on BOTH surfaces
 **A reader 6 months from now must be able to read a test name once and know what it does.** Therefore Postman items, Playwright tests, AND vitest tests use one format:
 
 ```
-<STORY-ID> | <HTTP method + path or surface> | <given / condition> → <then / outcome>
+<PRODUCT-PREFIXED-STORY-ID> | <method + path> (<condition>) | <assertion>
 ```
 
-Three pipe-delimited segments + an arrow. **Same string in every layer.** The matching name across layers is a feature — it lets you cross-reference one scenario tested from multiple perspectives.
+Three pipe-delimited segments. **Same string in every layer** where the scenario is testable from both perspectives. The matching name across layers is a feature — it lets you cross-reference one scenario tested from multiple angles.
 
 ### Anatomy
 
 | Segment | Answers | Examples |
 |---------|---------|----------|
-| **`<STORY-ID>`** | Which story or refinement | `R-001`, `OSE-272`, `OSE-15` |
-| **`<HTTP method + path>`** | What surface | `GET /admin`, `POST /api/v2/events/shared-reports/batch`, `GET /forms/:eventId` |
-| **`<given / condition>`** | What the user/caller is doing | `unauthenticated browser`, `bar owner signed in via CF Access`, `mobile 375px viewport`, `payload exceeds 16KB` |
-| **`<then / outcome>`** | What should happen | `401 HTML sign-in page`, `200 SharedReport JSON`, `400 friendly error copy`, `card fits within viewport width` |
+| **`<PRODUCT-PREFIXED-STORY-ID>`** | Which product + which story | `OSE-272`, `OSE-R-001`, `OW-15`, `OA-7`, `OSM-12` |
+| **`<method + path> (<condition>)`** | What surface + in what state | `GET /admin (unauthenticated)`, `POST /api/v2/events/shared-reports/batch (WKRP service token)`, `GET /forms/:eventId (mobile 375px viewport)` |
+| **`<assertion>`** | What should be true | `401 HTML sign-in page`, `returns 200 with reports map`, `card fits within viewport width`, `a11y skip-link + semantic main + focus` |
+
+### Why product-prefixed IDs are non-negotiable
+
+OCR is a 7-product fleet. A test name like `R-001 | GET /admin | ...` is ambiguous the moment it shows up outside its home repo — CI dashboards, fleet-wide log aggregation, cross-product audits, fleet `STATUS.md`. **Every test name must self-identify the product.**
+
+| Story type | ID shape | Why |
+|---|---|---|
+| Linear story (already product-prefixed) | unchanged | `OSE-272`, `OW-30`, `OA-15` |
+| Refinement / audit ID | product-prefixed | `OSE-R-001` (not bare `R-001`), `OW-R-005` |
+| Cross-product story | always product-prefixed | `OSE-272`, never `STORY-272` |
+
+This matches the existing OCR naming spine (`OSE_UNIT_...`, `OW_MIGRATION_...`) where product comes first.
 
 ### Rules
 
-- **Present tense for both segments**: "unauthenticated browser → 401 HTML sign-in page" (not "tries to access" / "should return")
+- **Product-prefixed story ID first** — non-negotiable; see above
+- **Present tense in the assertion**: "returns 401 HTML sign-in page" / "card fits within viewport width" — not "should return" / "tries to" / "will display"
+- **Condition in parens after the surface** — keep the surface + state as a single recognizable token: `GET /admin (unauthenticated)`
 - **No abbreviations that don't tell the story**: write "unauthenticated" not "unauth"; write "authenticated" not "authed"
-- **Plain English on both sides of the arrow**: not raw codes (`UNAUTH`, `INVALID_BODY`) and not implementation detail (`returns null`, `throws`)
-- **One scenario per test**: if you find yourself writing "and" twice on either side of the arrow, split into separate tests
-- **No PW-NN / numeric suffixes**: ordering is irrelevant; the name itself disambiguates. Two tests can never have the same name; if they would, your scenario or condition is wrong
+- **Plain English in the assertion**: not raw codes (`UNAUTH`, `INVALID_BODY`) and not implementation detail (`returns null`, `throws`)
+- **One scenario per test**: if you find yourself writing "and" twice on either side, split into separate tests
+- **No `-PW-NN` / numeric suffixes**: ordering is irrelevant; the name itself disambiguates. Two tests can never have the same name; if they would, your condition or assertion is wrong
+- **No arrows** (`→`, `=>`, `-->`): some CI dashboards, log aggregators, and grep tools don't render Unicode arrows cleanly. The pipe + parens carry the same semantics portably
 
-### Reference implementation (R-001 in OSE)
+### Reference implementation (OSE-R-001)
 
-The exact same 11 test names appear in Postman items and Playwright tests for R-001 — only the runner differs. A reviewer comparing Newman output to Playwright output can match each scenario line-by-line.
+The same test names appear in Postman items and Playwright tests where the scenario is testable in both — only the runner differs. A reviewer comparing Newman output to Playwright output can match each scenario line-by-line.
 
 | Postman item (Newman output) | Playwright test (Playwright output) |
 |---|---|
-| `R-001 \| GET /admin \| unauthenticated browser → 401 HTML sign-in page` | `R-001 \| GET /admin \| unauthenticated browser → 401 HTML sign-in page` |
-| `R-001 \| GET /admin \| unauthenticated API client → 401 JSON error` | _(not applicable in Playwright — that's a curl test)_ |
-| `R-001 \| GET /manage \| unauthenticated browser → 401 HTML sign-in page (alias)` | `R-001 \| GET /manage \| unauthenticated browser → 401 HTML sign-in page (alias)` |
-| `R-001 \| POST /api/v2/admin/events \| unauthenticated browser → 401 JSON (no HTML leak)` | _(not applicable — that's a curl test)_ |
-| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → heading + lede + CTAs render` |
-| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → brand matches landing (logo + nav)` |
-| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → a11y skip-link + semantic main + focus` |
-| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → robots noindex meta present` |
-| _(curl can't test viewport)_ | `R-001 \| GET /admin \| mobile 375px viewport → card fits within viewport width` |
-| _(curl can't test viewport)_ | `R-001 \| GET /admin \| unauthenticated browser → no admin dashboard content leaked` |
+| `OSE-R-001 \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | `OSE-R-001 \| GET /admin (unauthenticated) \| 401 HTML sign-in page` |
+| `OSE-R-001 \| GET /admin (Accept: application/json) \| 401 JSON error` | _(not applicable — Playwright is a browser)_ |
+| `OSE-R-001 \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | `OSE-R-001 \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` |
+| `OSE-R-001 \| POST /api/v2/admin/events (unauthenticated) \| 401 JSON (no HTML leak)` | _(not applicable — Playwright is a browser)_ |
+| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| heading + lede + CTAs render` |
+| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| brand matches landing (logo + nav)` |
+| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| a11y skip-link + semantic main + focus` |
+| _(vitest already tests internal)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| robots noindex meta present` |
+| _(curl can't test viewport)_ | `OSE-R-001 \| GET /admin (mobile 375px viewport) \| card fits within viewport width` |
+| _(curl can't test viewport)_ | `OSE-R-001 \| GET /admin (unauthenticated) \| no admin dashboard content leaked` |
 
 When a scenario is testable in BOTH Postman and Playwright (response shape, status, headers), use the **exact same name string**. When it's only testable in one (visual layout → Playwright only; raw API contract from a non-browser → Postman only), still use the format so the output stays scannable.
 
@@ -104,8 +118,8 @@ When a scenario is testable in BOTH Postman and Playwright (response shape, stat
 Vitest tests internal Worker behavior — different audience (devs debugging unit tests) but the same naming for consistency. The describe block names the story; inner tests use the unified format:
 
 ```typescript
-describe('R-001 admin front-door', () => {
-  test('R-001 | GET /admin | unauthenticated browser → 401 HTML sign-in page', async () => {
+describe('OSE-R-001 admin front-door', () => {
+  test('OSE-R-001 | GET /admin (unauthenticated) | 401 HTML sign-in page', async () => {
     // ...
   });
 });
@@ -115,9 +129,11 @@ describe('R-001 admin front-door', () => {
 
 For tests that don't have an HTTP method + path (a pure function, a DB helper, a UI component in isolation), substitute the surface for the method+path slot:
 
-- `R-NNN | mintSignedLinkToken() | valid event ID + secret → returns HMAC token`
-- `R-NNN | escapeHtml() | string with < > & quotes → returns entity-encoded string`
-- `R-NNN | <EventCard> component | event in pre_event phase → renders RSVP CTA`
+- `OSE-R-NNN | mintSignedLinkToken() (valid event ID + secret) | returns HMAC token`
+- `OSE-R-NNN | escapeHtml() (string with < > & quotes) | returns entity-encoded string`
+- `OW-R-NNN | <EventCard> component (event in pre_event phase) | renders RSVP CTA`
+
+The surface slot adapts (function call, component, query name); the rest of the format holds.
 
 ---
 
