@@ -1,0 +1,201 @@
+# brain-location-audit.yml — enforce architectural invariant 13.
+#
+# Scans the workspace root and every app repo listed in
+# product-registry.yaml for Brain enforcement code living outside its
+# allowed home (OCR-docs/ocr-docs-brain/scripts/ or .../tests/).
+#
+# Triggers:
+#   - schedule: nightly at 09:00 UTC
+#   - pull_request: when the audit script, the invariant, or the
+#     standard doc themselves change (catch self-modifications)
+#   - workflow_dispatch: manual rerun
+#
+# On detection: writes audit-report.json as a build artifact, posts a
+# Linear ticket (if running on a schedule), and fails the workflow.
+# On a PR run, also comments the violation list back to the PR.
+
+name: Brain enforcement location audit
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'ocr-docs-brain/scripts/audit_brain_enforcement_location.py'
+      - 'ocr-docs-brain/architectural-invariants.yaml'
+      - 'docs/standards/OCR_STANDARD_brainEnforcementLocation.md'
+      - '.github/workflows/brain-location-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  audit:
+    name: Audit brain enforcement code location
+    runs-on: self-hosted
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout OCR-docs (this repo)
+        uses: actions/checkout@v4
+        with:
+          path: ocr-docs
+
+      - name: Checkout workspace root (ourCommunityRituals)
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourCommunityRituals
+          path: workspace-root
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+
+      # Each app repo gets its own checkout under ./app-repos/<name>.
+      # Cloning them all upfront is cheap (shallow + sparse) and keeps
+      # the audit script call simple.
+      - name: Checkout app repo — ourSharedEvents
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourSharedEvents
+          path: app-repos/ourSharedEvents
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+
+      - name: Checkout app repo — ourSharedMagnets
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourSharedMagnets
+          path: app-repos/ourSharedMagnets
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+
+      - name: Checkout app repo — ourWKRP
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourWKRP
+          path: app-repos/ourWKRP
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        continue-on-error: true  # planned repo; may not exist yet
+
+      - name: Checkout app repo — ourAirwaves
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourAirwaves
+          path: app-repos/ourAirwaves
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        continue-on-error: true  # planned repo
+
+      - name: Checkout app repo — ourSharedGames
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourSharedGames
+          path: app-repos/ourSharedGames
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        continue-on-error: true  # pre-tech repo
+
+      - name: Checkout app repo — ourSharedRecords
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourSharedRecords
+          path: app-repos/ourSharedRecords
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        continue-on-error: true  # pre-tech repo
+
+      - name: Checkout app repo — ourSharedPulse
+        uses: actions/checkout@v4
+        with:
+          repository: ourCommunityRituals/ourSharedPulse
+          path: app-repos/ourSharedPulse
+          ref: main
+          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        continue-on-error: true  # pre-tech repo
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: pip install pyyaml
+
+      - name: Run audit
+        id: audit
+        working-directory: ${{ github.workspace }}
+        run: |
+          python3 ocr-docs/ocr-docs-brain/scripts/audit_brain_enforcement_location.py \
+            --brain ocr-docs/ocr-docs-brain \
+            --workspace-root workspace-root \
+            --app-repos-root app-repos \
+            --report-path audit-report.json
+
+      - name: Upload audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brain-location-audit
+          path: audit-report.json
+
+      - name: Comment on PR with violation summary
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const fs = require('fs');
+            let report;
+            try {
+              report = JSON.parse(fs.readFileSync('audit-report.json', 'utf8'));
+            } catch (e) {
+              report = { violations: [{ target: '?', path: 'report missing', remediation: e.message }] };
+            }
+            const v = report.violations || [];
+            const body = [
+              '### Brain enforcement location audit failed',
+              '',
+              'Architectural invariant 13 forbids Brain enforcement code outside',
+              '`OCR-docs/ocr-docs-brain/scripts/` or `.../tests/`. Files matching',
+              'the forbidden pattern set were found in other repos.',
+              '',
+              `Violations: **${v.length}**`,
+              '',
+              ...v.slice(0, 10).map(f => `- \`${f.target}\`: \`${f.path}\``),
+              v.length > 10 ? `- ... and ${v.length - 10} more` : '',
+              '',
+              'See [`OCR_STANDARD_brainEnforcementLocation.md`](docs/standards/OCR_STANDARD_brainEnforcementLocation.md)',
+              'for the rule and remediation guidance. If a flagged file is a legitimate exception,',
+              'add its basename to invariant 13\'s `exceptions:` list in `architectural-invariants.yaml`.',
+            ].filter(Boolean).join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+      - name: Open Linear ticket on scheduled violation
+        if: failure() && github.event_name == 'schedule'
+        shell: bash
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          # Reuses the same drift-ticket helper used by the conformance check.
+          # If LINEAR_API_KEY isn't set the script no-ops with a warning rather
+          # than failing the audit a second time.
+          python3 ocr-docs/ocr-docs-brain/scripts/open_drift_ticket.py \
+            --report audit-report.json \
+            --repo "ourCommunityRituals/OCR-docs" \
+            --pr-number "0" \
+            --pr-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --pr-author "scheduled-audit" \
+            --commit "${{ github.sha }}" \
+            || echo "::warning::Linear ticket creation skipped (LINEAR_API_KEY missing or invalid)"
