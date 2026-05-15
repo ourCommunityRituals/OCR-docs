@@ -53,17 +53,71 @@ If a story changes both an API and a UI surface, it ships tests on BOTH surfaces
 
 ---
 
-## Test naming
+## Test naming — the unified format
 
-Each layer's tests reference the story/refinement ID in the test name. Example for refinement R-001 in OSE:
+**A reader 6 months from now must be able to read a test name once and know what it does.** Therefore Postman items, Playwright tests, AND vitest tests use one format:
 
-| Layer | Test name |
+```
+<STORY-ID> | <HTTP method + path or surface> | <given / condition> → <then / outcome>
+```
+
+Three pipe-delimited segments + an arrow. **Same string in every layer.** The matching name across layers is a feature — it lets you cross-reference one scenario tested from multiple perspectives.
+
+### Anatomy
+
+| Segment | Answers | Examples |
+|---------|---------|----------|
+| **`<STORY-ID>`** | Which story or refinement | `R-001`, `OSE-272`, `OSE-15` |
+| **`<HTTP method + path>`** | What surface | `GET /admin`, `POST /api/v2/events/shared-reports/batch`, `GET /forms/:eventId` |
+| **`<given / condition>`** | What the user/caller is doing | `unauthenticated browser`, `bar owner signed in via CF Access`, `mobile 375px viewport`, `payload exceeds 16KB` |
+| **`<then / outcome>`** | What should happen | `401 HTML sign-in page`, `200 SharedReport JSON`, `400 friendly error copy`, `card fits within viewport width` |
+
+### Rules
+
+- **Present tense for both segments**: "unauthenticated browser → 401 HTML sign-in page" (not "tries to access" / "should return")
+- **No abbreviations that don't tell the story**: write "unauthenticated" not "unauth"; write "authenticated" not "authed"
+- **Plain English on both sides of the arrow**: not raw codes (`UNAUTH`, `INVALID_BODY`) and not implementation detail (`returns null`, `throws`)
+- **One scenario per test**: if you find yourself writing "and" twice on either side of the arrow, split into separate tests
+- **No PW-NN / numeric suffixes**: ordering is irrelevant; the name itself disambiguates. Two tests can never have the same name; if they would, your scenario or condition is wrong
+
+### Reference implementation (R-001 in OSE)
+
+The exact same 11 test names appear in Postman items and Playwright tests for R-001 — only the runner differs. A reviewer comparing Newman output to Playwright output can match each scenario line-by-line.
+
+| Postman item (Newman output) | Playwright test (Playwright output) |
 |---|---|
-| Vitest | `describe('R-001 admin front-door', ...)` |
-| Postman | `name: "R-001 \| GET /admin (no auth, Accept:text/html) returns HTML sign-in page"` |
-| Playwright | `test('R-001-PW-01 \| GET /admin (unauth) returns 401 + HTML page (not JSON)', ...)` |
+| `R-001 \| GET /admin \| unauthenticated browser → 401 HTML sign-in page` | `R-001 \| GET /admin \| unauthenticated browser → 401 HTML sign-in page` |
+| `R-001 \| GET /admin \| unauthenticated API client → 401 JSON error` | _(not applicable in Playwright — that's a curl test)_ |
+| `R-001 \| GET /manage \| unauthenticated browser → 401 HTML sign-in page (alias)` | `R-001 \| GET /manage \| unauthenticated browser → 401 HTML sign-in page (alias)` |
+| `R-001 \| POST /api/v2/admin/events \| unauthenticated browser → 401 JSON (no HTML leak)` | _(not applicable — that's a curl test)_ |
+| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → heading + lede + CTAs render` |
+| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → brand matches landing (logo + nav)` |
+| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → a11y skip-link + semantic main + focus` |
+| _(vitest already tests internal)_ | `R-001 \| GET /admin \| unauthenticated browser → robots noindex meta present` |
+| _(curl can't test viewport)_ | `R-001 \| GET /admin \| mobile 375px viewport → card fits within viewport width` |
+| _(curl can't test viewport)_ | `R-001 \| GET /admin \| unauthenticated browser → no admin dashboard content leaked` |
 
-The `R-NNN` prefix makes failures cross-referenceable. A failing test name should immediately tell the reviewer which story it belongs to.
+When a scenario is testable in BOTH Postman and Playwright (response shape, status, headers), use the **exact same name string**. When it's only testable in one (visual layout → Playwright only; raw API contract from a non-browser → Postman only), still use the format so the output stays scannable.
+
+### Vitest variant
+
+Vitest tests internal Worker behavior — different audience (devs debugging unit tests) but the same naming for consistency. The describe block names the story; inner tests use the unified format:
+
+```typescript
+describe('R-001 admin front-door', () => {
+  test('R-001 | GET /admin | unauthenticated browser → 401 HTML sign-in page', async () => {
+    // ...
+  });
+});
+```
+
+### What about non-HTTP tests?
+
+For tests that don't have an HTTP method + path (a pure function, a DB helper, a UI component in isolation), substitute the surface for the method+path slot:
+
+- `R-NNN | mintSignedLinkToken() | valid event ID + secret → returns HMAC token`
+- `R-NNN | escapeHtml() | string with < > & quotes → returns entity-encoded string`
+- `R-NNN | <EventCard> component | event in pre_event phase → renders RSVP CTA`
 
 ---
 
@@ -91,8 +145,8 @@ For every refinement story (R-NNN in `REFINEMENT-BACKLOG-YYYY-MM-DD.md`):
 1. **Branch** off `main`: `<repo>/r-NNN-<short-description>`
 2. **Fix the code** — surgical, single concern, no scope creep
 3. **Vitest spec** — `tests/r-NNN-<feature>.spec.ts` (or extend an existing spec with a `describe('R-NNN ...')` block)
-4. **Postman update** — add named items to the relevant collection JSON, with `R-NNN | ...` naming
-5. **Playwright spec** — `tests/playwright/<feature>.spec.ts` with `R-NNN-PW-NN | ...` test names
+4. **Postman update** — add named items to the relevant collection JSON, using the unified naming format (see § Test naming)
+5. **Playwright spec** — `tests/playwright/<feature>.spec.ts` with the unified naming format — same string as the matching Postman item
 6. **Run all three locally** before pushing:
    - `npx vitest run tests/r-NNN-*.spec.ts` → pass
    - `newman run postman/collections/<surface>.json -e postman/environments/staging.json` → pass (or doc'd skip)
