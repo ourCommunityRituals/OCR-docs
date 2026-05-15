@@ -2,7 +2,7 @@
 
 This directory is the **fleet-wide** discovery surface for the OCR product line. It holds primary research, sales playbooks, and case-study material that spans more than one product. Per-product discovery work lives in that product's repo at `<repo>/docs/discovery/`.
 
-The routing rule is encoded in [`OPERATING_SYSTEM.md §3`](../../../OPERATING_SYSTEM.md) at the workspace root:
+The routing rule is encoded in [`OPERATING_SYSTEM.md §3`](../../OPERATING_SYSTEM.md) at the OCR-docs root:
 
 | Scope | Lives at |
 |-------|----------|
@@ -74,7 +74,7 @@ This rule applies to **every** discovery artifact in the fleet — per-repo and 
 ### Methodology references (fleet doctrine that governs discovery work)
 
 - `~/.claude/projects/.../memory/feedback_*.md` — doctrine memory files that constrain discovery work (anonymization, no-OneDrive paths, private-until-launch).
-- `OPERATING_SYSTEM.md §4` (workspace root) — the sales→eng→sales loop that discovery work feeds.
+- [`OPERATING_SYSTEM.md §4`](../../OPERATING_SYSTEM.md) (OCR-docs root) — the sales→eng→sales loop that discovery work feeds.
 
 ## Closing the loop
 
