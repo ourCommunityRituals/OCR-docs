@@ -213,8 +213,45 @@ invariants:
   - osr
   - osp
   exceptions: []
+- id: 14
+  name: mobile_workability
+  title: Mobile Workability — Every Customer Surface Usable on a 375px Phone
+  status: partial
+  test_file: mobile-workability.spec.ts
+  enforces: 'Every customer-facing surface in every OCR product MUST be fully usable on a 375x812 viewport
+    (iPhone 13 Mini / iPhone X). Usable is defined by five concrete contracts measured at the DOM
+    layer: (1) no horizontal scroll (document.documentElement.scrollWidth <= clientWidth at 375px
+    wide); (2) touch targets >= 44x44 px (WCAG 2.5.5 + Apple HIG); (3) input font-size >= 16 px to
+    avoid iOS Safari pinch-zoom on focus; (4) primary CTA visible above the fold on initial page
+    load; (5) every form fully completable without manual pinch-zoom. Rationale: bar owners check
+    on events from their phone mid-shift, investors open the demo URL on iPhone, bar customers
+    scan QR posters to phones — in every one of those moments the platform either works or it
+    does not. Mobile workability is a contract with the customer, not a refinement. Enforced by:
+    (a) human-readable standard at docs/standards/OCR_STANDARD_mobileWorkability.md propagated to
+    every app repo''s docs/standards/; (b) per-product Playwright audit suite (canonical OSE
+    implementation at ourSharedEvents/tests/playwright/mobile-workability.spec.ts) that loads each
+    surface at 375x812 and asserts the five contracts via getBoundingClientRect + getComputedStyle;
+    (c) nightly + on-PR workflow per product repo, PR-event informational, schedule + dispatch
+    blocking + Linear ticket on violation; (d) this invariant entry as the parseable source of
+    truth for compliance reporting. Out-of-scope exemptions: /display (venue TV kiosk surface,
+    different form factor) and /briefing (internal CEO tool, scoped out per OCR briefing-scope
+    feedback). Additional exemptions must be documented inline in the standard doc AND added to
+    this exceptions list. Status: partial until the per-surface drain stories (OSE-292 epic +
+    DRAIN-1 through DRAIN-7 children) complete and the nightly audit reports zero violations for
+    at least one full cycle. Promote to live via OCR-40.'
+  applies_to:
+  - ose
+  - osm
+  - wkrp
+  - oaw
+  - osg
+  - osr
+  - osp
+  exceptions:
+  - /display
+  - /briefing
 status_summary:
   live: 5
-  partial: 6
+  partial: 7
   planned: 2
-  total: 13
+  total: 14
