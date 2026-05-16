@@ -238,7 +238,20 @@ invariants:
     feedback). Additional exemptions must be documented inline in the standard doc AND added to
     this exceptions list. Status: partial until the per-surface drain stories (OSE-292 epic +
     DRAIN-1 through DRAIN-7 children) complete and the nightly audit reports zero violations for
-    at least one full cycle. Promote to live via OCR-40.'
+    at least one full cycle. Promote to live via OCR-40. Refined 2026-05-16 via OCR-42 after
+    the first full validation cycle: (a) contract (2) carries a WCAG 2.5.5 inline-text-link
+    exemption (anchors with computed display:inline inside p/li/dt/dd/span/em/strong/label
+    text-flow containers are NOT subject to the 44x44 floor; primary CTAs styled as buttons
+    or block-level links remain subject); (b) contract (4) carries a page-state steady-state
+    model (the audit waits for aria-busy=false on the surface root OR data-ready=true on
+    body OR a 3-second steady-state timeout before measuring CTA visibility; a
+    disabled-but-visible primary CTA satisfies (4) if it would be enabled in happy-path);
+    (c) error pages count as customer surfaces and must satisfy contracts (1)(2)(3)(5) at
+    the same threshold, with the recovery action satisfying (4) and the audit detecting
+    error renders via HTTP status >= 400 OR data-testid="error-main" / data-testid^="error-"
+    signal. OSE-301 aligns mobile-workability.spec.ts implementation to these refinements.
+    OCR-40 promote-to-live now gates on the REFINED audit reporting zero violations, not
+    the pre-refinement coarse-audit.'
   applies_to:
   - ose
   - osm
