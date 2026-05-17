@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oursharedevents.com/brain/uec-codes.schema.json",
+  "title": "UEC Canonical Standard Schema",
+  "description": "JSON Schema for the Universal Event Code (UEC) brain artifact (uec-codes.yaml). Validates structure AND declares the brand-promise constraints that the CI gate (OSE-324) enforces computationally.\n\nThe schema's job is to reject any UEC artifact whose STRUCTURE is malformed. The CI gate's job is to compute WCAG contrast for every scan_hex and assert it meets the declared wcag_grade. Together they enforce the load-bearing claim that 'the color IS the instruction' remains physically scannable across every code, forever.",
+  "type": "object",
+  "required": ["schema_version", "version", "provenance", "palette_usage", "verticals", "codes", "changelog"],
+  "additionalProperties": true,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Semver of this schema file itself (not the UEC standard)."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?\\d+\\.\\d+(\\.\\d+)?$",
+      "description": "UEC standard version (e.g., '1.1', 'v1.1', '1.1.0')."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 20
+    },
+    "provenance": {
+      "type": "object",
+      "description": "Documents where the canonical values came from. Required so future maintainers can trace back to the originating sources.",
+      "required": ["scan_palette", "display_palette"],
+      "properties": {
+        "scan_palette": { "$ref": "#/$defs/paletteProvenance" },
+        "display_palette": { "$ref": "#/$defs/paletteProvenance" }
+      }
+    },
+    "palette_usage": {
+      "type": "array",
+      "description": "Contract for which surfaces consume which palette. Used by drift checks (OSE-323) to assert consumer surfaces use the correct palette for their job.",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["field"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "enum": ["scan_hex", "display_hex", "lightHex"]
+          },
+          "used_in": { "type": "array", "items": { "type": "string" } },
+          "constraint": { "type": "string" },
+          "handling": { "type": "string" },
+          "formula": { "type": "string" },
+          "rationale": { "type": "string" }
+        }
+      }
+    },
+    "verticals": {
+      "type": "array",
+      "description": "Canonical list of event verticals. Each code's verticals[] MUST be a subset of this list. event-taxonomy.yaml MUST also use a subset.",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string" }
+    },
+    "codes": {
+      "type": "array",
+      "description": "The 7 core + 4 extension UEC codes. Order is canonical (core first by num 01-07, then extensions by num 08-11).",
+      "minItems": 11,
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/code" }
+    },
+    "changelog": {
+      "type": "array",
+      "description": "Documents v1.0 → v1.1 transitions and any future version transitions. Append-only; never rewrite history.",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/changelogEntry" }
+    },
+    "notes": {
+      "type": "object",
+      "description": "Architectural notes for future maintainers — design decisions, sequencing rationale, edge cases. Free-form but encouraged."
+    }
+  },
+  "$defs": {
+    "hexColor": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$",
+      "description": "6-digit hex color, uppercase or lowercase, with leading #"
+    },
+    "wcagGrade": {
+      "type": "string",
+      "enum": ["AAA", "AA"],
+      "description": "WCAG contrast grade against white background. FAIL is NOT permitted — the brand promise 'the color IS the instruction' requires every UEC scan_hex to remain physically scannable. CI gate (OSE-324) computes actual contrast and asserts it meets or exceeds this declared grade. WCAG thresholds on white: AA ≥ 4.5:1, AAA ≥ 7:1."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["KEEP", "ADD", "CHANGE"],
+      "description": "Change-relative-to-previous-version status. KEEP = unchanged from prior version. ADD = new in this version. CHANGE = modified in this version (color, name, or both — see changelog for detail)."
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["Arrival", "During", "Post", "Anytime"],
+      "description": "Event Triangle phase the code primarily belongs to. Anytime = ambient/utility codes that span phases."
+    },
+    "extensionPriority": {
+      "type": "string",
+      "enum": ["HIGH", "MEDIUM", "LOW"],
+      "description": "Extension codes only. Indicates operational priority for which verticals/contexts should adopt the extension."
+    },
+    "paletteProvenance": {
+      "type": "object",
+      "required": ["source_files", "intent", "rationale"],
+      "properties": {
+        "source_files": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "intent": { "type": "string", "minLength": 10 },
+        "rationale": { "type": "string", "minLength": 30 }
+      }
+    },
+    "code": {
+      "type": "object",
+      "required": [
+        "id", "num", "label", "scan_hex", "display_hex",
+        "semantics", "description", "verticals", "status",
+        "wcag_grade", "rationale"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9-]*[A-Z0-9]$",
+          "description": "Code identifier. UPPERCASE with optional hyphens (e.g., ENTER, CHECK-IN). Must be unique across all codes (enforced by CI)."
+        },
+        "num": {
+          "type": "string",
+          "pattern": "^\\d{2}$",
+          "description": "Two-digit zero-padded sequence number. 01-07 = core; 08+ = extensions. Must be unique across all codes (enforced by CI)."
+        },
+        "label": {
+          "type": "string",
+          "minLength": 2,
+          "description": "Human-readable color name (e.g., 'Green', 'Coral', 'Dark Teal')."
+        },
+        "scan_hex": {
+          "$ref": "#/$defs/hexColor",
+          "description": "QR module fill color. MUST yield WCAG contrast matching declared wcag_grade on white (#FFFFFF). Computed and asserted by CI gate OSE-324."
+        },
+        "display_hex": {
+          "$ref": "#/$defs/hexColor",
+          "description": "UI showcase + marketing color. No contrast requirement, but MUST belong to the same semantic color family as scan_hex (e.g., both ENTER hexes must be recognizably 'green')."
+        },
+        "semantics": {
+          "type": "string",
+          "minLength": 5,
+          "description": "Short semantic formula, typically 3 words separated by ' · ' (e.g., 'Go · Access · Safe Passage')."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 20,
+          "description": "What the code is used for in plain language. Concrete examples preferred over abstractions."
+        },
+        "url_path": {
+          "type": "string",
+          "pattern": "^/[a-z][a-z0-9-]*$",
+          "description": "Human-readable URL path the code resolves to (e.g., '/enter', '/sponsor'). Lowercase letters, digits, hyphens only. No UUIDs."
+        },
+        "phase": { "$ref": "#/$defs/phase" },
+        "verticals": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "Subset of top-level verticals[]. Enforces which event verticals this code applies to. Asserted by CI: every value must appear in the top-level verticals list."
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "wcag_grade": { "$ref": "#/$defs/wcagGrade" },
+        "data_generated": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "BigQuery / D1 table names this code's scans feed into. Empty array OK for utility codes that don't generate tracking data."
+        },
+        "extension_priority": { "$ref": "#/$defs/extensionPriority" },
+        "rationale": {
+          "type": "object",
+          "required": ["psychology", "why", "contexts", "verdict"],
+          "properties": {
+            "psychology": {
+              "type": "string",
+              "minLength": 10,
+              "description": "Color psychology — why this color carries this meaning across cultures."
+            },
+            "why": {
+              "type": "string",
+              "minLength": 30,
+              "description": "Why this code exists in the UEC system. The functional + brand justification."
+            },
+            "contexts": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" },
+              "description": "Concrete deployment contexts (e.g., 'Indoor signage', 'Backstage access')."
+            },
+            "verdict": {
+              "type": "string",
+              "minLength": 20,
+              "description": "Editorial summary — 'is this code locked in? what would challenge it?' Used by future maintainers to know which codes are permanent vs. iterable."
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "num": { "pattern": "^0[1-7]$" } } },
+          "then": {
+            "description": "Core codes (01-07) must NOT have extension_priority.",
+            "not": { "required": ["extension_priority"] }
+          }
+        },
+        {
+          "if": { "properties": { "num": { "pattern": "^(0[8-9]|1[0-9])$" } } },
+          "then": {
+            "description": "Extension codes (08+) MUST have extension_priority.",
+            "required": ["extension_priority"]
+          }
+        }
+      ]
+    },
+    "changelogEntry": {
+      "type": "object",
+      "required": ["from", "to", "code", "type", "reason"],
+      "properties": {
+        "from": { "type": "string" },
+        "to": { "type": "string" },
+        "code": {
+          "type": "string",
+          "description": "The code ID this changelog entry affects (e.g., 'ENTER', 'FEEDBACK', 'ALERT')."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["rename", "color_change", "color_and_name_change", "addition", "extension_introduction", "removal"],
+          "description": "Categorical change type. Enables CI/tooling to enumerate breaking vs. non-breaking transitions."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 30,
+          "description": "Why the change happened. Mandatory for traceability."
+        }
+      }
+    }
+  }
+}
