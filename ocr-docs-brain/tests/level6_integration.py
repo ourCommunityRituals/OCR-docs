@@ -34,8 +34,8 @@ def check(name, fn):
 
 def load(f):
     if f.endswith('.json'):
-        return json.loads((BRAIN / f).read_text())
-    return yaml.safe_load((BRAIN / f).read_text())
+        return json.loads((BRAIN / f).read_text(encoding='utf-8'))
+    return yaml.safe_load((BRAIN / f).read_text(encoding='utf-8'))
 
 pr = load('product-registry.yaml')
 tg = load('tier-gates.yaml')
@@ -199,7 +199,7 @@ def bq_schemas():
     for pool in ('general', 'hipaa', 'coppa', 'aggregate'):
         path = BRAIN / f'bigquery-schemas/{pool}.json'
         assert path.exists(), f'{pool}.json missing'
-        data = json.loads(path.read_text())
+        data = json.loads(path.read_text(encoding='utf-8'))
         assert data, f'{pool}.json is empty'
     return 'all 4 pool schemas present and non-empty'
 

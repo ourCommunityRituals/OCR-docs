@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """
-Level 1 — SCHEMA
+Level 2 — SCHEMA
 =================
 Required fields per record type. Type validation. Enum constraints.
 Ensures every record in the brain has the shape consumers expect.
+
+Validates these brain artifacts:
+  - product-registry.yaml
+  - tier-gates.yaml
+  - corridor-definitions.yaml
+  - event-taxonomy.yaml
+  - architectural-invariants.yaml (including rich-form fields + enrichment_history)
+  - event-phase-contract.yaml (optional)
+  - uec-codes.yaml (added 2026-05-17 with OSE-319 / OSE-318 brain artifact)
 """
 import sys, yaml
 from pathlib import Path
@@ -17,7 +26,11 @@ def check(name, condition, detail=''):
     results.append((name, 'PASS' if condition else 'FAIL', detail))
 
 def load(f):
-    return yaml.safe_load((BRAIN / f).read_text())
+    # encoding='utf-8' explicit — Windows .read_text() defaults to cp1252 which
+    # fails on non-ASCII chars (em-dash, box-drawing, etc.). Brain YAMLs may
+    # contain Unicode in human-readable headers; this ensures portability across
+    # Windows and Linux/Mac runners.
+    return yaml.safe_load((BRAIN / f).read_text(encoding='utf-8'))
 
 pr = load('product-registry.yaml')
 tg = load('tier-gates.yaml')
@@ -103,7 +116,7 @@ for cat in et.get('categories', []):
           f'missing {missing}' if missing else 'complete')
 
 # ---------------------------------------------------------------------------
-# 1.5 — Invariant records: required fields and enum validation
+# 1.5 — Invariant records: required fields and enum validation (LEAN form)
 # ---------------------------------------------------------------------------
 INV_REQUIRED = ['id', 'name', 'title', 'status', 'test_file', 'enforces', 'applies_to']
 INV_STATUS_ENUM = ['live', 'partial', 'planned']
@@ -115,6 +128,95 @@ for i in inv.get('invariants', []):
     status = i.get('status')
     check(f'invariant_status_enum:#{iid}', status in INV_STATUS_ENUM,
           f'{status} not in {INV_STATUS_ENUM}' if status not in INV_STATUS_ENUM else f'{status}')
+
+# ---------------------------------------------------------------------------
+# 1.5a — Invariant records: RICH form optional field validation (added 2026-05-17)
+# ---------------------------------------------------------------------------
+# Rich-form invariant entries may add: protective_statement (str),
+# enforcement_statement (str), references (dict), activation_note (str).
+# When present, each must be the right type and non-empty. Rich form is
+# preferred for load-bearing invariants but not required.
+RICH_STRING_FIELDS = ['protective_statement', 'enforcement_statement', 'activation_note']
+for i in inv.get('invariants', []):
+    iid = i.get('id', '?')
+    for field in RICH_STRING_FIELDS:
+        if field in i:
+            val = i[field]
+            check(f'invariant_rich_type:#{iid}.{field}',
+                  isinstance(val, str) and len(val.strip()) > 30,
+                  f'expected non-empty str (>30 chars), got {type(val).__name__} len={len(val) if isinstance(val, str) else "n/a"}'
+                  if not (isinstance(val, str) and len(val.strip()) > 30) else 'ok')
+    if 'references' in i:
+        refs = i['references']
+        check(f'invariant_rich_type:#{iid}.references',
+              isinstance(refs, dict) and len(refs) > 0,
+              f'expected non-empty dict, got {type(refs).__name__}'
+              if not (isinstance(refs, dict) and len(refs) > 0) else f'{len(refs)} reference(s)')
+
+# ---------------------------------------------------------------------------
+# 1.5b — Invariant records: ID uniqueness + sequence integrity (added 2026-05-17)
+# ---------------------------------------------------------------------------
+ids = [i.get('id') for i in inv.get('invariants', [])]
+check('invariant_ids_unique',
+      len(ids) == len(set(ids)),
+      f'duplicate IDs found: {[x for x in ids if ids.count(x) > 1]}' if len(ids) != len(set(ids)) else f'{len(ids)} unique IDs')
+
+# ---------------------------------------------------------------------------
+# 1.5c — enrichment_history validation (added 2026-05-17 / OSE-319)
+# ---------------------------------------------------------------------------
+# Top-level enrichment_history is optional but, when present, must be:
+#   - a list
+#   - each entry: dict with invariant_id (int), invariant_name (str),
+#     from_state (str), to_state (str), date (str), pr_refs (list), rationale (str)
+#   - each entry's invariant_id MUST reference an actual invariant in the file
+#     (cross-reference integrity)
+EH_REQUIRED = ['invariant_id', 'invariant_name', 'from_state', 'to_state', 'date', 'pr_refs', 'rationale']
+EH_TYPES = {
+    'invariant_id': int,
+    'invariant_name': str,
+    'from_state': str,
+    'to_state': str,
+    'date': str,
+    'pr_refs': list,
+    'rationale': str,
+}
+existing_invariant_ids = set(ids)
+existing_invariant_names = {i.get('name') for i in inv.get('invariants', []) if i.get('name')}
+
+if 'enrichment_history' in inv:
+    eh = inv['enrichment_history']
+    check('enrichment_history_is_list',
+          isinstance(eh, list),
+          f'expected list, got {type(eh).__name__}' if not isinstance(eh, list) else f'{len(eh)} entries')
+    if isinstance(eh, list):
+        for idx, entry in enumerate(eh):
+            tag = f'enrichment_history[{idx}]'
+            if not isinstance(entry, dict):
+                check(f'{tag}_is_dict', False, f'expected dict, got {type(entry).__name__}')
+                continue
+            # Required fields
+            missing = [f for f in EH_REQUIRED if f not in entry]
+            check(f'{tag}_required', not missing,
+                  f'missing {missing}' if missing else 'all required fields present')
+            # Type validation
+            for field, expected_type in EH_TYPES.items():
+                if field in entry:
+                    val = entry[field]
+                    check(f'{tag}_type:{field}',
+                          isinstance(val, expected_type),
+                          f'expected {expected_type.__name__}, got {type(val).__name__}'
+                          if not isinstance(val, expected_type) else 'ok')
+            # Cross-reference integrity
+            inv_id = entry.get('invariant_id')
+            check(f'{tag}_invariant_id_exists',
+                  inv_id in existing_invariant_ids,
+                  f'invariant_id {inv_id} not in invariants list {sorted(existing_invariant_ids)}'
+                  if inv_id not in existing_invariant_ids else f'#{inv_id} exists')
+            inv_name = entry.get('invariant_name')
+            check(f'{tag}_invariant_name_exists',
+                  inv_name in existing_invariant_names,
+                  f'invariant_name "{inv_name}" not in invariants list'
+                  if inv_name not in existing_invariant_names else f'"{inv_name}" exists')
 
 # ---------------------------------------------------------------------------
 # 1.6 — Corridor definitions: required fields per founding corridor
@@ -224,6 +326,105 @@ else:
     # File optional today; presence is checked at OCR-24 time
     check('event_phase_contract_present', True,
           f'{EVENT_PHASE_FILE} not yet present (no-op until OCR-24 / first sibling consumer)')
+
+# ---------------------------------------------------------------------------
+# 1.10 — UEC canonical artifact (added 2026-05-17 / OSE-319 + OSE-318)
+# ---------------------------------------------------------------------------
+# Validates uec-codes.yaml — the canonical Universal Event Code standard
+# brain artifact. Structural validation only here (per existing brain
+# pattern of manual checks without jsonschema lib dep). The full
+# WCAG-contrast computation gate is OSE-324's deliverable and will live
+# in a future level addition (likely level3_unit.py).
+UEC_FILE = 'uec-codes.yaml'
+if (BRAIN / UEC_FILE).exists():
+    uec = load(UEC_FILE)
+
+    # 1.10.1 — Required top-level keys
+    UEC_TOP_KEYS = ['schema_version', 'version', 'provenance', 'palette_usage',
+                    'verticals', 'codes', 'changelog']
+    missing_uec = [k for k in UEC_TOP_KEYS if k not in uec]
+    check('uec_top_keys', not missing_uec,
+          f'missing {missing_uec}' if missing_uec else f'all {len(UEC_TOP_KEYS)} present')
+
+    # 1.10.2 — Version field shape
+    ver = uec.get('version', '')
+    version_ok = isinstance(ver, str) and ver.replace('v', '').replace('.', '').isdigit()
+    check('uec_version_shape', version_ok,
+          ver if version_ok else f'version = {ver!r} (expected like "1.1" or "v1.1")')
+
+    # 1.10.3 — Exactly 11 codes (7 core + 4 extensions)
+    codes = uec.get('codes', [])
+    count_ok = isinstance(codes, list) and len(codes) == 11
+    check('uec_code_count', count_ok,
+          f'{len(codes)} codes' if count_ok else f'expected 11, got {len(codes) if isinstance(codes, list) else "non-list"}')
+
+    # 1.10.4 — Every code has required fields (dual palette: scan_hex + display_hex)
+    UEC_CODE_REQUIRED = ['id', 'num', 'label', 'scan_hex', 'display_hex',
+                         'semantics', 'description', 'verticals', 'status',
+                         'wcag_grade', 'rationale']
+    UEC_CODE_STATUS_ENUM = ['KEEP', 'ADD', 'CHANGE']
+    UEC_CODE_WCAG_ENUM = ['AAA', 'AA']  # FAIL is unrepresentable (brand promise)
+    for code in codes:
+        cid = code.get('id', '?') if isinstance(code, dict) else '?'
+        if not isinstance(code, dict):
+            check(f'uec_code_is_dict:{cid}', False, f'expected dict')
+            continue
+        missing_c = [f for f in UEC_CODE_REQUIRED if f not in code]
+        check(f'uec_code_required:{cid}', not missing_c,
+              f'missing {missing_c}' if missing_c else 'all required fields')
+        # Status enum
+        st = code.get('status')
+        check(f'uec_code_status_enum:{cid}', st in UEC_CODE_STATUS_ENUM,
+              f'{st} not in {UEC_CODE_STATUS_ENUM}' if st not in UEC_CODE_STATUS_ENUM else f'{st}')
+        # WCAG grade enum (FAIL not permitted)
+        wg = code.get('wcag_grade')
+        check(f'uec_code_wcag_grade_enum:{cid}', wg in UEC_CODE_WCAG_ENUM,
+              f'{wg} not in {UEC_CODE_WCAG_ENUM} (FAIL is unrepresentable)' if wg not in UEC_CODE_WCAG_ENUM else f'{wg}')
+        # Hex format
+        for hex_field in ('scan_hex', 'display_hex'):
+            hex_val = code.get(hex_field, '')
+            valid_hex = (isinstance(hex_val, str) and len(hex_val) == 7
+                         and hex_val.startswith('#')
+                         and all(c in '0123456789abcdefABCDEF' for c in hex_val[1:]))
+            check(f'uec_code_{hex_field}_format:{cid}', valid_hex,
+                  f'{hex_field} = {hex_val!r} (expected #RRGGBB)' if not valid_hex else hex_val)
+        # rationale sub-fields
+        rat = code.get('rationale')
+        if isinstance(rat, dict):
+            rat_required = ['psychology', 'why', 'contexts', 'verdict']
+            missing_rat = [f for f in rat_required if f not in rat]
+            check(f'uec_code_rationale_required:{cid}', not missing_rat,
+                  f'missing rationale subs: {missing_rat}' if missing_rat else 'complete')
+
+    # 1.10.5 — All code IDs unique
+    code_ids = [c.get('id') for c in codes if isinstance(c, dict)]
+    check('uec_code_ids_unique',
+          len(code_ids) == len(set(code_ids)),
+          f'duplicates: {[x for x in code_ids if code_ids.count(x) > 1]}' if len(code_ids) != len(set(code_ids)) else f'{len(code_ids)} unique')
+
+    # 1.10.6 — All code nums unique
+    code_nums = [c.get('num') for c in codes if isinstance(c, dict)]
+    check('uec_code_nums_unique',
+          len(code_nums) == len(set(code_nums)),
+          f'duplicates: {[x for x in code_nums if code_nums.count(x) > 1]}' if len(code_nums) != len(set(code_nums)) else f'{len(code_nums)} unique')
+
+    # 1.10.7 — Every code's verticals[] is a subset of top-level verticals
+    top_verticals = set(uec.get('verticals', []))
+    for code in codes:
+        if not isinstance(code, dict): continue
+        cid = code.get('id', '?')
+        code_v = set(code.get('verticals', []))
+        bad = code_v - top_verticals
+        check(f'uec_code_verticals_subset:{cid}', not bad,
+              f'not in top-level: {sorted(bad)}' if bad else f'{len(code_v)} verticals')
+
+    # 1.10.8 — Schema file exists alongside the artifact (commitment from PR #49)
+    schema_present = (BRAIN / 'uec-codes.schema.json').exists()
+    check('uec_schema_file_present', schema_present,
+          'present' if schema_present else 'uec-codes.schema.json missing alongside uec-codes.yaml')
+else:
+    check('uec_codes_file_present', False,
+          f'{UEC_FILE} missing — required artifact since OSE-318 merge 2026-05-17')
 
 # ---------------------------------------------------------------------------
 # REPORT

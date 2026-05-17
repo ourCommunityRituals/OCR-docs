@@ -21,7 +21,7 @@ def check(name, condition, detail=''):
     results.append((name, 'PASS' if condition else 'FAIL', detail))
 
 def load(f):
-    return yaml.safe_load((BRAIN / f).read_text())
+    return yaml.safe_load((BRAIN / f).read_text(encoding='utf-8'))
 
 pr = load('product-registry.yaml')
 tg = load('tier-gates.yaml')

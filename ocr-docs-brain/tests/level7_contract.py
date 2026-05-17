@@ -32,8 +32,8 @@ def check(name, condition, detail=''):
 
 def load(f):
     if f.endswith('.json'):
-        return json.loads((BRAIN / f).read_text())
-    return yaml.safe_load((BRAIN / f).read_text())
+        return json.loads((BRAIN / f).read_text(encoding='utf-8'))
+    return yaml.safe_load((BRAIN / f).read_text(encoding='utf-8'))
 
 pr = load('product-registry.yaml')
 tg = load('tier-gates.yaml')
