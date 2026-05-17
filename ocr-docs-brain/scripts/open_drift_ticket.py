@@ -241,7 +241,7 @@ def main():
         sys.exit(0)
 
     try:
-        report = json.loads(open(args.report).read())
+        report = json.loads(open(args.report, encoding='utf-8').read())
     except Exception as e:
         print(f'could not read report: {e}', file=sys.stderr)
         sys.exit(1)

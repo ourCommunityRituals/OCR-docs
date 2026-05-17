@@ -28,15 +28,15 @@ def load_brain(brain_dir: Path) -> dict[str, Any]:
     """Load all brain artifacts into a single dict."""
     try:
         return {
-            'products': yaml.safe_load((brain_dir / 'product-registry.yaml').read_text()),
-            'tiers': yaml.safe_load((brain_dir / 'tier-gates.yaml').read_text()),
-            'corridors': yaml.safe_load((brain_dir / 'corridor-definitions.yaml').read_text()),
-            'taxonomy': yaml.safe_load((brain_dir / 'event-taxonomy.yaml').read_text()),
-            'invariants': yaml.safe_load((brain_dir / 'architectural-invariants.yaml').read_text()),
-            'bq_general': json.loads((brain_dir / 'bigquery-schemas/general.json').read_text()),
-            'bq_hipaa':   json.loads((brain_dir / 'bigquery-schemas/hipaa.json').read_text()),
-            'bq_coppa':   json.loads((brain_dir / 'bigquery-schemas/coppa.json').read_text()),
-            'bq_agg':     json.loads((brain_dir / 'bigquery-schemas/aggregate.json').read_text()),
+            'products': yaml.safe_load((brain_dir / 'product-registry.yaml').read_text(encoding='utf-8')),
+            'tiers': yaml.safe_load((brain_dir / 'tier-gates.yaml').read_text(encoding='utf-8')),
+            'corridors': yaml.safe_load((brain_dir / 'corridor-definitions.yaml').read_text(encoding='utf-8')),
+            'taxonomy': yaml.safe_load((brain_dir / 'event-taxonomy.yaml').read_text(encoding='utf-8')),
+            'invariants': yaml.safe_load((brain_dir / 'architectural-invariants.yaml').read_text(encoding='utf-8')),
+            'bq_general': json.loads((brain_dir / 'bigquery-schemas/general.json').read_text(encoding='utf-8')),
+            'bq_hipaa':   json.loads((brain_dir / 'bigquery-schemas/hipaa.json').read_text(encoding='utf-8')),
+            'bq_coppa':   json.loads((brain_dir / 'bigquery-schemas/coppa.json').read_text(encoding='utf-8')),
+            'bq_agg':     json.loads((brain_dir / 'bigquery-schemas/aggregate.json').read_text(encoding='utf-8')),
         }
     except Exception as e:
         print(f"ERROR: could not load brain from {brain_dir}: {e}", file=sys.stderr)
