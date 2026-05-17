@@ -1,270 +1,457 @@
+# ═════════════════════════════════════════════════════════════════════════════
 # Architectural invariants — CI-enforced contracts.
-# Every invariant has a dedicated test file. Status reflects CI enforcement state.
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# Every invariant has a dedicated test file. Status reflects CI enforcement.
+#
+# Two forms exist for an invariant entry:
+#
+#   LEAN form (legacy / minimum) — id, name, title, status, test_file,
+#                                  enforces, applies_to
+#   RICH form (preferred, since 2026-05-17) — adds protective_statement,
+#                                  enforcement_statement, references[]
+#
+# Both forms validate. RICH is preferred for load-bearing invariants — its
+# protective_statement names WHAT the invariant protects against; its
+# enforcement_statement names HOW it's mechanically enforced; its references[]
+# block trace back to the artifacts, ADRs, and CI gates that make the
+# invariant real. The depth of documentation should match the load-bearing
+# weight of the architectural commitment.
+#
+# Invariants evolve IN PLACE — when an entry transitions lean → rich, the
+# number is preserved and an entry is appended to `enrichment_history` at the
+# top level of this file. Never renumber. Never delete an entry.
+#
+# `enrichment_history` is append-only and documents every lean → rich (or
+# planned → live, or other material change) transition for traceability.
+# Pattern established 2026-05-17 with the trio enrichment of #1 / #3 / #5.
+# ═════════════════════════════════════════════════════════════════════════════
 
-schema_version: 1.0.0
-description: The ten architectural invariants are the governance-brain-enforced contracts that the CI
-  pipeline validates on every commit. Each invariant has a dedicated test file. An invariant marked "live"
-  is currently enforced in CI; "partial" means the enforcement mechanism exists but is not yet promoted
-  to the 0-architecture suite; "planned" means the test file and mechanism are scheduled but not yet implemented.
+schema_version: 1.1.0
+description: >
+  Architectural invariants are the governance-brain-enforced contracts that
+  the CI pipeline validates on every commit. Each invariant has a dedicated
+  test file. Status enum: live = currently enforced in CI; partial =
+  enforcement mechanism exists but not yet promoted to the 0-architecture
+  suite; planned = test file and mechanism are scheduled but not yet
+  implemented. Rich-form entries additionally carry protective_statement,
+  enforcement_statement, and references blocks for load-bearing invariants;
+  enrichments are tracked in the top-level enrichment_history field.
 enforcement_gate: ose-platform-tests at org level (CI-enforced)
 invariants:
-- id: 1
-  name: anonymous_id
-  title: Anonymous ID
-  status: live
-  test_file: anonymous-id.invariant.spec.ts
-  enforces: Zero-PII scan system. Two-database separation (DB / FORMS_DB). ose_anon cookie contract (HttpOnly,
-    Secure, SameSite=Lax). No cross-linking.
-  applies_to:
-  - ose
-  - osm
-- id: 2
-  name: hyperlocal_geo_resolution
-  title: Hyperlocal Geo-Resolution
-  status: live
-  test_file: geo-resolution.invariant.spec.ts
-  enforces: sponsor_areas + sponsor_event_types tables. Corridor-level resolution. zip + radius matching.
-  applies_to:
-  - ose
-- id: 3
-  name: uec_encoding
-  title: UEC Encoding
-  status: live
-  test_file: uec-codes.invariant.spec.ts
-  enforces: 7 color-semantic QR codes + 4 extensions. Canonical hex values. URL path semantics.
-  applies_to:
-  - ose
-  - osm
-- id: 4
-  name: ncr_data_accumulation
-  title: NCR Data Accumulation
-  status: live
-  test_file: ncr-accumulation.invariant.spec.ts
-  enforces: poster_deployments lat/lng. scan_aggregates pipeline. Permanent storage (no PII = no TTL).
-  applies_to:
-  - ose
-  - oureventring
-- id: 5
-  name: tier_equity
-  title: Tier Equity / Pricing Governance
-  status: planned
-  test_file: tier-equity.invariant.spec.ts
-  enforces: Pricing tiers govern display priority within events only — never platform access. Same QR
-    system, same form quality, same privacy protection, same real-time counts at every tier. Local stays
-    in at all flag levels.
-  applies_to:
-  - ose
-  - osm
-  depends_on:
-  - tier-gates.yaml
-- id: 6
-  name: inert_monetization_hooks
-  title: Inert Monetization Hooks
-  status: partial
-  test_file: monetization-inert.invariant.spec.ts
-  enforces: 'X-Monetization-Inert: true header on every response. No billing logic executes. Billable
-    units are read-only. Existing CI gate checkMonetizationHooksInert + contract test story-f4-monetization-hooks_MOCK.test.js
-    already enforce; promote to 0-architecture suite.'
-  applies_to:
-  - ose
-  research_note: This invariant is the reason research data can be collected cleanly before revenue activation.
-    Pre-revenue by contract, not by choice.
-- id: 7
-  name: aggregate_only_reporting
-  title: Aggregate-Only Reporting
-  status: planned
-  test_file: aggregate-only.invariant.spec.ts
-  enforces: SharedReport endpoints return aggregates only — never individual records. Closes the privacy
-    story on the output side; the Anonymous ID invariant guards the data; this invariant guards the reports.
-  applies_to:
-  - ose
-- id: 8
-  name: bounded_pii_retention
-  title: Bounded PII Retention
-  status: partial
-  test_file: pii-retention.invariant.spec.ts
-  enforces: All opt-in PII has a finite TTL (expires_at, retention_expires_at). Daily lifecycle cron deletes
-    expired registrations (90d), scrubs survey PII, deletes expired email signups (30d). No PII has unbounded
-    retention. Cron + TTL columns + PRIVACY.md exist; promote unified test to 0-architecture suite.
-  applies_to:
-  - ose
-- id: 9
-  name: tenant_isolation
-  title: Tenant Isolation
-  status: partial
-  test_file: tenant-isolation.invariant.spec.ts
-  enforces: Dual-key pattern (id + brandId) on every multi-tenant table. No cross-tenant data leakage
-    in queries. Brand-scoped URLs maintain isolation. Schema pattern exists; needs the cross-cutting test.
-  applies_to:
-  - ose
-  - osm
-  - oaw
-- id: 10
-  name: deprecation_lock
-  title: Deprecation Lock
-  status: partial
-  test_file: deprecation-lock.invariant.spec.ts
-  enforces: Once a runtime is removed (GAS, Sheets, etc.), CI forbids its re-introduction. Generalizes
-    the existing scripts/guard-no-gas.js and the no-GAS CI gate. Future deprecations (e.g., embedded HTML
-    when Phase 3 Firebase lands) inherit this pattern.
-  applies_to:
-  - ose
-  - osm
-  - wkrp
-  - oaw
-- id: 11
-  name: self_hosted_runner_bash_resolution
-  title: Self-Hosted Runner Bash Resolution
-  status: partial
-  test_file: runner-environment.invariant.spec.ts
-  enforces: 'On Windows self-hosted runners (Bloodraven + any sibling instances), `bash` MUST resolve
-    to Git Bash (C:\Program Files\Git\usr\bin\bash.exe), NEVER to the WSL/Microsoft Store shim at
-    C:\Users\<user>\AppData\Local\Microsoft\WindowsApps\bash.EXE. WSL bash interprets backslashes
-    in Windows paths as escape characters, corrupting any `shell: bash` workflow step script-file
-    path. Enforced by: (a) provisioning script tools/runner/provision-runner.ps1 which writes a
-    canonical PATH into each runner''s .env file (Git Bash first); (b) CI gate
-    .github/workflows/runner-env-validation.yml which runs first on every PR and fails fast with
-    actionable error message if the assigned runner is misconfigured; (c) runbook
-    tools/runner/README.md. Status partial — gate exists, provisioning is procedural rather than
-    automatic on `config.cmd` registration. Promote to live once the provisioner is invoked
-    automatically from a runner-setup script.'
-  applies_to:
-  - ose
-  - osm
-  - wkrp
-  - oaw
-- id: 12
-  name: runner_pool_readiness_probe
-  title: Runner Pool Readiness Probe
-  status: partial
-  test_file: runner-pool-readiness.invariant.spec.ts
-  enforces: 'Self-hosted runner pools MUST be self-healing on a 1-minute cadence with a 5-minute
-    watchdog. Concrete contract: (a) scheduled task "Runner Readiness Probe (1-min)" runs
-    tools/runner/janitor.ps1 -EnsureReady every 60 seconds — prunes orphan job children, kills
-    Workers exceeding per-workflow dwell caps (T0 Gate=10min, S0 Security=15min, T4 Functional=60min,
-    default=15min), bounces Listeners stuck on broker errors (SocketException 995 /
-    TaskAgentJobNotFoundException / BrokerServer ERR within last 3 min AND no Running-job
-    dispatch in that window). (b) Scheduled task "Runner Probe Watchdog (5-min)" runs
-    tools/runner/verify-probe-alive.ps1 reading actions-runner/_probe-heartbeat.txt — emits
-    RUNNER_PROBE_DEAD if the timestamp is stale, covering the case where the probe itself stops
-    (PowerShell breaks, task disabled, disk full). (c) Pool-wide outage detection: when ALL
-    runners share the same broker-error signature within 5 min, SUPPRESS per-runner bounces and
-    emit GITHUB_SIDE_OUTAGE — bouncing into a dead upstream broker burns the circuit-breaker
-    budget. (d) Circuit breaker: 3 bounces of the same runner in 60 min → STOP bouncing, emit
-    RUNNER_POOL_DEGRADED. State persists in actions-runner/_janitor-state.json. (e) Queue-idle
-    signal MUST be corroboration-gated, not a unilateral bounce trigger — an upstream queue
-    (CodeQL on ubuntu-latest, environment-approval blocks, workflow_run waiters) is not proof
-    of a local broker problem. A bounce requires a recent broker error in THIS Listener''s diag
-    log within 10 min as corroboration. The unilateral version of this signal caused all 3
-    Bloodraven runners to trip the circuit breaker against healthy idle Listeners during PR #159
-    — see Test-QueueIdleCorroborated regression test for the lock-in. (f) Six structured log
-    signals must be emitted to actions-runner/_janitor.log: RUNNER_JANITOR (per-runner cycle),
-    RUNNER_POOL_READINESS (pool summary), RUNNER_POOL_DEGRADED (circuit tripped),
-    GITHUB_SIDE_OUTAGE (upstream broker dead), RUNNER_PROBE_ALIVE (watchdog OK),
-    RUNNER_PROBE_DEAD (watchdog alarm). Log is auto-rotated at LogMaxMB (default 5 MB).
-    (g) Pure-logic regression suite at tools/runner/janitor.tests.ps1 (22 cases minimum) MUST
-    pass before any change to the janitor is merged — covers circuit breaker state machine, UTC
-    parse safety, per-workflow dwell lookups, broker-error parsing, queue-idle corroboration.
-    Installation is via tools/runner/install-janitor-tasks.ps1 (no UAC required —
-    LogonType Interactive + RunLevel Limited). Status partial — scheduled tasks must be
-    installed manually after `config.cmd` registration. Promote to live once the installer is
-    auto-invoked from a runner-setup script alongside provision-runner.ps1 (the same gap as
-    invariant 11). Without this invariant, stuck-runner incidents waste ~60 min of pool throughput
-    per occurrence + multiply the agent supervision-token cost of every PR loop.'
-  applies_to:
-  - ose
-  - osm
-  - wkrp
-  - oaw
-  depends_on:
-  - self_hosted_runner_bash_resolution
-- id: 13
-  name: brain_enforcement_location
-  title: Brain Enforcement Code Lives Next to Brain Content
-  status: live
-  test_file: audit_brain_enforcement_location.py
-  enforces: 'Any script, test, or check whose purpose is to enforce the shape of OCR-docs/ocr-docs-brain/*.yaml
-    (the parseable contracts governing the fleet) MUST live inside OCR-docs/ocr-docs-brain/scripts/
-    or OCR-docs/ocr-docs-brain/tests/. It MUST NOT live in the workspace root (ourCommunityRituals/packages/,
-    ourCommunityRituals/tools/), in any individual application repo''s .github/scripts/ or source
-    tree, or in a separate ci-scripts repo. Rationale: the Brain is the single source of truth for
-    OCR governance; splitting governance content from governance enforcement turns every contract
-    change into a cross-repo coordination problem. Co-location means one PR, one review, one diff.
-    Boundary test: enforcement code answers "is this shape correct?"; consumer code answers "give
-    me the value at this path." Consumer code is allowed outside OCR-docs (e.g., the propagator
-    reading product-registry.yaml, @ocr/flags generating TypeScript from flags-contract.yaml at
-    build time). Enforced by: (a) human-readable standard at docs/standards/OCR_STANDARD_brainEnforcementLocation.md
-    propagated to every app repo''s docs/standards/ so developers see the rule wherever they''re
-    working; (b) nightly audit at .github/workflows/brain-location-audit.yml that runs
-    ocr-docs-brain/scripts/audit_brain_enforcement_location.py against the workspace root and
-    every app repo listed in product-registry.yaml, opens a Linear ticket on violations; (c) this
-    invariant entry serving as the parseable source of truth for compliance reporting. History:
-    in April 2026 the brain-conformance script was centralized into the workspace root at
-    packages/ocr-ci-scripts/check_brain_contract.py. This produced noisy false-failures on stub-repo
-    propagator PRs throughout April-May (OSM PRs #9, #10, #11). The fix relocated the script into
-    OCR-docs alongside the Brain content. This invariant prevents the same mistake from recurring.'
-  applies_to:
-  - ocr-docs
-  - ose
-  - osm
-  - wkrp
-  - oaw
-  - osg
-  - osr
-  - osp
-  exceptions: []
-- id: 14
-  name: mobile_workability
-  title: Mobile Workability — Every Customer Surface Usable on a 375px Phone
-  status: partial
-  test_file: mobile-workability.spec.ts
-  enforces: 'Every customer-facing surface in every OCR product MUST be fully usable on a 375x812 viewport
-    (iPhone 13 Mini / iPhone X). Usable is defined by five concrete contracts measured at the DOM
-    layer: (1) no horizontal scroll (document.documentElement.scrollWidth <= clientWidth at 375px
-    wide); (2) touch targets >= 44x44 px (WCAG 2.5.5 + Apple HIG); (3) input font-size >= 16 px to
-    avoid iOS Safari pinch-zoom on focus; (4) primary CTA visible above the fold on initial page
-    load; (5) every form fully completable without manual pinch-zoom. Rationale: bar owners check
-    on events from their phone mid-shift, investors open the demo URL on iPhone, bar customers
-    scan QR posters to phones — in every one of those moments the platform either works or it
-    does not. Mobile workability is a contract with the customer, not a refinement. Enforced by:
-    (a) human-readable standard at docs/standards/OCR_STANDARD_mobileWorkability.md propagated to
-    every app repo''s docs/standards/; (b) per-product Playwright audit suite (canonical OSE
-    implementation at ourSharedEvents/tests/playwright/mobile-workability.spec.ts) that loads each
-    surface at 375x812 and asserts the five contracts via getBoundingClientRect + getComputedStyle;
-    (c) nightly + on-PR workflow per product repo, PR-event informational, schedule + dispatch
-    blocking + Linear ticket on violation; (d) this invariant entry as the parseable source of
-    truth for compliance reporting. Out-of-scope exemptions: /display (venue TV kiosk surface,
-    different form factor) and /briefing (internal CEO tool, scoped out per OCR briefing-scope
-    feedback). Additional exemptions must be documented inline in the standard doc AND added to
-    this exceptions list. Status: partial until the per-surface drain stories (OSE-292 epic +
-    DRAIN-1 through DRAIN-7 children) complete and the nightly audit reports zero violations for
-    at least one full cycle. Promote to live via OCR-40. Refined 2026-05-16 via OCR-42 after
-    the first full validation cycle: (a) contract (2) carries a WCAG 2.5.5 inline-text-link
-    exemption (anchors with computed display:inline inside p/li/dt/dd/span/em/strong/label
-    text-flow containers are NOT subject to the 44x44 floor; primary CTAs styled as buttons
-    or block-level links remain subject); (b) contract (4) carries a page-state steady-state
-    model (the audit waits for aria-busy=false on the surface root OR data-ready=true on
-    body OR a 3-second steady-state timeout before measuring CTA visibility; a
-    disabled-but-visible primary CTA satisfies (4) if it would be enabled in happy-path);
-    (c) error pages count as customer surfaces and must satisfy contracts (1)(2)(3)(5) at
-    the same threshold, with the recovery action satisfying (4) and the audit detecting
-    error renders via HTTP status >= 400 OR data-testid="error-main" / data-testid^="error-"
-    signal. OSE-301 aligns mobile-workability.spec.ts implementation to these refinements.
-    OCR-40 promote-to-live now gates on the REFINED audit reporting zero violations, not
-    the pre-refinement coarse-audit.'
-  applies_to:
-  - ose
-  - osm
-  - wkrp
-  - oaw
-  - osg
-  - osr
-  - osp
-  exceptions:
-  - /display
-  - /briefing
+  # ── #1 ANONYMOUS ID ────────────────────────────────────────────────────────
+  - id: 1
+    name: anonymous_id
+    title: Anonymous ID
+    status: live
+    test_file: anonymous-id.invariant.spec.ts
+    enforces: Zero-PII scan system. Two-database separation (DB / FORMS_DB).
+      ose_anon cookie contract (HttpOnly, Secure, SameSite=Lax). No
+      cross-linking.
+    applies_to:
+      - ose
+      - osm
+    protective_statement: >
+      The brand promise "you're part of the group, anonymously" is
+      load-bearing across every public surface. Drift — any code path that
+      links anonymous_id to identifiable PII, any handler that crosses
+      DB/FORMS_DB boundaries, any net-new raw-PII column — breaks the
+      promise that lets attendees trust the platform. Privacy is not a
+      feature; it is the architecture. This invariant is the deepest
+      architectural commitment OSE makes; everything else (UEC, sponsor
+      placement, reporting, retention) inherits its constraint that
+      identifiable-attendee data cannot be correlated back from any output.
+    enforcement_statement: >
+      Two-database architecture (DB / FORMS_DB) is enforced by static gate
+      tests/architecture.spec.ts — handlers in src/handlers/forms.ts MUST
+      NEVER reference env.DB; handlers in non-forms files MUST NEVER
+      reference env.FORMS_DB; CI fails the build at code-source-level on
+      violations. PII column gate (tests/pii-invariant.spec.ts) prevents
+      net-new raw-PII columns from being introduced via migration. The
+      ose_anon cookie contract (HttpOnly, Secure, SameSite=Lax) is set by
+      middleware on every public request; the cookie value is the only
+      sanctioned correlation key. Anonymous-id-only lookups are the only
+      sanctioned correlation method into FORMS_DB. Pool routing
+      (src/lib/pool-contract.ts REGULATORY_POOLS = ['general', 'hipaa',
+      'coppa']) segregates HIPAA/COPPA data flows physically from general,
+      preventing cross-tier leakage downstream.
+    references:
+      adr: docs/adr/ADR-001-anonymous-identity-architecture.md
+      static_gate: tests/architecture.spec.ts
+      pii_gate: tests/pii-invariant.spec.ts
+      cookie_contract: src/lib/anonymous-id.ts
+      pool_routing: src/lib/pool-contract.ts
+      customer_artifact: "anonymity affordance rendered on every public event page (see .claude/brand-voice-guidelines.md §4.1)"
+
+  # ── #2 HYPERLOCAL GEO-RESOLUTION ──────────────────────────────────────────
+  - id: 2
+    name: hyperlocal_geo_resolution
+    title: Hyperlocal Geo-Resolution
+    status: live
+    test_file: geo-resolution.invariant.spec.ts
+    enforces: sponsor_areas + sponsor_event_types tables. Corridor-level
+      resolution. zip + radius matching.
+    applies_to:
+      - ose
+
+  # ── #3 UNIVERSAL EVENT CODE (UEC) ─────────────────────────────────────────
+  - id: 3
+    name: uec_encoding
+    title: Universal Event Code Standard
+    status: live
+    test_file: uec-codes.invariant.spec.ts
+    enforces: 11 color-semantic QR codes (7 core + 4 extensions). Dual
+      palette per code (scan_hex contrast-validated; display_hex brand-warm).
+      Canonical hex values sourced from brain artifact at build time. URL
+      path semantics. WCAG AA minimum on every scan_hex (AAA where declared).
+    applies_to:
+      - ose
+      - osm
+    protective_statement: >
+      The choice architecture's visual layer depends on every
+      OCR-affiliated event presenting the same color-coded scan surfaces
+      with the same semantic meanings. Drift breaks the attendee's mental
+      model — they learn "blue means sponsor" at one event and that meaning
+      must hold at every event forever. Without this invariant, every
+      sponsor placement, every check-in scan, every poster QR loses the
+      pre-attentive scannability that makes the platform feel cohesive.
+      The dual-palette design (scan_hex for QR module fill;
+      display_hex for UI/marketing showcase) recognizes that QR
+      scannability and brand-warm display are two distinct functional jobs
+      that need two values; collapsing them risks reintroducing the v1.0
+      contrast bugs the v1.1 transition specifically fixed.
+    enforcement_statement: >
+      Brain holds the canonical artifact (ocr-docs-brain/uec-codes.yaml)
+      validated by ocr-docs-brain/uec-codes.schema.json. Substrate (OSE)
+      consumes the artifact at build time (OSE-320) — never hardcodes UEC
+      values in code. Substrate static gate (OSE-322) prevents UEC hex
+      literals from appearing anywhere in src/ outside the brain-consumer
+      module. Drift check (OSE-323) compares OSE's local UEC values
+      against the brain artifact and fails CI on divergence. Brain-side
+      schema CI gate (OSE-324) validates artifact structure on every
+      change AND computes WCAG contrast for every scan_hex against white,
+      asserting the computed grade meets the declared wcag_grade (AA = 4.5:1,
+      AAA = 7:1). Together: brain = source of truth; schema = brand-promise
+      validator; substrate gates = no-drift enforcement.
+    references:
+      brain_artifact: ocr-docs-brain/uec-codes.yaml
+      brain_schema: ocr-docs-brain/uec-codes.schema.json
+      brain_pr: "OCR-docs#49 (OSE-318 — canonical artifact + schema landed 2026-05-17)"
+      substrate_consumer_story: OSE-320
+      substrate_static_gate_story: OSE-322
+      substrate_drift_check_story: OSE-323
+      brain_schema_ci_gate_story: OSE-324
+      sdet_fixtures_story: OSE-325
+      template_pattern: "invariant #1 anonymous_id (template for rich-form invariant entries)"
+
+  # ── #4 NCR DATA ACCUMULATION ──────────────────────────────────────────────
+  - id: 4
+    name: ncr_data_accumulation
+    title: NCR Data Accumulation
+    status: live
+    test_file: ncr-accumulation.invariant.spec.ts
+    enforces: poster_deployments lat/lng. scan_aggregates pipeline. Permanent
+      storage (no PII = no TTL).
+    applies_to:
+      - ose
+      - oureventring
+
+  # ── #5 LOCAL SPONSOR COVENANT (was "Tier Equity / Pricing Governance") ───
+  - id: 5
+    name: tier_equity
+    title: Local Sponsor Covenant
+    status: planned
+    test_file: tier-equity.invariant.spec.ts
+    enforces: Pricing tiers govern display priority within events only —
+      never platform access. Same QR system, same form quality, same
+      privacy protection, same real-time counts at every tier. Local
+      stays in at all flag levels.
+    applies_to:
+      - ose
+      - osm
+    depends_on:
+      - tier-gates.yaml
+    protective_statement: >
+      Pricing tiers govern display priority within events ONLY — never
+      platform access. Local sponsors are guaranteed a place at every
+      event, at every flag level, regardless of how much a premium buyer
+      pays. This commitment is what makes OSE non-substitutable: a sponsor
+      matching platform that pushes the highest bidder to the top is a
+      standard ad network; OSE's covenant — that the local stays in — is
+      the differentiating brand promise that creates the local-economy
+      flywheel. Without this invariant, OSE collapses into a commodity ad
+      auction; with it, OSE is the only platform in the market that takes
+      local-economy commerce as architectural commitment.
+    enforcement_statement: >
+      The sponsor slot allocator reserves a fixed proportion of event
+      placements for local-tier sponsors regardless of premium bids. The
+      invariant test (tier-equity.invariant.spec.ts, to be written by
+      sibling activation story OSE-330) asserts that for any event with N
+      local-tier sponsors registered, at least min(N, FLOOR) of them
+      appear in the rendered sponsor placement slots — no premium-paid
+      placement displaces a registered local sponsor. CI fails the build
+      on any code path that would allow local-sponsor displacement. FLOOR
+      value sourced from tier-gates.yaml (never hardcoded in OSE).
+    references:
+      dependency: "tier-gates.yaml (source of FLOOR value)"
+      activation_story: "OSE-330 (writes the test + slot allocator code + promotes status from planned → live)"
+      customer_artifact: "brand-voice guidelines §2 (Voice Constant — neighborhood-rooted) + landing copy commitment language"
+      brand_positioning: "false-market framing (per founder operating-system message 2026-05-17 — anonymous-but-aggregated as third option vs personal-data tracking OR no tracking)"
+      template_pattern: "invariant #1 anonymous_id"
+    activation_note: >
+      Status REMAINS planned until OSE-330 lands. This rich form is
+      documentation of the commitment — not yet mechanical enforcement.
+      Enrichment without activation = false confidence; the activation
+      story is the load-bearing follow-on that flips status → live.
+
+  # ── #6 INERT MONETIZATION HOOKS ───────────────────────────────────────────
+  - id: 6
+    name: inert_monetization_hooks
+    title: Inert Monetization Hooks
+    status: partial
+    test_file: monetization-inert.invariant.spec.ts
+    enforces: 'X-Monetization-Inert: true header on every response. No
+      billing logic executes. Billable units are read-only. Existing CI gate
+      checkMonetizationHooksInert + contract test
+      story-f4-monetization-hooks_MOCK.test.js already enforce; promote to
+      0-architecture suite.'
+    applies_to:
+      - ose
+    research_note: This invariant is the reason research data can be
+      collected cleanly before revenue activation. Pre-revenue by contract,
+      not by choice.
+
+  # ── #7 AGGREGATE-ONLY REPORTING ───────────────────────────────────────────
+  - id: 7
+    name: aggregate_only_reporting
+    title: Aggregate-Only Reporting
+    status: planned
+    test_file: aggregate-only.invariant.spec.ts
+    enforces: SharedReport endpoints return aggregates only — never
+      individual records. Closes the privacy story on the output side; the
+      Anonymous ID invariant guards the data; this invariant guards the
+      reports.
+    applies_to:
+      - ose
+
+  # ── #8 BOUNDED PII RETENTION ──────────────────────────────────────────────
+  - id: 8
+    name: bounded_pii_retention
+    title: Bounded PII Retention
+    status: partial
+    test_file: pii-retention.invariant.spec.ts
+    enforces: All opt-in PII has a finite TTL (expires_at,
+      retention_expires_at). Daily lifecycle cron deletes expired
+      registrations (90d), scrubs survey PII, deletes expired email signups
+      (30d). No PII has unbounded retention. Cron + TTL columns + PRIVACY.md
+      exist; promote unified test to 0-architecture suite.
+    applies_to:
+      - ose
+
+  # ── #9 TENANT ISOLATION ───────────────────────────────────────────────────
+  - id: 9
+    name: tenant_isolation
+    title: Tenant Isolation
+    status: partial
+    test_file: tenant-isolation.invariant.spec.ts
+    enforces: Dual-key pattern (id + brandId) on every multi-tenant table.
+      No cross-tenant data leakage in queries. Brand-scoped URLs maintain
+      isolation. Schema pattern exists; needs the cross-cutting test.
+    applies_to:
+      - ose
+      - osm
+      - oaw
+
+  # ── #10 DEPRECATION LOCK ──────────────────────────────────────────────────
+  - id: 10
+    name: deprecation_lock
+    title: Deprecation Lock
+    status: partial
+    test_file: deprecation-lock.invariant.spec.ts
+    enforces: Once a runtime is removed (GAS, Sheets, etc.), CI forbids its
+      re-introduction. Generalizes the existing scripts/guard-no-gas.js and
+      the no-GAS CI gate. Future deprecations (e.g., embedded HTML when
+      Phase 3 Firebase lands) inherit this pattern.
+    applies_to:
+      - ose
+      - osm
+      - wkrp
+      - oaw
+
+  # ── #11 SELF-HOSTED RUNNER BASH RESOLUTION ────────────────────────────────
+  - id: 11
+    name: self_hosted_runner_bash_resolution
+    title: Self-Hosted Runner Bash Resolution
+    status: partial
+    test_file: runner-environment.invariant.spec.ts
+    enforces: 'On Windows self-hosted runners (Bloodraven + any sibling
+      instances), `bash` MUST resolve to Git Bash (C:\Program
+      Files\Git\usr\bin\bash.exe), NEVER to the WSL/Microsoft Store shim at
+      C:\Users\<user>\AppData\Local\Microsoft\WindowsApps\bash.EXE. WSL bash
+      interprets backslashes in Windows paths as escape characters,
+      corrupting any `shell: bash` workflow step script-file path. Enforced
+      by: (a) provisioning script tools/runner/provision-runner.ps1 which
+      writes a canonical PATH into each runner''s .env file (Git Bash
+      first); (b) CI gate .github/workflows/runner-env-validation.yml which
+      runs first on every PR and fails fast with actionable error message if
+      the assigned runner is misconfigured; (c) runbook
+      tools/runner/README.md. Status partial — gate exists, provisioning is
+      procedural rather than automatic on `config.cmd` registration. Promote
+      to live once the provisioner is invoked automatically from a
+      runner-setup script.'
+    applies_to:
+      - ose
+      - osm
+      - wkrp
+      - oaw
+
+  # ── #12 RUNNER POOL READINESS PROBE ───────────────────────────────────────
+  - id: 12
+    name: runner_pool_readiness_probe
+    title: Runner Pool Readiness Probe
+    status: partial
+    test_file: runner-pool-readiness.invariant.spec.ts
+    enforces: 'Self-hosted runner pools MUST be self-healing on a 1-minute
+      cadence with a 5-minute watchdog. Concrete contract: (a) scheduled
+      task "Runner Readiness Probe (1-min)" runs tools/runner/janitor.ps1
+      -EnsureReady every 60 seconds — prunes orphan job children, kills
+      Workers exceeding per-workflow dwell caps (T0 Gate=10min, S0
+      Security=15min, T4 Functional=60min, default=15min), bounces Listeners
+      stuck on broker errors (SocketException 995 /
+      TaskAgentJobNotFoundException / BrokerServer ERR within last 3 min AND
+      no Running-job dispatch in that window). (b) Scheduled task "Runner
+      Probe Watchdog (5-min)" runs tools/runner/verify-probe-alive.ps1
+      reading actions-runner/_probe-heartbeat.txt — emits RUNNER_PROBE_DEAD
+      if the timestamp is stale, covering the case where the probe itself
+      stops (PowerShell breaks, task disabled, disk full). (c) Pool-wide
+      outage detection: when ALL runners share the same broker-error
+      signature within 5 min, SUPPRESS per-runner bounces and emit
+      GITHUB_SIDE_OUTAGE — bouncing into a dead upstream broker burns the
+      circuit-breaker budget. (d) Circuit breaker: 3 bounces of the same
+      runner in 60 min → STOP bouncing, emit RUNNER_POOL_DEGRADED. State
+      persists in actions-runner/_janitor-state.json. (e) Queue-idle signal
+      MUST be corroboration-gated, not a unilateral bounce trigger — an
+      upstream queue (CodeQL on ubuntu-latest, environment-approval blocks,
+      workflow_run waiters) is not proof of a local broker problem. A bounce
+      requires a recent broker error in THIS Listener''s diag log within 10
+      min as corroboration. The unilateral version of this signal caused
+      all 3 Bloodraven runners to trip the circuit breaker against healthy
+      idle Listeners during PR #159 — see Test-QueueIdleCorroborated
+      regression test for the lock-in. (f) Six structured log signals must
+      be emitted to actions-runner/_janitor.log: RUNNER_JANITOR (per-runner
+      cycle), RUNNER_POOL_READINESS (pool summary), RUNNER_POOL_DEGRADED
+      (circuit tripped), GITHUB_SIDE_OUTAGE (upstream broker dead),
+      RUNNER_PROBE_ALIVE (watchdog OK), RUNNER_PROBE_DEAD (watchdog alarm).
+      Log is auto-rotated at LogMaxMB (default 5 MB). (g) Pure-logic
+      regression suite at tools/runner/janitor.tests.ps1 (22 cases minimum)
+      MUST pass before any change to the janitor is merged — covers circuit
+      breaker state machine, UTC parse safety, per-workflow dwell lookups,
+      broker-error parsing, queue-idle corroboration. Installation is via
+      tools/runner/install-janitor-tasks.ps1 (no UAC required — LogonType
+      Interactive + RunLevel Limited). Status partial — scheduled tasks
+      must be installed manually after `config.cmd` registration. Promote
+      to live once the installer is auto-invoked from a runner-setup script
+      alongside provision-runner.ps1 (the same gap as invariant 11).
+      Without this invariant, stuck-runner incidents waste ~60 min of pool
+      throughput per occurrence + multiply the agent supervision-token cost
+      of every PR loop.'
+    applies_to:
+      - ose
+      - osm
+      - wkrp
+      - oaw
+    depends_on:
+      - self_hosted_runner_bash_resolution
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Enrichment History — append-only record of lean → rich (and other material)
+# invariant transitions. Documents the evolution of the registry over time so
+# future maintainers can trace WHY each invariant got the depth of
+# documentation it has, and HOW the pattern itself evolved.
+#
+# Pattern rule: when an invariant entry is materially expanded or its status
+# changes from planned/partial → live (or vice versa, with rationale), append
+# an entry here. NEVER delete past entries. NEVER renumber invariants. The
+# history is the contract.
+# ═════════════════════════════════════════════════════════════════════════════
+enrichment_history:
+  - invariant_id: 1
+    invariant_name: anonymous_id
+    from_state: >-
+      lean (pre-2026-05-17 — 1-sentence enforces; status live; 2 test files
+      implied via enforces text)
+    to_state: >-
+      rich (v1 — protective_statement + enforcement_statement + references
+      block naming ADR-001 + 5 enforcement mechanisms + customer artifact)
+    date: "2026-05-17"
+    pr_refs:
+      - "OCR-docs#PR-PENDING"  # OSE-319 — will update post-PR-create
+    rationale: >
+      Anonymous ID is the brand's load-bearing architectural commitment.
+      The lean form understated the breadth of enforcement (5 mechanisms:
+      two-DB static gate + PII column gate + cookie contract + anon-id-only
+      lookups + pool routing) and didn't reference ADR-001 where the design
+      decision was formally recorded. Enrichment aligns documentation depth
+      with the commitment's load-bearing weight. Sets the template pattern
+      for rich-form invariant entries.
+
+  - invariant_id: 3
+    invariant_name: uec_encoding
+    from_state: >-
+      lean (pre-2026-05-17 — single sentence enforces; one test file; status
+      live)
+    to_state: >-
+      rich (v1.1 — protective_statement + enforcement_statement + brain
+      artifact reference + schema reference + 3 CI gates OSE-322 / OSE-323
+      / OSE-324; invariant #1 cross-reference; title renamed from "UEC
+      Encoding" to "Universal Event Code Standard" for brand-readable
+      registry index)
+    date: "2026-05-17"
+    pr_refs:
+      - "OCR-docs#PR-PENDING"  # OSE-319 — will update post-PR-create
+      - "OCR-docs#49"  # OSE-318 — the brain artifact this enrichment references
+    rationale: >
+      UEC v1.1 was extracted to a canonical brain artifact
+      (ocr-docs-brain/uec-codes.yaml) on 2026-05-17 with the dual-palette
+      design (scan_hex contrast-validated + display_hex brand-warm).
+      Lean enforcement (one test file) upgraded to multi-gate enforcement
+      (brain artifact + schema + 3 downstream CI gates). Architectural
+      commitment unchanged; documentation + enforcement mechanism enriched.
+
+  - invariant_id: 5
+    invariant_name: tier_equity
+    from_state: >-
+      lean planned (pre-2026-05-17 — 1-paragraph enforces; depends on
+      tier-gates.yaml; no test file exists; title "Tier Equity / Pricing
+      Governance")
+    to_state: >-
+      rich planned (v1 — protective_statement + enforcement_statement +
+      references + activation_note + title renamed to "Local Sponsor
+      Covenant"; status REMAINS planned pending OSE-330 activation)
+    date: "2026-05-17"
+    pr_refs:
+      - "OCR-docs#PR-PENDING"  # OSE-319 — will update post-PR-create
+    rationale: >
+      Discovered during Co-Architect audit (2026-05-17) that #5 already
+      captures the founder's Local Sponsor Covenant — named in the
+      operating-system message 2026-05-17 as "local sponsors are always
+      guaranteed a place; they will never be pushed out of an event by the
+      premium buyer." Enrichment makes the brand framing readable from the
+      registry index. Activation (test + slot allocator + promote to live)
+      is sibling story OSE-330. Explicit note in the entry's
+      `activation_note` field: enrichment WITHOUT activation = false
+      confidence; this entry's status remains `planned` until the
+      activation story lands.
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Status summary — counts may include lean and rich forms; the form is
+# orthogonal to status. Live/partial/planned counts are recomputed on every
+# material change. Updated manually until level2_schema.py auto-computes.
+# ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 5
-  partial: 7
-  planned: 2
-  total: 14
+  live: 4    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation
+  partial: 6 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  planned: 2 # #5 tier_equity / Local Sponsor Covenant (rich planned), #7 aggregate_only_reporting
+  total: 12
+  rich_form: 3  # #1, #3, #5 enriched 2026-05-17 (trio)
+  lean_form: 9  # #2, #4, #6, #7, #8, #9, #10, #11, #12 — candidates for future enrichment

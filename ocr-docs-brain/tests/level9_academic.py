@@ -26,7 +26,7 @@ def load(f):
     path = BRAIN / f
     if not path.exists():
         return None
-    return yaml.safe_load(path.read_text())
+    return yaml.safe_load(path.read_text(encoding='utf-8'))
 
 DISCIPLINES = ['economic_geography', 'sociology', 'political_science', 'education']
 
