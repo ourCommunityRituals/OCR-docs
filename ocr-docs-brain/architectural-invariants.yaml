@@ -385,7 +385,7 @@ enrichment_history:
       block naming ADR-001 + 5 enforcement mechanisms + customer artifact)
     date: "2026-05-17"
     pr_refs:
-      - "OCR-docs#PR-PENDING"  # OSE-319 — will update post-PR-create
+      - "OCR-docs#50"  # OSE-319
     rationale: >
       Anonymous ID is the brand's load-bearing architectural commitment.
       The lean form understated the breadth of enforcement (5 mechanisms:
@@ -408,7 +408,7 @@ enrichment_history:
       registry index)
     date: "2026-05-17"
     pr_refs:
-      - "OCR-docs#PR-PENDING"  # OSE-319 — will update post-PR-create
+      - "OCR-docs#50"  # OSE-319
       - "OCR-docs#49"  # OSE-318 — the brain artifact this enrichment references
     rationale: >
       UEC v1.1 was extracted to a canonical brain artifact
@@ -430,7 +430,7 @@ enrichment_history:
       Covenant"; status REMAINS planned pending OSE-330 activation)
     date: "2026-05-17"
     pr_refs:
-      - "OCR-docs#PR-PENDING"  # OSE-319 — will update post-PR-create
+      - "OCR-docs#50"  # OSE-319
     rationale: >
       Discovered during Co-Architect audit (2026-05-17) that #5 already
       captures the founder's Local Sponsor Covenant — named in the
