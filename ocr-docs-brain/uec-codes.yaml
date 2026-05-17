@@ -1,0 +1,545 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Universal Event Code (UEC) v1.1 — Canonical Brain Artifact
+# ═══════════════════════════════════════════════════════════════════════════════
+#
+# The color-semantic QR standard for the OCR ecosystem.
+# 7 core codes + 4 extensions. Single source of truth for downstream consumption
+# across OSE (QR generation, sharedReport, posters), OSM, and all future OCR
+# substrates that render scan codes.
+#
+# Validated by uec-codes.schema.json. WCAG contrast enforcement on scan_hex is
+# computed by CI at brain-side (OSE-324) and substrate-side (OSE-322, OSE-323).
+#
+# This file is the answer to: "What color is SPONSOR?" "Does this UEC v1.1
+# instance still pass scannability?" "What palette do I use for the marketing
+# showcase vs. the QR module?" All three answers live here.
+#
+# Linear: OSE-318 (Story 1.1 of Epic OSE-315 / Feature OSE-316)
+# Provenance + design decisions: see provenance + notes sections below.
+# ═══════════════════════════════════════════════════════════════════════════════
+
+schema_version: 1.0.0
+version: "1.1"
+description: >
+  Universal Event Code v1.1 — the canonical color-semantic QR standard for the
+  OCR ecosystem. Each code carries TWO functional hex values: scan_hex (QR module
+  fill, WCAG-contrast-validated) and display_hex (UI showcase / marketing). One
+  semantic color per code; two functional values serving two different jobs.
+
+# ─── Provenance ────────────────────────────────────────────────────────────────
+# Why two palettes exist and where each value came from.
+provenance:
+  scan_palette:
+    source_files:
+      - app-repos/ourSharedEvents/docs/features/UEC-CODES.md
+      - app-repos/ourSharedEvents/tests/e2e/0-architecture/uec-codes.invariant.spec.ts
+    intent: QR module fill — must pass WCAG AA contrast on white background
+    rationale: >
+      QR scanning requires high foreground/background contrast. The v1.0 → v1.1
+      transition specifically fixed contrast failures (Yellow → Amber for FEEDBACK,
+      White → Charcoal for UTILITY). These values are contrast-validated and
+      currently enforced by the live Invariant #3 test (uec-codes.invariant.spec.ts).
+      They are non-negotiable for QR rendering: dropping below AA fails the brand
+      promise that "the color IS the instruction" because the instruction stops
+      being scannable.
+  display_palette:
+    source_files:
+      - app-repos/ourSharedEvents/reference/uec-system.jsx
+    intent: UI showcase + sponsor-facing marketing — brand-warm variant
+    rationale: >
+      Lighter, more vibrant variants serve sponsor decks, marketing screens, and
+      design system showcases where good lighting + larger surface area allow
+      richer hues. The semantic color is the same; the functional value differs
+      to optimize for human perception (display) vs. QR scan reliability (scan).
+      Treating these as one palette would force a compromise that fails one job.
+
+# ─── Palette usage contract ────────────────────────────────────────────────────
+# Each consumer surface picks which palette to use based on its job.
+palette_usage:
+  - field: scan_hex
+    used_in:
+      - QR code module fill (foreground color of the QR symbol)
+      - Physical poster QR rendering
+      - data-uec="<code>" CSS color tokens where the rendered element IS or
+        encloses a QR code
+    constraint: MUST yield WCAG AA contrast (≥4.5:1) on white (#FFFFFF) background.
+      Validated by CI (OSE-324 brain-side, OSE-322 substrate-side).
+  - field: display_hex
+    used_in:
+      - UI showcase cards (the UEC reference page, design system docs)
+      - Sponsor-facing marketing materials (decks, briefing.ts content)
+      - UEC reference React component (reference/uec-system.jsx)
+      - Design system color tokens for non-QR surfaces (badges, chips, accents)
+    constraint: No contrast requirement; visual brand fidelity is the priority.
+      MAY differ from scan_hex by being lighter/warmer; MUST share the same
+      semantic color family (e.g., both ENTER values are unambiguously "green").
+  - field: lightHex
+    handling: Derived at render time. NOT stored as a separate canonical value.
+    formula: "${display_hex}11"  # display_hex with alpha = 0x11 = 17/255 ≈ 6.7%
+    used_in:
+      - Card backgrounds in expanded/hover state (per JSX reference)
+      - Subtle backdrop tinting in UI surfaces
+    rationale: >
+      Storing a third hex value would create drift potential. Consumers needing
+      a literal lightHex compute it from display_hex at render time using the
+      documented formula. Schema does not require lightHex as a field.
+
+# ─── Verticals coverage matrix anchors ─────────────────────────────────────────
+# The canonical list of verticals against which each code's applicability is
+# expressed. event-taxonomy.yaml category coverage MUST be a subset of this list.
+verticals:
+  - Sports
+  - School
+  - Church
+  - Museum
+  - Rec Center
+  - Civic
+  - Tourism
+  - Bars
+  - Government
+  - Fundraising
+
+# ─── Codes ─────────────────────────────────────────────────────────────────────
+codes:
+  # ┌─ 7 CORE CODES ─────────────────────────────────────────────────────────────
+  - id: ENTER
+    num: "01"
+    label: Green
+    scan_hex: "#1A6B2F"
+    display_hex: "#2D6A4F"
+    semantics: Go · Access · Safe Passage
+    description: Venue entry, gate access, facility check-in, lobby scan, room unlock
+    url_path: /enter
+    phase: Arrival
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: CHANGE
+    wcag_grade: AAA
+    data_generated: [form_registrations, checkin_counts]
+    rationale:
+      psychology: Go, safe, proceed — same meaning in every culture on Earth
+      why: >
+        First scan of every event sets the tone for the entire platform
+        interaction. Traffic light green is the most universal "go" signal on
+        Earth. Works indoors and outdoors, legible at distance on signage.
+      contexts:
+        - Indoor signage
+        - Outdoor signage
+        - At-distance legibility
+        - Venue gate / lobby
+      verdict: No color challenge possible. Green for ENTER is permanent.
+
+  - id: LIVE
+    num: "02"
+    label: Coral
+    scan_hex: "#C04048"
+    display_hex: "#E07A5F"
+    semantics: Exciting · Warm · Now
+    description: Live scoring, real-time brackets, active event feed, fundraiser
+      thermometer, live auction
+    url_path: /live
+    phase: During
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: CHANGE
+    wcag_grade: AA
+    data_generated: [scans, scan_aggregates]
+    rationale:
+      psychology: Excitement + warmth, no alarm — midpoint of red energy and
+        orange inclusivity
+      why: >
+        Scanned at peak event energy. Coral sits at the exact midpoint between
+        red's excitement and orange's warmth — without the baggage of either.
+        Works at a bocce tournament AND a church fundraiser equally.
+      contexts:
+        - Peak foot traffic
+        - Real-time score boards
+        - Live feeds / activity displays
+      verdict: >
+        Replaces v1.0 Orange/GAME. Orange carried caution/industrial associations
+        incompatible with school and church contexts. GAME was too narrow — LIVE
+        covers all event types.
+
+  - id: SPONSOR
+    num: "03"
+    label: Blue
+    scan_hex: "#1A3A8A"
+    display_hex: "#1D3557"
+    semantics: Trust · Commerce · Partnership
+    description: Sponsor landing page, partner offers, advertiser profile, brand
+      activation, local business deals
+    url_path: /sponsor
+    phase: During
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: KEEP
+    wcag_grade: AAA
+    data_generated: [sponsors, source_placement_id]
+    rationale:
+      psychology: Trust, institution, value — banks, hospitals, governments worldwide
+      why: >
+        Highest contrast core code against white. Blue universally signals
+        institutional trust. Sponsors recognize blue as "their" color — reduces
+        friction at point of scan. Critical revenue code — premium placement on
+        all posters and signage.
+      contexts:
+        - Sponsor placements on posters
+        - Sponsor landing pages
+        - Local-sponsor covenant placements (guaranteed)
+        - Premium / paid placement slots
+      verdict: The most valuable pixel in the system. Blue for SPONSOR is permanent.
+
+  - id: ARCHIVE
+    num: "04"
+    label: Purple
+    scan_hex: "#5E1A9A"
+    display_hex: "#6C3483"
+    semantics: Memory · History · Record
+    description: Past results, statistics, event memories, photos, SharedReport,
+      legacy data, season records
+    url_path: /archive
+    phase: Post
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: KEEP
+    wcag_grade: AA
+    data_generated: [scan_aggregates, form_analytics]
+    rationale:
+      psychology: Permanence, memory, royalty — thousands of years across cultures
+      why: >
+        The archive is the competitive moat — most platforms end when the event
+        ends. This code brings people back between events; core loyalty driver.
+        Purple has meant permanence and importance across Western and Eastern
+        cultures for thousands of years.
+      contexts:
+        - SharedReport surfaces
+        - Post-event recap pages
+        - Historical/season pages
+        - Compounding-activity displays
+      verdict: Premium color for the platform's most differentiated feature. Permanent.
+
+  - id: HELP
+    num: "05"
+    label: Pink
+    scan_hex: "#B01468"
+    display_hex: "#D4668E"
+    semantics: Care · Assistance · Accessibility
+    description: ADA assistance, staff contact, first aid location, lost & found,
+      volunteer info, accessibility services
+    url_path: /help
+    phase: Anytime
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: ADD
+    wcag_grade: AA
+    data_generated: []
+    rationale:
+      psychology: Care, assistance, compassion — healthcare and safety globally
+      why: >
+        Fills a gap that exists at every single event in every vertical. An
+        elderly attendee needing accessible seating. A lost child. A medical
+        situation. Pink makes help visible without stigma. Critical for ADA
+        compliance signage at schools and civic venues.
+      contexts:
+        - ADA-required signage
+        - First aid stations
+        - Lost & found
+        - Volunteer/staff support points
+      verdict: New addition in v1.1. Highest human stakes of any code — help when
+        it's actually needed.
+
+  - id: FEEDBACK
+    num: "06"
+    label: Amber
+    scan_hex: "#8A5A00"
+    display_hex: "#C4930A"
+    semantics: Voice · Opinion · Response
+    description: Attendee surveys, player ratings, post-event input, experience
+      scoring, community voice
+    url_path: /feedback
+    phase: Post
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: CHANGE
+    wcag_grade: AA
+    data_generated: [form_surveys, email_signups]
+    rationale:
+      psychology: Reflection, warmth, completion — harvest and gold
+      why: >
+        Feedback closes the flywheel. If attendees feel invited rather than
+        interrogated, completion rates rise. Amber is warm without being alarming
+        — invites reflection rather than demanding attention.
+      contexts:
+        - Post-event surveys
+        - Email signup at event close
+        - Rating prompts
+      verdict: >
+        Changed from v1.0 Yellow. Yellow fails QR scanning — near-zero contrast on
+        white. Yellow's universal meaning is caution, not conversation. Dark amber
+        preserves warmth while achieving reliable scan contrast.
+
+  - id: UTILITY
+    num: "07"
+    label: Charcoal
+    scan_hex: "#2A2A3A"
+    display_hex: "#4A4A4A"
+    semantics: General · Info · Infrastructure
+    description: WiFi password, schedule PDF, venue map, general announcements,
+      admin quick links
+    url_path: /utility
+    phase: Anytime
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: CHANGE
+    wcag_grade: AAA
+    data_generated: []
+    rationale:
+      psychology: Infrastructure, backstage, utility — circuit breakers, server racks
+      why: >
+        Maximum possible contrast — most scannable code in the system. Neutral
+        charcoal reads as infrastructure (backstage, utility, general info).
+        Catch-all code — anything without a dedicated UEC color receives charcoal.
+      contexts:
+        - WiFi password posters
+        - Venue maps / schedules
+        - Admin quick links
+        - Catch-all general info
+      verdict: >
+        Changed from v1.0 White. White QR modules on white background are
+        physically impossible to scan. Zero contrast. Charcoal is the correct fix.
+
+  # ┌─ 4 EXTENSION CODES ────────────────────────────────────────────────────────
+  - id: ALERT
+    num: "08"
+    label: Yellow
+    scan_hex: "#B8960A"
+    display_hex: "#B8960A"
+    semantics: Caution · Safety · Urgent
+    description: Safety notices, weather delays, venue emergencies, schedule changes
+    url_path: /alert
+    phase: Anytime
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
+    status: ADD
+    extension_priority: HIGH
+    wcag_grade: AA
+    data_generated: []
+    rationale:
+      psychology: Caution, safety — the one color whose meaning is universal and
+        non-negotiable
+      why: >
+        The one color whose meaning is universal and non-negotiable. Yellow means
+        caution — reserved exclusively for urgent real-world alerts. Reintroduced
+        in v1.1 as an extension code with valid contrast (dark yellow / amber-gold)
+        because the safety semantic is too important to lose, but it's kept out of
+        the core 7 because alerts are inherently exceptional, not part of the
+        standard attendee journey.
+      contexts:
+        - Weather delays
+        - Venue emergencies
+        - Safety announcements
+        - Schedule change broadcasts
+      verdict: >
+        Yellow as extension (not core) preserves the universal caution semantic
+        while acknowledging alerts are exceptional events. For emergency signage,
+        ALERT codes MAY use alternative printing methods (yellow background with
+        dark modules) where the standard contrast assumption is moot.
+
+  - id: STAFF
+    num: "09"
+    label: Red
+    scan_hex: "#A00020"
+    display_hex: "#A00020"
+    semantics: Authority · Restricted · Operational
+    description: Staff-only pages, volunteer check-in, backstage access, admin tools,
+      event worker resources
+    url_path: /staff
+    phase: Anytime
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic, Government]
+    status: KEEP
+    extension_priority: HIGH
+    wcag_grade: AAA
+    data_generated: []
+    rationale:
+      psychology: Authority, restricted access — universal "stop / staff-only" signal
+      why: >
+        Separates operational codes from public-facing codes. Staff see red;
+        attendees do not. Reduces visual noise for general attendees while giving
+        operations a distinct, instantly-recognizable surface.
+      contexts:
+        - Backstage access points
+        - Volunteer check-in
+        - Admin quick links
+        - Operational dashboards
+      verdict: >
+        Excluded from Tourism and Bars verticals (no staff-page concept in those
+        contexts). Authority-coded red is unambiguous globally.
+
+  - id: CHECK-IN
+    num: "10"
+    label: Teal
+    scan_hex: "#006B6B"
+    display_hex: "#006B6B"
+    semantics: Attendance · Roster · Verification
+    description: Attendance tracking, membership verification, roster check-in,
+      season pass confirmation
+    url_path: /check-in
+    phase: Arrival
+    verticals: [Sports, School, Church, Museum, Rec Center, Civic]
+    status: KEEP
+    extension_priority: MEDIUM
+    wcag_grade: AAA
+    data_generated: [checkin_counts_with_roster]
+    rationale:
+      psychology: Verification, list-based confirmation — distinct from ENTER
+      why: >
+        Distinct from ENTER — you can enter a building but still need to register
+        attendance separately. Critical for school, church, sports, and civic
+        contexts where membership matters and entry doesn't equal verified
+        attendance.
+      contexts:
+        - School attendance
+        - Church membership rolls
+        - Sports league rosters
+        - Season-pass confirmation
+      verdict: >
+        Excluded from Tourism, Bars, Government, Fundraising (those contexts
+        don't have a roster-distinct-from-entry concept). Teal is visually
+        distinct from green (ENTER) which prevents semantic collision.
+
+  - id: SHOP
+    num: "11"
+    label: Dark Teal
+    scan_hex: "#1A4A48"
+    display_hex: "#1A4A48"
+    semantics: Commerce · Transaction · Purchase
+    description: Merchandise, ticket upgrades, concession ordering, silent auction,
+      fundraising purchases
+    url_path: /shop
+    phase: During
+    verticals: [Sports, Museum, Tourism, Bars, Fundraising]
+    status: KEEP
+    extension_priority: MEDIUM
+    wcag_grade: AAA
+    data_generated: [sponsor_click_impression_tokens]
+    rationale:
+      psychology: Commerce beyond sponsors — buying as transaction, not relationship
+      why: >
+        Separates buying (transaction) from sponsorship (relationship). Shop is
+        attendee-initiated; sponsor is platform-placed. Distinct from blue
+        (SPONSOR) because the attendee's relationship to the action is different.
+      contexts:
+        - Merch booths
+        - Concession ordering
+        - Silent auctions
+        - Fundraising purchases
+      verdict: >
+        Limited to verticals where attendee-initiated purchase is part of the
+        event experience (Sports, Museum, Tourism, Bars, Fundraising). Dark teal
+        is visually adjacent to teal (CHECK-IN) but operationally distinct.
+
+# ─── Changelog v1.0 → v1.1 ─────────────────────────────────────────────────────
+changelog:
+  - from: DOOR (v1.0)
+    to: ENTER (v1.1)
+    code: ENTER
+    type: rename
+    reason: >
+      'Enter' generalizes better than 'door' for non-physical entry contexts
+      (digital check-in, event start). Same semantic, broader applicability.
+
+  - from: Orange / GAME (v1.0)
+    to: Coral / LIVE (v1.1)
+    code: LIVE
+    type: color_and_name_change
+    reason: >
+      Orange = caution/industrial associations incompatible with school + church.
+      GAME too narrow for non-sports verticals. Coral keeps energy without alarm;
+      LIVE covers all event types (church fundraiser, museum opening, bar trivia).
+
+  - from: Yellow / FEEDBACK (v1.0)
+    to: Amber / FEEDBACK (v1.1)
+    code: FEEDBACK
+    type: color_change
+    reason: >
+      Yellow fails QR scanning — near-zero contrast on white background. Yellow
+      means caution, not conversation. Dark amber preserves warmth while
+      achieving reliable scan contrast.
+
+  - from: White / UTILITY (v1.0)
+    to: Charcoal / UTILITY (v1.1)
+    code: UTILITY
+    type: color_change
+    reason: >
+      White QR modules on white background are physically impossible to scan.
+      Zero contrast. Charcoal is the correct fix and yields the highest contrast
+      in the entire system.
+
+  - from: "(none in v1.0)"
+    to: Pink / HELP (v1.1)
+    code: HELP
+    type: addition
+    reason: >
+      Fills the ADA/accessibility gap that exists at every single event in every
+      vertical. Help when it's actually needed without stigma. Critical for
+      schools and civic venues with ADA signage requirements.
+
+  - from: "Yellow (removed from core in v1.0)"
+    to: Yellow / ALERT (v1.1 extension)
+    code: ALERT
+    type: extension_introduction
+    reason: >
+      Yellow's universal meaning is caution — too important to lose entirely.
+      Reintroduced as an extension code reserved for urgent real-world alerts.
+      As an extension, ALERT codes can use alternative printing methods (yellow
+      background with dark modules) when needed for emergency signage where the
+      standard contrast assumption is moot.
+
+# ─── Architectural notes for future maintainers ────────────────────────────────
+notes:
+  num_assignment_for_extensions:
+    decision: Extensions are numbered 08–11 in source order (ALERT, STAFF, CHECK-IN, SHOP).
+    rationale: >
+      Acceptance criteria require `num` on all 11 codes. The JSX source did not
+      number extensions. Order follows the JSX const declaration order and the
+      MD extension table order — both agree. Future v1.2 additions append
+      starting at 12 unless explicitly versioned otherwise.
+
+  scan_vs_display_palette:
+    decision: Both palettes are canonical; both required on every code.
+    rationale: >
+      Two distinct functional jobs (QR module fill vs. UI/marketing showcase)
+      need two values to serve well. Picking one would force a compromise that
+      fails the other job. Schema (uec-codes.schema.json) enforces structure;
+      CI gate OSE-324 enforces WCAG AA on scan_hex via computation.
+    consequence: >
+      Any future change to a code's scan_hex MUST be validated against WCAG AA
+      contrast before merge. CI is the gate; this YAML is the source of truth.
+
+  lightHex_handling:
+    decision: NOT stored as a separate canonical value.
+    rationale: >
+      AC for OSE-318 mentions a `lightHex` field. Investigation: the JSX uses
+      `${color}11` — an alpha-overlay derivation of display_hex, not a separate
+      stored value. Storing it as a third hex would create drift potential.
+      Consumers needing a literal lightHex compute it from display_hex + 6.7%
+      alpha at render time. Formula documented in palette_usage above.
+
+  semantic_color_vs_functional_value:
+    principle: >
+      The semantic color (Green, Blue, Pink, etc.) is the brand contract. The
+      functional values (scan_hex, display_hex) are the precise renderings of
+      that contract for different surfaces. Both scan_hex and display_hex for
+      a given code MUST belong to the same semantic color family — a viewer
+      seeing either should think "green" for ENTER, "blue" for SPONSOR. This
+      is enforced socially (PR review) not yet mechanically.
+
+  invariant_3_existing_entry:
+    note: >
+      architectural-invariants.yaml already contains an entry for invariant #3
+      (uec_encoding, status: live). OSE-319 should EXPAND that entry to
+      reference this canonical artifact (uec-codes.yaml) and add v1.1-specific
+      enforcement details, NOT create a new numbered invariant. This avoids
+      double-numbering the same architectural commitment.
+
+  downstream_consumer_pattern:
+    description: >
+      Every OCR substrate (OSE, OSM, future products) that renders UEC codes
+      consumes this artifact at build time. Pattern:
+        1. Read uec-codes.yaml (this file)
+        2. Validate via uec-codes.schema.json
+        3. Use scan_hex for QR rendering; display_hex for UI showcases
+        4. Drift-check periodically (OSE-323 pattern) — any local copy that
+           diverges from the brain must fail CI on the substrate side.
