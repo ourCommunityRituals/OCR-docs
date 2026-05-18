@@ -437,6 +437,113 @@ else:
           f'{UEC_FILE} missing — required artifact since OSE-318 merge 2026-05-17')
 
 # ---------------------------------------------------------------------------
+# 1.11 — Sponsor allocation canonical (added 2026-05-18 / OSE-330 Phase 1)
+# ---------------------------------------------------------------------------
+# Validates sponsor-allocation.yaml — codifies the Local Sponsor Covenant
+# (architectural-invariants.yaml Invariant #5) display-priority rule + future
+# slot-cap floor scaffolding. Structural validation only here; mechanical
+# enforcement happens in OSE substrate (OSE-330 Phase 2 — sponsor-resolver
+# tierSort upgrade + tier-equity.invariant.spec.ts).
+SPONSOR_ALLOC_FILE = 'sponsor-allocation.yaml'
+if (BRAIN / SPONSOR_ALLOC_FILE).exists():
+    sa = load(SPONSOR_ALLOC_FILE)
+
+    # 1.11.1 — Required top-level keys
+    SA_TOP_KEYS = ['schema_version', 'version', 'description', 'covenant',
+                   'classification', 'display_priority', 'slot_floor',
+                   'drift_detection']
+    missing_sa = [k for k in SA_TOP_KEYS if k not in sa]
+    check('sponsor_alloc_top_keys', not missing_sa,
+          f'missing {missing_sa}' if missing_sa else f'all {len(SA_TOP_KEYS)} present')
+
+    # 1.11.2 — covenant required subfields
+    covenant = sa.get('covenant') or {}
+    COV_REQUIRED = ['statement', 'brand_promise', 'applies_to']
+    missing_cov = [f for f in COV_REQUIRED if f not in covenant]
+    check('sponsor_alloc_covenant_required', not missing_cov,
+          f'missing {missing_cov}' if missing_cov else 'complete')
+    check('sponsor_alloc_covenant_applies_to_nonempty',
+          isinstance(covenant.get('applies_to'), list) and len(covenant['applies_to']) > 0,
+          f'{len(covenant.get("applies_to", []))} substrates')
+
+    # 1.11.3 — classification required subfields (the is_local boolean contract)
+    classification = sa.get('classification') or {}
+    CLS_REQUIRED = ['field', 'type', 'default', 'description', 'semantics']
+    missing_cls = [f for f in CLS_REQUIRED if f not in classification]
+    check('sponsor_alloc_classification_required', not missing_cls,
+          f'missing {missing_cls}' if missing_cls else 'complete')
+    check('sponsor_alloc_classification_field',
+          classification.get('field') == 'is_local',
+          f'field = {classification.get("field")!r} (expected "is_local")')
+    check('sponsor_alloc_classification_type',
+          classification.get('type') == 'boolean',
+          f'type = {classification.get("type")!r} (expected "boolean")')
+
+    # 1.11.4 — display_priority rule enum
+    display_priority = sa.get('display_priority') or {}
+    DP_REQUIRED = ['rule', 'description', 'enforcement']
+    missing_dp = [f for f in DP_REQUIRED if f not in display_priority]
+    check('sponsor_alloc_display_priority_required', not missing_dp,
+          f'missing {missing_dp}' if missing_dp else 'complete')
+    DP_RULE_ENUM = ['locals_first']
+    check('sponsor_alloc_display_priority_rule_enum',
+          display_priority.get('rule') in DP_RULE_ENUM,
+          f'rule = {display_priority.get("rule")!r} (expected one of {DP_RULE_ENUM})')
+
+    # 1.11.5 — slot_floor surfaces (future-proofing scaffolding)
+    slot_floor = sa.get('slot_floor') or {}
+    SF_REQUIRED = ['status', 'description', 'surfaces']
+    missing_sf = [f for f in SF_REQUIRED if f not in slot_floor]
+    check('sponsor_alloc_slot_floor_required', not missing_sf,
+          f'missing {missing_sf}' if missing_sf else 'complete')
+    SF_STATUS_ENUM = ['scaffolded', 'active']
+    check('sponsor_alloc_slot_floor_status_enum',
+          slot_floor.get('status') in SF_STATUS_ENUM,
+          f'status = {slot_floor.get("status")!r} (expected one of {SF_STATUS_ENUM})')
+    # Each surface entry must have cap (null or int) + local_floor (int) + rationale
+    surfaces = slot_floor.get('surfaces') or {}
+    for surface_name, surface_def in surfaces.items():
+        if not isinstance(surface_def, dict):
+            check(f'sponsor_alloc_surface_is_dict:{surface_name}', False,
+                  f'expected dict, got {type(surface_def).__name__}')
+            continue
+        cap = surface_def.get('cap')
+        check(f'sponsor_alloc_surface_cap_type:{surface_name}',
+              cap is None or isinstance(cap, int),
+              f'cap = {cap!r} (expected null or int)')
+        floor = surface_def.get('local_floor')
+        check(f'sponsor_alloc_surface_local_floor_type:{surface_name}',
+              isinstance(floor, int) and floor >= 0,
+              f'local_floor = {floor!r} (expected non-negative int)')
+        check(f'sponsor_alloc_surface_has_rationale:{surface_name}',
+              isinstance(surface_def.get('rationale'), str) and len(surface_def['rationale']) > 10,
+              'rationale missing or too short')
+
+    # 1.11.6 — drift_detection status
+    drift = sa.get('drift_detection') or {}
+    DRIFT_STATUS_ENUM = ['planned', 'active']
+    check('sponsor_alloc_drift_detection_status',
+          drift.get('status') in DRIFT_STATUS_ENUM,
+          f'status = {drift.get("status")!r} (expected one of {DRIFT_STATUS_ENUM})')
+
+    # 1.11.7 — Invariant #5 references this artifact (cross-reference integrity)
+    inv5 = next((i for i in inv.get('invariants', []) if i.get('id') == 5), None)
+    if inv5 is not None:
+        depends = inv5.get('depends_on') or []
+        check('sponsor_alloc_invariant5_depends_on',
+              SPONSOR_ALLOC_FILE in depends,
+              f'Invariant #5 depends_on = {depends} (must include {SPONSOR_ALLOC_FILE})')
+        refs = inv5.get('references') or {}
+        check('sponsor_alloc_invariant5_brain_canonical',
+              refs.get('brain_canonical', '').endswith(SPONSOR_ALLOC_FILE),
+              f'Invariant #5 references.brain_canonical = {refs.get("brain_canonical")!r} (must end with {SPONSOR_ALLOC_FILE})')
+else:
+    # Soft-pass when artifact not present (future-tolerant; will become hard when
+    # OSE-330 Phase 2 makes the artifact load-bearing for the OSE-side resolver)
+    check('sponsor_alloc_file_present', True,
+          f'{SPONSOR_ALLOC_FILE} not yet present (soft-pass; becomes hard once OSE-330 Phase 2 ships)')
+
+# ---------------------------------------------------------------------------
 # REPORT
 # ---------------------------------------------------------------------------
 passed = sum(1 for _, s, _ in results if s == 'PASS')

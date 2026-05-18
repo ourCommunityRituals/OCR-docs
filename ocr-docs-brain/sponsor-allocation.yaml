@@ -1,0 +1,178 @@
+# ═════════════════════════════════════════════════════════════════════════════
+# Sponsor allocation — canonical rules governing how sponsors appear at events.
+# ═════════════════════════════════════════════════════════════════════════════
+#
+# This artifact codifies the Local Sponsor Covenant referenced by
+# architectural-invariants.yaml Invariant #5 (`tier_equity`, brand-readable
+# title "Local Sponsor Covenant"). The covenant is one of the THREE
+# load-bearing brand commitments OSE makes:
+#
+#   #1 Anonymous ID            — privacy is the architecture
+#   #3 UEC                     — the color IS the instruction
+#   #5 Local Sponsor Covenant  — the local stays in (this artifact)
+#
+# Together these three commitments define OSE as non-substitutable.
+#
+# Substrate consumers (today: OSE) read this artifact at build time to
+# parameterize their sponsor allocator behavior. Drift between this brain
+# canonical and the OSE consumed copy is caught by the OSE-323 pattern
+# extended to this artifact (future story — OSE-323 today only covers
+# uec-codes.yaml; sponsor-allocation.yaml drift is human-review-gated
+# until that extension lands).
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+schema_version: 1.0.0
+version: "1.0"
+description: >
+  Canonical sponsor-allocation rules for OSE substrate consumption.
+  Governs display priority + (future) slot-cap floor enforcement so that
+  local sponsors are never displaced by premium-pricing-tier sponsors.
+
+# ─── The covenant ────────────────────────────────────────────────────────────
+# Plain-language statement of what these rules enforce. The Voice Constant
+# attribute "Privacy-forward by design" (per brand-voice-guidelines §2)
+# has its parallel here in "Local-first by design."
+covenant:
+  statement: >
+    Local sponsors are guaranteed display priority at every event, at every
+    pricing tier, regardless of how much a premium buyer pays. A premium
+    sponsor's payment buys position WITHIN the non-local tier — never the
+    ability to displace a local sponsor from their slot.
+  brand_promise: >
+    A sponsor matching platform that pushes the highest bidder to the top
+    is a standard ad network. OSE's covenant — that the local stays in —
+    is the differentiating brand promise that creates the local-economy
+    flywheel.
+  applies_to:
+    - ose
+    # When OSM, OW, OA add sponsor surfaces, append here. The covenant
+    # generalizes across every OCR product that emits sponsor placements.
+
+# ─── Sponsor classification: is_local boolean ────────────────────────────────
+# Sponsors carry an orthogonal `is_local` boolean classification, distinct
+# from their pricing tier (title/platinum/gold/silver/bronze/primary).
+# A sponsor can be both is_local=true AND pricing-tier=platinum — these
+# are independent dimensions.
+classification:
+  field: is_local
+  type: boolean
+  default: false
+  description: >
+    True when the sponsor is a local business in the event's neighborhood.
+    Today the determination is admin-set during sponsor creation/edit;
+    future stories may add automatic geographic-proximity detection.
+  semantics:
+    - Local sponsors get display-priority bump (see display_priority below)
+    - Local sponsors count toward the per-surface floor (see slot_floor below)
+    - Pricing tier still affects ORDER WITHIN local sponsors AND ORDER
+      WITHIN non-local sponsors, but does NOT mix the two groups
+
+# ─── Display priority enforcement (live in OSE today via OSE-330) ────────────
+# When a surface displays sponsors, locals appear BEFORE non-locals
+# regardless of pricing tier. Within each group, pricing tier breaks ties.
+display_priority:
+  rule: locals_first
+  description: >
+    Sort order across any sponsor list rendered to a customer surface:
+    1. All sponsors with is_local=true, sorted by tier priority
+       (title > platinum > gold > silver > bronze > primary)
+    2. All sponsors with is_local=false, sorted by tier priority
+    No interleaving. A primary-tier local appears before a platinum-tier
+    non-local. This is the LITERAL mechanical implementation of the
+    covenant.
+  enforcement:
+    - "OSE substrate — src/lib/sponsor-resolver.ts tierSort() upgraded to bump is_local=true entries to top"
+    - "Invariant test — tests/e2e/0-architecture/tier-equity.invariant.spec.ts asserts the sort property holds for arbitrary mixed inputs"
+  exemptions: []  # No surface is exempt. Locals-first applies universally.
+
+# ─── Slot-cap floor (future-proofing, no current enforcement) ────────────────
+# Today's OSE surfaces don't enforce a slot cap — all sponsors that opted
+# into a placement_format get displayed (rotated through). When future
+# surfaces add a slot cap (e.g., "TV shows only top 3 sponsors per cycle"),
+# this section defines the FLOOR of guaranteed-local slots per surface so
+# the covenant continues to hold under capped-rendering conditions.
+#
+# Status: SPECULATIVE INFRASTRUCTURE — not active today. Once a surface
+# adds a slot cap, the OSE allocator reads this section to determine the
+# minimum number of local sponsors that must appear before any non-local
+# is included.
+slot_floor:
+  status: scaffolded
+  description: >
+    Reserved configuration shape for the future where a customer surface
+    enforces a top-N slot cap. When that happens, this section defines
+    the minimum local-sponsor count per surface so the covenant's
+    "guaranteed a place" promise holds even under capped rendering.
+  surfaces:
+    posterTop:
+      cap: null            # null = no cap today; all opted-in sponsors display
+      local_floor: 1       # future: when cap is set, reserve >= 1 slot for locals
+      rationale: >
+        Poster is the highest-visibility physical surface. Local sponsors
+        guaranteed at least 1 of the cap slots when cap > 0.
+    tvTop:
+      cap: null
+      local_floor: 1
+      rationale: >
+        TV top banner. Same local-first guarantee as poster.
+    tvSide:
+      cap: null
+      local_floor: 2
+      rationale: >
+        TV sidebar has more slots historically; double the local floor.
+    mobileBanner:
+      cap: null
+      local_floor: 0
+      rationale: >
+        Mobile banner is a single-impression surface; tier sort already
+        delivers locals-first via display_priority above. No additional
+        floor needed when cap is set.
+
+# ─── Drift detection ─────────────────────────────────────────────────────────
+# Future story (OSE-323 extension) will compare OSE's consumed copy of
+# these rules against this brain canonical, same pattern as uec-codes.yaml.
+# Until that ships, drift is caught at PR-review time via human inspection
+# of the OSE consumed copy at workers/oursharedevents/src/lib/sponsor-allocation.ts.
+drift_detection:
+  status: planned
+  ose_consumed_copy: workers/oursharedevents/src/lib/sponsor-allocation.ts
+  future_story: OSE-3xx (extend OSE-323 drift check to sponsor-allocation.yaml)
+  current_mitigation: PR-review discipline + commit message references
+
+# ─── Architectural notes for future maintainers ──────────────────────────────
+notes:
+  why_separate_from_tier_gates:
+    decision: sponsor-allocation.yaml is a separate brain artifact from tier-gates.yaml
+    rationale: >
+      tier-gates.yaml governs feature availability per PRICING tier
+      (Free/Mid/Premium customer subscription). sponsor-allocation.yaml
+      governs how SPONSORS (display surfaces on the bar-owner's events)
+      are positioned. Two different "tier" concepts; conflating them
+      would create confusion and brittleness.
+
+  why_is_local_not_a_tier_value:
+    decision: is_local is a boolean classification, orthogonal to pricing tier
+    rationale: >
+      A sponsor can pay for platinum-tier prominence AND be a local business.
+      Forcing is_local into the tier enum (e.g., "local-platinum" vs
+      "premium-platinum") would 2× the tier permutations and lose the
+      independent dimensions. Boolean classification + tier sort = cleanest.
+
+  why_locals_first_without_interleaving:
+    decision: Sort is locals (by tier), then non-locals (by tier). No interleaving.
+    rationale: >
+      Interleaving (e.g., "platinum-local > platinum-nonlocal > gold-local >
+      gold-nonlocal") would let a paying platinum push a gold local down.
+      Strict locals-first means a primary-tier local always beats a platinum
+      non-local. Honors the covenant's brand promise literally — the
+      premium tier buys position WITHIN non-locals, never across the
+      local/non-local boundary.
+
+  what_about_no_locals_today:
+    decision: Until any sponsor has is_local=true, display order is unchanged.
+    rationale: >
+      Backward-compatible by design. Existing events with no local sponsors
+      see no behavior change. The covenant kicks in the moment an admin
+      marks the first sponsor as local. Migration adds is_local=false
+      default to all existing rows; admins opt-in per sponsor.
