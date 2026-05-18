@@ -395,6 +395,16 @@ if (BRAIN / UEC_FILE).exists():
             missing_rat = [f for f in rat_required if f not in rat]
             check(f'uec_code_rationale_required:{cid}', not missing_rat,
                   f'missing rationale subs: {missing_rat}' if missing_rat else 'complete')
+        # requires_alt_print boolean (OSE-324, added 2026-05-18) — carve-out
+        # marker for codes that legitimately can't pass WCAG-on-white (e.g.,
+        # ALERT yellow). Optional; when present must be boolean true (presence
+        # is the signal; false is meaningless and would only add noise).
+        if 'requires_alt_print' in code:
+            rap = code['requires_alt_print']
+            check(f'uec_code_requires_alt_print_type:{cid}',
+                  isinstance(rap, bool) and rap is True,
+                  f'must be boolean true (presence is the signal); got {type(rap).__name__}: {rap!r}'
+                  if not (isinstance(rap, bool) and rap is True) else 'ok (true)')
 
     # 1.10.5 — All code IDs unique
     code_ids = [c.get('id') for c in codes if isinstance(c, dict)]

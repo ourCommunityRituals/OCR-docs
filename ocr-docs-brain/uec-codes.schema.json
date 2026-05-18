@@ -177,6 +177,10 @@
           "description": "BigQuery / D1 table names this code's scans feed into. Empty array OK for utility codes that don't generate tracking data."
         },
         "extension_priority": { "$ref": "#/$defs/extensionPriority" },
+        "requires_alt_print": {
+          "type": "boolean",
+          "description": "Optional carve-out marker for codes whose scan_hex fundamentally cannot pass WCAG contrast on white (e.g., ALERT yellow). When true, the WCAG-on-white CI gate (OSE-324, level3_unit.py) SKIPS this code's contrast computation. Codes marking this MUST justify the carve-out in their rationale.verdict, and MUST require alternative print substrate (e.g., yellow background with dark modules) to remain scannable. Defaults to false / absent (most codes follow standard WCAG-on-white)."
+        },
         "rationale": {
           "type": "object",
           "required": ["psychology", "why", "contexts", "verdict"],
