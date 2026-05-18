@@ -160,17 +160,18 @@ invariants:
   - id: 5
     name: tier_equity
     title: Local Sponsor Covenant
-    status: planned
+    status: partial
     test_file: tier-equity.invariant.spec.ts
     enforces: Pricing tiers govern display priority within events only —
-      never platform access. Same QR system, same form quality, same
+      never platform access. Local sponsors get top-of-display position
+      regardless of pricing tier. Same QR system, same form quality, same
       privacy protection, same real-time counts at every tier. Local
       stays in at all flag levels.
     applies_to:
       - ose
       - osm
     depends_on:
-      - tier-gates.yaml
+      - sponsor-allocation.yaml
     protective_statement: >
       Pricing tiers govern display priority within events ONLY — never
       platform access. Local sponsors are guaranteed a place at every
@@ -183,26 +184,40 @@ invariants:
       auction; with it, OSE is the only platform in the market that takes
       local-economy commerce as architectural commitment.
     enforcement_statement: >
-      The sponsor slot allocator reserves a fixed proportion of event
-      placements for local-tier sponsors regardless of premium bids. The
-      invariant test (tier-equity.invariant.spec.ts, to be written by
-      sibling activation story OSE-330) asserts that for any event with N
-      local-tier sponsors registered, at least min(N, FLOOR) of them
-      appear in the rendered sponsor placement slots — no premium-paid
-      placement displaces a registered local sponsor. CI fails the build
-      on any code path that would allow local-sponsor displacement. FLOOR
-      value sourced from tier-gates.yaml (never hardcoded in OSE).
+      Mechanism is display-priority enforcement (not slot allocation —
+      current OSE architecture has no slot cap on sponsor surfaces, so
+      "displacement" can only happen via sort order, not via exclusion).
+      Brain canonical at sponsor-allocation.yaml codifies the locals-first
+      rule. OSE-side sponsor-resolver's tierSort() bumps is_local=true
+      sponsors to the top of every rendered list regardless of pricing
+      tier. The invariant test (tier-equity.invariant.spec.ts, written
+      by OSE-330 Phase 2) asserts: (a) any non-empty mix of local + non-
+      local sponsors returns locals before non-locals; (b) within each
+      group, pricing tier breaks ties; (c) adding a higher-tier non-local
+      never pushes a local below it. CI fails the build on any code path
+      that would allow a local sponsor to be displayed after a non-local
+      regardless of tier. The slot-cap floor scaffolding in
+      sponsor-allocation.yaml is reserved for FUTURE surfaces that add
+      capped rendering — not active today.
     references:
-      dependency: "tier-gates.yaml (source of FLOOR value)"
-      activation_story: "OSE-330 (writes the test + slot allocator code + promotes status from planned → live)"
+      brain_canonical: "ocr-docs-brain/sponsor-allocation.yaml"
+      activation_story: "OSE-330 (Phase 1 brain artifact this PR; Phase 2 OSE resolver + invariant test in flight)"
+      ose_consumed_copy: "workers/oursharedevents/src/lib/sponsor-allocation.ts (added by OSE-330 Phase 2)"
       customer_artifact: "brand-voice guidelines §2 (Voice Constant — neighborhood-rooted) + landing copy commitment language"
       brand_positioning: "false-market framing (per founder operating-system message 2026-05-17 — anonymous-but-aggregated as third option vs personal-data tracking OR no tracking)"
       template_pattern: "invariant #1 anonymous_id"
+      adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md (OSE-330 Phase 2)"
     activation_note: >
-      Status REMAINS planned until OSE-330 lands. This rich form is
-      documentation of the commitment — not yet mechanical enforcement.
-      Enrichment without activation = false confidence; the activation
-      story is the load-bearing follow-on that flips status → live.
+      Status PARTIAL as of 2026-05-18 (OSE-330 Phase 1 — brain artifact
+      sponsor-allocation.yaml exists with display-priority rule codified).
+      Will flip PARTIAL → LIVE when OSE-330 Phase 2 ships: D1 migration
+      adding is_local column, sponsor-resolver tierSort upgrade for
+      locals-first sort, and tier-equity.invariant.spec.ts promoted to
+      the 0-architecture suite. Slot-cap floor scaffolding in
+      sponsor-allocation.yaml is reserved for FUTURE capped-rendering
+      surfaces — not active today (current architecture has no slot
+      caps, so the covenant is mechanically satisfied at the
+      display-priority layer alone).
 
   # ── #6 INERT MONETIZATION HOOKS ───────────────────────────────────────────
   - id: 6
@@ -435,13 +450,50 @@ enrichment_history:
       Discovered during Co-Architect audit (2026-05-17) that #5 already
       captures the founder's Local Sponsor Covenant — named in the
       operating-system message 2026-05-17 as "local sponsors are always
-      guaranteed a place; they will never be pushed out of an event by the
-      premium buyer." Enrichment makes the brand framing readable from the
-      registry index. Activation (test + slot allocator + promote to live)
-      is sibling story OSE-330. Explicit note in the entry's
-      `activation_note` field: enrichment WITHOUT activation = false
-      confidence; this entry's status remains `planned` until the
+      guaranteed a place; they will never be pushed out of an event by
+      the premium buyer." Enrichment makes the brand framing readable
+      from the registry index. Activation (test + slot allocator +
+      promote to live) is sibling story OSE-330. Explicit note in the
+      entry's `activation_note` field: enrichment WITHOUT activation =
+      false confidence; this entry's status remains `planned` until the
       activation story lands.
+
+  - invariant_id: 5
+    invariant_name: tier_equity
+    from_state: >-
+      rich planned (v1 2026-05-17 — protective + enforcement statements;
+      activation pending; depends_on tier-gates.yaml; enforcement
+      mechanism described as "slot allocator with floor from
+      tier-gates.yaml")
+    to_state: >-
+      rich partial (v1.1 2026-05-18 OSE-330 Phase 1 — brain artifact
+      sponsor-allocation.yaml codifies display-priority locals-first
+      rule; enforcement_statement refined to display-priority mechanism
+      (current OSE architecture has no slot cap, so "displacement" can
+      only happen via sort order); depends_on changed from tier-gates.yaml
+      to sponsor-allocation.yaml; references updated to point at new
+      brain canonical + future ADR-013 + future OSE consumed copy;
+      status flipped planned → partial; slot-cap floor scaffolding kept
+      in brain artifact as reserved infrastructure for future capped-
+      rendering surfaces)
+    date: "2026-05-18"
+    pr_refs:
+      - "OCR-docs#PR-PENDING"  # OSE-330 Phase 1 — will update post-PR-create
+    rationale: >
+      Path C of OSE-330 per founder direction 2026-05-18: "If we are
+      this early I suggest going all the way." Co-Architect
+      reconnaissance found current sponsor-resolver has no slot cap —
+      all qualifying sponsors display, just sorted by tier. The original
+      enforcement_statement assumed a slot allocator with floor would
+      exist; in reality "displacement" can only happen via sort order
+      today. Refined to display-priority enforcement: locals-first sort
+      regardless of pricing tier. Slot-cap floor scaffolding KEPT in
+      sponsor-allocation.yaml for future surfaces that add capped
+      rendering (e.g., a TV that picks top-N sponsors per cycle). When
+      that day comes, the floor config is already in brain canonical
+      and OSE just wires the slot-cap logic to consume it. Status flip
+      partial → live happens in OSE-330 Phase 2 (OSE-side resolver +
+      tier-equity.invariant.spec.ts promoted to 0-architecture suite).
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
@@ -450,8 +502,8 @@ enrichment_history:
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
   live: 4    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation
-  partial: 6 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
-  planned: 2 # #5 tier_equity / Local Sponsor Covenant (rich planned), #7 aggregate_only_reporting
+  partial: 7 # #5 tier_equity / Local Sponsor Covenant (rich partial, OSE-330 P1), #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  planned: 1 # #7 aggregate_only_reporting
   total: 12
   rich_form: 3  # #1, #3, #5 enriched 2026-05-17 (trio)
   lean_form: 9  # #2, #4, #6, #7, #8, #9, #10, #11, #12 — candidates for future enrichment
