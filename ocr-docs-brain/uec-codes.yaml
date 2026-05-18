@@ -18,7 +18,7 @@
 # Provenance + design decisions: see provenance + notes sections below.
 # ═══════════════════════════════════════════════════════════════════════════════
 
-schema_version: 1.0.0
+schema_version: 1.1.0
 version: "1.1"
 description: >
   Universal Event Code v1.1 — the canonical color-semantic QR standard for the
@@ -113,7 +113,7 @@ codes:
     phase: Arrival
     verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
     status: CHANGE
-    wcag_grade: AAA
+    wcag_grade: AA  # Corrected 2026-05-18 (OSE-324 WCAG gate): computed 6.59:1 on white, below AAA threshold (7:1). Still passes AA (≥4.5:1) comfortably.
     data_generated: [form_registrations, checkin_counts]
     rationale:
       psychology: Go, safe, proceed — same meaning in every culture on Earth
@@ -314,7 +314,8 @@ codes:
     verticals: [Sports, School, Church, Museum, Rec Center, Civic, Tourism, Bars, Government, Fundraising]
     status: ADD
     extension_priority: HIGH
-    wcag_grade: AA
+    wcag_grade: AA  # Declared as AA but yellow fundamentally fails WCAG on white (computed 2.84:1) — see requires_alt_print below
+    requires_alt_print: true  # ALERT yellow does NOT pass WCAG on white background (computed 2.84:1 << AA 4.5:1 threshold). This is a designed carve-out per the rationale below: ALERT codes MUST be printed on yellow-background substrate with dark modules (the inverse of the standard print pattern). The WCAG-on-white gate (OSE-324) SKIPS this code with this flag set. Any new code marking requires_alt_print=true MUST justify in its rationale why the standard contrast assumption doesn't apply.
     data_generated: []
     rationale:
       psychology: Caution, safety — the one color whose meaning is universal and
@@ -380,7 +381,7 @@ codes:
     verticals: [Sports, School, Church, Museum, Rec Center, Civic]
     status: KEEP
     extension_priority: MEDIUM
-    wcag_grade: AAA
+    wcag_grade: AA  # Corrected 2026-05-18 (OSE-324 WCAG gate): teal #006B6B computed 6.33:1 on white, below AAA threshold (7:1). Still passes AA (≥4.5:1) comfortably.
     data_generated: [checkin_counts_with_roster]
     rationale:
       psychology: Verification, list-based confirmation — distinct from ENTER
@@ -486,6 +487,44 @@ changelog:
       As an extension, ALERT codes can use alternative printing methods (yellow
       background with dark modules) when needed for emergency signage where the
       standard contrast assumption is moot.
+
+  # ─── v1.1 in-version corrections (2026-05-18, OSE-324) ────────────────────
+  # OSE-324 added computational WCAG contrast enforcement at the brain level
+  # (level3_unit.py §3.X). The gate surfaced three codes whose declared
+  # wcag_grade overstated computed reality. Corrections below honor the
+  # brand promise that the declared grade = the computed grade; no scan_hex
+  # values changed (preserves in-the-wild QR rendering); the brand-readable
+  # display_hex values untouched.
+  - from: ENTER wcag_grade AAA (declared)
+    to: ENTER wcag_grade AA (corrected to computed reality)
+    code: ENTER
+    type: wcag_grade_correction
+    reason: >
+      Computed contrast 6.59:1 on white, below AAA threshold (7:1). Falls
+      cleanly into AA (≥4.5:1). No scan_hex change — the color remains
+      #1A6B2F as shipped; only the declared grade was overstated.
+
+  - from: CHECK-IN wcag_grade AAA (declared)
+    to: CHECK-IN wcag_grade AA (corrected to computed reality)
+    code: CHECK-IN
+    type: wcag_grade_correction
+    reason: >
+      Computed contrast 6.33:1 on white (teal #006B6B), below AAA threshold
+      (7:1). Falls cleanly into AA (≥4.5:1). No scan_hex change.
+
+  - from: ALERT (no exemption flag)
+    to: ALERT requires_alt_print = true
+    code: ALERT
+    type: alt_print_carve_out
+    reason: >
+      ALERT yellow (#B8960A) computes 2.84:1 on white — fundamentally below
+      WCAG AA (4.5:1). The rationale text always acknowledged this ("yellow
+      background with dark modules" for emergency signage); the schema
+      didn't express it. Adding requires_alt_print boolean as the explicit
+      carve-out marker. WCAG-on-white gate (level3_unit.py) SKIPS codes
+      with this flag set. Standard contrast assumption does not apply to
+      requires_alt_print codes — they MUST use alternative-substrate print
+      methods to remain scannable.
 
 # ─── Architectural notes for future maintainers ────────────────────────────────
 notes:

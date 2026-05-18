@@ -1,9 +1,25 @@
 #!/usr/bin/env python3
 """
-Level 2 — UNIT
+Level 3 — UNIT
 ===============
 Value-level assertions. Counts match. Uniqueness holds.
 Computed properties are correct. Each check tests one rule against one file.
+
+Includes (added 2026-05-18 / OSE-324):
+  - WCAG contrast computation for UEC scan_hex values. Promotes the
+    dual-palette schema's `wcag_grade` enum from a DECLARED claim
+    (level2_schema.py constrains the field to AA/AAA — FAIL
+    unrepresentable) to a COMPUTED guarantee — actually computes the
+    contrast ratio of every scan_hex against white (#FFFFFF) and asserts
+    the computed grade meets or exceeds the declared wcag_grade.
+    This is what makes the brand promise ("the color IS the instruction")
+    mechanically enforceable: a future contributor (or agent) who edits
+    a scan_hex to something visually nice but contrast-insufficient
+    fails CI on this check, not at a customer's first failed scan.
+  - Inline fixture tests proving the WCAG computation fires on
+    deliberately-bad inputs (#FFFFFF as scan_hex with AAA declared
+    grade, etc.) — negative-test discipline so the gate's behavior is
+    proven, not just the artifact's pass-through.
 """
 import re, sys, yaml
 from pathlib import Path
@@ -147,6 +163,142 @@ for p in products:
     monotonic = all(counts[i] <= counts[i+1] for i in range(len(counts)-1))
     check(f'tier_monotonic:{p.get("product_id")}', monotonic,
           f'phase counts {counts}' + (' (non-monotonic!)' if not monotonic else ''))
+
+# ---------------------------------------------------------------------------
+# 3.X — UEC WCAG contrast computation (OSE-324 — added 2026-05-18)
+# ---------------------------------------------------------------------------
+# Computational enforcement of the brand promise: every scan_hex MUST yield
+# WCAG contrast against white that meets or exceeds the declared wcag_grade.
+# Per WCAG 2.1:
+#   AA  = contrast ratio >= 4.5:1 (normal text minimum)
+#   AAA = contrast ratio >= 7:1   (enhanced)
+# A scan_hex declared as AAA that computes to 6.8:1 fails this check; ships
+# would block in CI. Same for AA declared but computing < 4.5.
+#
+# Reference implementation matches the WCAG formula used in OSE's
+# uec-codes.invariant.spec.ts (Playwright). Same math, different runtime.
+
+WCAG_AA_RATIO = 4.5
+WCAG_AAA_RATIO = 7.0
+GRADE_THRESHOLDS = {'AA': WCAG_AA_RATIO, 'AAA': WCAG_AAA_RATIO}
+
+
+def _channel_linear(c_srgb: float) -> float:
+    """Convert an sRGB channel (0..1) to linear-light. Per WCAG 2.x spec."""
+    return c_srgb / 12.92 if c_srgb <= 0.03928 else ((c_srgb + 0.055) / 1.055) ** 2.4
+
+
+def _relative_luminance(hex_color: str) -> float:
+    """Relative luminance of a #RRGGBB color, per WCAG 2.x."""
+    s = hex_color.lstrip('#')
+    r = int(s[0:2], 16) / 255.0
+    g = int(s[2:4], 16) / 255.0
+    b = int(s[4:6], 16) / 255.0
+    return 0.2126 * _channel_linear(r) + 0.7152 * _channel_linear(g) + 0.0722 * _channel_linear(b)
+
+
+def wcag_contrast_ratio(hex_a: str, hex_b: str) -> float:
+    """Compute WCAG contrast ratio between two #RRGGBB colors. Range [1, 21]."""
+    la = _relative_luminance(hex_a)
+    lb = _relative_luminance(hex_b)
+    lighter, darker = (la, lb) if la > lb else (lb, la)
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+def wcag_grade_passes(scan_hex: str, declared_grade: str, background: str = '#FFFFFF') -> tuple[bool, float]:
+    """Returns (passes, computed_ratio). Threshold from GRADE_THRESHOLDS."""
+    ratio = wcag_contrast_ratio(scan_hex, background)
+    threshold = GRADE_THRESHOLDS.get(declared_grade)
+    if threshold is None:
+        # Unknown grade — caller's structural check should have rejected this;
+        # treat as fail here so the issue surfaces somewhere.
+        return False, ratio
+    return ratio >= threshold, ratio
+
+
+# Run WCAG computation against the live UEC artifact
+UEC_FILE = 'uec-codes.yaml'
+if (BRAIN / UEC_FILE).exists():
+    uec = load(UEC_FILE)
+    for code in uec.get('codes', []):
+        if not isinstance(code, dict):
+            continue
+        cid = code.get('id', '?')
+        scan_hex = code.get('scan_hex')
+        declared = code.get('wcag_grade')
+        # Carve-out: codes marked requires_alt_print=true bypass the WCAG-on-white
+        # gate because they're designed for alternative-substrate print (e.g.,
+        # ALERT yellow on yellow background with dark modules). The schema +
+        # the code's rationale.verdict must justify the carve-out. The brain
+        # changelog documents it. We surface a PASS with skip-reason so the
+        # check is visible in the report (not silently absent).
+        if code.get('requires_alt_print') is True:
+            check(
+                f'uec_wcag_compute:{cid}',
+                True,
+                f'SKIPPED (requires_alt_print=true): {declared} declaration not validated on white; '
+                'standard contrast assumption does not apply per documented carve-out'
+            )
+            continue
+        if not scan_hex or not declared:
+            check(f'uec_wcag_compute_setup:{cid}', False,
+                  f'missing scan_hex or wcag_grade (scan_hex={scan_hex!r}, grade={declared!r})')
+            continue
+        passes, ratio = wcag_grade_passes(scan_hex, declared)
+        threshold = GRADE_THRESHOLDS.get(declared, 0.0)
+        check(
+            f'uec_wcag_compute:{cid}',
+            passes,
+            f'{declared} on white: computed {ratio:.2f}:1, threshold {threshold:.1f}:1 — '
+            + ('OK' if passes else f'INSUFFICIENT (need >= {threshold:.1f})')
+        )
+else:
+    check('uec_wcag_compute_setup', False,
+          f'{UEC_FILE} not present — cannot run WCAG computation')
+
+# ---------------------------------------------------------------------------
+# 3.Y — Negative-test fixtures: prove the WCAG gate fires on bad inputs
+# ---------------------------------------------------------------------------
+# The structural validation in level2_schema.py is exercised by the live
+# brain pyramid run (positive evidence). These fixtures provide negative
+# evidence: prove the WCAG computation actually catches deliberately-bad
+# scan_hex values. Without this, a regression in the contrast math could
+# silently pass the gate; with this, the gate's BEHAVIOR is tested.
+#
+# Each fixture pairs (scan_hex, declared_grade, expected_pass). If the
+# computation returns the wrong verdict, the fixture's check FAILs and
+# the gate itself is broken.
+
+WCAG_FIXTURES = [
+    # (label, scan_hex, declared_grade, expected_pass, why)
+    # Canonical-aligned fixtures (match the post-OSE-324-correction declared grades):
+    ('canonical_enter_aa',          '#1A6B2F', 'AA',  True,  'ENTER scan_hex passes AA on white (corrected 2026-05-18 from AAA per OSE-324 — computed 6.59:1, below AAA 7:1)'),
+    ('canonical_sponsor_aaa',       '#1A3A8A', 'AAA', True,  'SPONSOR scan_hex passes AAA on white (canonical)'),
+    ('canonical_live_aa',           '#C04048', 'AA',  True,  'LIVE scan_hex passes AA on white (canonical)'),
+    ('canonical_checkin_aa',        '#006B6B', 'AA',  True,  'CHECK-IN scan_hex passes AA on white (corrected 2026-05-18 from AAA per OSE-324 — computed 6.33:1, below AAA 7:1)'),
+    # Negative fixtures — prove the gate fires on bad inputs:
+    ('white_on_white_fails_any',    '#FFFFFF', 'AA',  False, 'white scan_hex on white background = 1:1 — must fail any grade'),
+    ('near_white_fails_aa',         '#EEEEEE', 'AA',  False, '#EEEEEE on white ~1.32:1 — below AA threshold'),
+    ('mid_grey_fails_aaa',          '#777777', 'AAA', False, '#777777 on white ~4.48:1 — below AAA threshold'),
+    ('mid_grey_passes_aa',          '#767676', 'AA',  True,  '#767676 on white ~4.54:1 — just above AA threshold (regression guard for boundary)'),
+    ('black_passes_aaa',            '#000000', 'AAA', True,  'black on white = 21:1 — sanity check upper bound'),
+    # Boundary fixtures around the corrected canonical values — regression guards
+    # so future hex tweaks don't silently push a code below the declared grade:
+    ('enter_below_aaa_above_aa',    '#1A6B2F', 'AAA', False, 'regression guard — ENTER hex cannot be re-declared AAA without raising contrast first'),
+    ('checkin_below_aaa_above_aa',  '#006B6B', 'AAA', False, 'regression guard — CHECK-IN hex cannot be re-declared AAA without raising contrast first'),
+    # Alt-print exemption fixture — prove the ALERT yellow case is acknowledged
+    # as failing standard WCAG and thus REQUIRES requires_alt_print=true:
+    ('alert_yellow_fails_aa_unless_exempt', '#B8960A', 'AA', False, 'ALERT yellow ~2.84:1 on white — would fail AA if validated; documented carve-out via requires_alt_print=true skips the validation'),
+]
+
+for label, scan_hex, declared, expected_pass, why in WCAG_FIXTURES:
+    actual_pass, ratio = wcag_grade_passes(scan_hex, declared)
+    correct = actual_pass == expected_pass
+    check(
+        f'uec_wcag_fixture:{label}',
+        correct,
+        f'{declared} on white: computed {ratio:.2f}:1, expected pass={expected_pass}, got pass={actual_pass} ({why})'
+    )
 
 # ---------------------------------------------------------------------------
 # REPORT
