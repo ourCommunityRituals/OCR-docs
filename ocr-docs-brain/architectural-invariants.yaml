@@ -374,10 +374,18 @@ invariants:
       first); (b) CI gate .github/workflows/runner-env-validation.yml which
       runs first on every PR and fails fast with actionable error message if
       the assigned runner is misconfigured; (c) runbook
-      tools/runner/README.md. Status partial — gate exists, provisioning is
-      procedural rather than automatic on `config.cmd` registration. Promote
-      to live once the provisioner is invoked automatically from a
-      runner-setup script.'
+      tools/runner/README.md; (d) structural invariant test
+      tests/e2e/0-architecture/runner-environment.invariant.spec.ts (added
+      2026-05-18 via OSE PR #249) which locks the code-shape: every
+      mechanism file MUST exist, the verifier MUST detect WSL bash via
+      WindowsApps path, the workflow MUST run on self-hosted with
+      pull_request + push-to-main triggers AND invoke the verifier AND
+      include the deliberate shell:bash smoke step. Without the structural
+      test, a future "simplification" of any layer could quietly remove the
+      WSL detection or the bash smoke step and the gate becomes cosmetic.
+      Status partial — gate exists, provisioning is procedural rather than
+      automatic on `config.cmd` registration. Promote to live once the
+      provisioner is invoked automatically from a runner-setup script.'
     applies_to:
       - ose
       - osm
@@ -425,7 +433,20 @@ invariants:
       regression suite at tools/runner/janitor.tests.ps1 (22 cases minimum)
       MUST pass before any change to the janitor is merged — covers circuit
       breaker state machine, UTC parse safety, per-workflow dwell lookups,
-      broker-error parsing, queue-idle corroboration. Installation is via
+      broker-error parsing, queue-idle corroboration. (h) Structural
+      invariant test
+      tests/e2e/0-architecture/runner-pool-readiness.invariant.spec.ts
+      (added 2026-05-18 via OSE PR #249) locks the code-shape of the
+      mechanism: every mechanism file (janitor + install-janitor-tasks +
+      janitor.tests + verify-probe-alive) MUST exist; the circuit breaker
+      (RUNNER_POOL_DEGRADED), pool-wide outage detection
+      (GITHUB_SIDE_OUTAGE), and the probe-heartbeat-watchdog pair MUST
+      remain referenced; the runbook MUST document the three
+      human-investigate signals. Without the structural test, a future
+      refactor could silently drop the circuit breaker (infinite-bounce
+      loop) or the outage detection (burns the breaker budget against a
+      dead upstream broker) and operators would only notice when the next
+      multi-PR outage happens. Installation is via
       tools/runner/install-janitor-tasks.ps1 (no UAC required — LogonType
       Interactive + RunLevel Limited). Status partial — scheduled tasks
       must be installed manually after `config.cmd` registration. Promote
@@ -598,6 +619,65 @@ enrichment_history:
       flip partial → live. Enrichment to rich form preserves the layered
       enforcement architecture so the pattern can be inherited verbatim
       by future deprecations (Sheets, embedded HTML, etc.).
+  - invariant_id: 11
+    invariant_name: self_hosted_runner_bash_resolution
+    from_state: >-
+      lean partial (pre-2026-05-18 — enforces text listed 3 mechanisms:
+      (a) provisioning script, (b) CI gate runner-env-validation.yml,
+      (c) runbook; no structural invariant test referenced)
+    to_state: >-
+      lean partial (v1.1 2026-05-18 — enforces text adds mechanism (d):
+      structural invariant test runner-environment.invariant.spec.ts
+      that locks the code-shape of all three prior mechanisms. Status
+      REMAINS partial because the gating criterion is "provisioner is
+      invoked automatically from a runner-setup script" which is
+      orthogonal to substrate test coverage)
+    date: "2026-05-18"
+    pr_refs:
+      - "OSE#249"  # substrate-side: runner-environment.invariant.spec.ts on OSE main
+    rationale: >
+      OSE PR #249 added tests/e2e/0-architecture/runner-environment.invariant.spec.ts
+      to the substrate, asserting the code-shape of provision-runner.ps1,
+      verify-runner-env.ps1, runner-env-validation.yml workflow, and
+      README.md runbook. Without the structural test, a future
+      "simplification" of any layer could quietly remove the WSL detection
+      or the bash smoke step and the gate becomes cosmetic. Brain entry
+      now references the substrate test as enforcement layer (d). Status
+      does NOT flip to live — the brain's partial→live criterion remains
+      "auto-provisioner invoked from runner-setup script", which is
+      separate concern from substrate test coverage.
+
+  - invariant_id: 12
+    invariant_name: runner_pool_readiness_probe
+    from_state: >-
+      lean partial (pre-2026-05-18 — enforces text listed 7 mechanisms
+      a-g: probe, watchdog, outage detection, circuit breaker,
+      corroboration-gated queue-idle, log signals, pure-logic regression
+      suite; no structural invariant test referenced)
+    to_state: >-
+      lean partial (v1.1 2026-05-18 — enforces text adds mechanism (h):
+      structural invariant test runner-pool-readiness.invariant.spec.ts
+      that locks the code-shape of janitor + installer + janitor.tests +
+      verify-probe-alive AND asserts circuit breaker + outage detection +
+      probe-heartbeat-watchdog pair remain referenced AND runbook
+      documents the three human-investigate signals. Status REMAINS
+      partial because the gating criterion is "installer auto-invoked
+      from runner-setup script" — same gap as invariant 11)
+    date: "2026-05-18"
+    pr_refs:
+      - "OSE#249"  # substrate-side: runner-pool-readiness.invariant.spec.ts on OSE main
+    rationale: >
+      OSE PR #249 added
+      tests/e2e/0-architecture/runner-pool-readiness.invariant.spec.ts to
+      the substrate. Without the structural test, a future refactor could
+      silently drop the circuit breaker (infinite-bounce loop on broken
+      runner) or the GitHub-side outage detection (burns the breaker
+      budget against a dead upstream broker) and operators would only
+      notice when the next multi-PR outage happens. Brain entry now
+      references the substrate test as enforcement layer (h). Status does
+      NOT flip to live — the brain's partial→live criterion remains
+      "auto-installer invoked from runner-setup script", parallel to the
+      gap for invariant 11.
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
