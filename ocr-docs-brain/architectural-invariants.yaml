@@ -160,7 +160,7 @@ invariants:
   - id: 5
     name: tier_equity
     title: Local Sponsor Covenant
-    status: partial
+    status: live
     test_file: tier-equity.invariant.spec.ts
     enforces: Pricing tiers govern display priority within events only —
       never platform access. Local sponsors get top-of-display position
@@ -184,40 +184,91 @@ invariants:
       auction; with it, OSE is the only platform in the market that takes
       local-economy commerce as architectural commitment.
     enforcement_statement: >
-      Mechanism is display-priority enforcement (not slot allocation —
-      current OSE architecture has no slot cap on sponsor surfaces, so
-      "displacement" can only happen via sort order, not via exclusion).
-      Brain canonical at sponsor-allocation.yaml codifies the locals-first
-      rule. OSE-side sponsor-resolver's tierSort() bumps is_local=true
-      sponsors to the top of every rendered list regardless of pricing
-      tier. The invariant test (tier-equity.invariant.spec.ts, written
-      by OSE-330 Phase 2) asserts: (a) any non-empty mix of local + non-
-      local sponsors returns locals before non-locals; (b) within each
-      group, pricing tier breaks ties; (c) adding a higher-tier non-local
-      never pushes a local below it. CI fails the build on any code path
-      that would allow a local sponsor to be displayed after a non-local
-      regardless of tier. The slot-cap floor scaffolding in
+      Six-layer pyramid enforcement, all on the substrate side, all
+      wired into CI:
+      (a) L0 STATIC code shape —
+      tests/e2e/0-architecture/tier-equity.invariant.spec.ts asserts the
+      resolver declares is_local on SponsorRow, tierSort() compares
+      is_local BEFORE TIER_PRIORITY, migration 0036 adds the column with
+      NOT NULL DEFAULT 0, the OSE consumed copy of sponsor-allocation.ts
+      cites the brain canonical, and the covenant brand promise is
+      documented in the resolver header.
+      (b) L0 SCHEMA + INDEX — workers/oursharedevents/tests/schema.spec.ts
+      and constraints.spec.ts assert the idx_sponsors_is_local index is
+      present and the sponsors table column count matches the post-OSE-330
+      shape.
+      (c) L0 MIGRATION SAFETY —
+      workers/oursharedevents/tests/shared-report-pipeline-invariants.spec.ts
+      asserts migration 0036 adds ONLY the locality classification axis
+      (no other schema changes piggybacking).
+      (d) L0 BRAIN↔OSE DRIFT —
+      workers/oursharedevents/tests/sponsor-allocation-drift-check.spec.ts
+      compares the OSE consumed copy at src/lib/sponsor-allocation.ts
+      byte-for-byte against brain canonical sponsor-allocation.yaml.
+      (e) L1 WORKER HTTP INTEGRATION —
+      workers/oursharedevents/tests/tier-equity-sort.spec.ts uses
+      SELF.fetch() to call the public /api/v2/events/:id/sponsors endpoint
+      against an in-process miniflare worker, seeded with mixed-locality
+      sponsors via direct D1 INSERT. 7 cases: the canonical "primary-
+      local beats platinum-nonlocal" covenant assertion, within-local-
+      group tier-breaks-ties, within-non-local-group tier-breaks-ties,
+      full 4-sponsor mixed sort, all-local and all-non-local backward
+      compat, schema NOT NULL guard.
+      (f) T3 NETWORK-STAGING — postman/collections/ose-api.json section
+      11 runs Newman against deployed stg.oursharedevents.com: 4 seeds
+      + 1 covenant assertion + 4 cleanups via the public
+      /api/v2/events/test-event-001/sponsors endpoint. Adversarial seed
+      (bronze-local vs title-nonlocal) plus full 4-sponsor expected-
+      order assertion. Requires CF_ACCESS_CLIENT_ID +
+      CF_ACCESS_CLIENT_SECRET in CI secrets (verified present). Fail-
+      loud on missing creds (not silent-skip) so cosmetic-compliance is
+      impossible.
+      Together: brain = source of truth for the covenant rule; gates
+      a-d = no-drift enforcement at code shape, schema, migration, and
+      brain contract; gate e = behavioral assertion in-process; gate f
+      = behavioral assertion on the deployed worker. CI fails on any
+      layer that breaks. The slot-cap floor scaffolding in
       sponsor-allocation.yaml is reserved for FUTURE surfaces that add
       capped rendering — not active today.
     references:
       brain_canonical: "ocr-docs-brain/sponsor-allocation.yaml"
-      activation_story: "OSE-330 (Phase 1 brain artifact this PR; Phase 2 OSE resolver + invariant test in flight)"
-      ose_consumed_copy: "workers/oursharedevents/src/lib/sponsor-allocation.ts (added by OSE-330 Phase 2)"
+      activation_story: "OSE-330 (Phase 1 brain artifact 2026-05-18; Phase 2 OSE substrate via OSE PR #249; Phase 3 T3 Newman covenant via OSE PR #251)"
+      ose_consumed_copy: "workers/oursharedevents/src/lib/sponsor-allocation.ts"
+      structural_test: "tests/e2e/0-architecture/tier-equity.invariant.spec.ts"
+      worker_integration_test: "workers/oursharedevents/tests/tier-equity-sort.spec.ts (7 cases via SELF.fetch)"
+      network_staging_test: "postman/collections/ose-api.json §11 — 4 seeds + 1 covenant assertion + 4 cleanups"
+      schema_tests: "workers/oursharedevents/tests/{schema,constraints,shared-report-pipeline-invariants}.spec.ts"
+      drift_check: "workers/oursharedevents/tests/sponsor-allocation-drift-check.spec.ts"
       customer_artifact: "brand-voice guidelines §2 (Voice Constant — neighborhood-rooted) + landing copy commitment language"
       brand_positioning: "false-market framing (per founder operating-system message 2026-05-17 — anonymous-but-aggregated as third option vs personal-data tracking OR no tracking)"
-      template_pattern: "invariant #1 anonymous_id"
-      adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md (OSE-330 Phase 2)"
+      template_pattern: "invariant #1 anonymous_id (rich-form template) + #10 deprecation_lock (rich live activation pattern)"
+      adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md"
+      activation_pr_substrate: "OSE PR #249 (L0 structural + L1 worker HTTP integration); OSE PR #251 (T3 network-staging Newman)"
+      activation_pr_brain: "OCR-docs#PR-PENDING (this PR — partial → live + rich enrichment v2)"
     activation_note: >
-      Status PARTIAL as of 2026-05-18 (OSE-330 Phase 1 — brain artifact
-      sponsor-allocation.yaml exists with display-priority rule codified).
-      Will flip PARTIAL → LIVE when OSE-330 Phase 2 ships: D1 migration
-      adding is_local column, sponsor-resolver tierSort upgrade for
-      locals-first sort, and tier-equity.invariant.spec.ts promoted to
-      the 0-architecture suite. Slot-cap floor scaffolding in
+      Status PARTIAL → LIVE on 2026-05-19 with the full six-layer
+      pyramid evidence chain in place:
+      (1) OSE PR #249 (merged 2026-05-18 sha f099d34) landed the L0
+      structural invariant test + L1 worker HTTP integration test (7
+      cases via SELF.fetch);
+      (2) OSE PR #251 (merged 2026-05-19 sha 8796f46) landed the T3
+      Newman network-staging covenant test (4 seeds + 1 assertion + 4
+      cleanups against stg.oursharedevents.com) AND the CI workflow
+      wiring for CF Access service token secrets;
+      (3) PR-context CI on #251 ran green prior to merge — verified by
+      founder before merge approval;
+      (4) Main CI on sha 8796f46 (post-merge) re-running all gates with
+      the T3 covenant section now in the deployed test set.
+      The activation depended on the T3 layer landing because the
+      brain's "pipeline-proves-the-covenant" doctrine requires runtime
+      verification at the deployed-worker layer, not just code-shape +
+      in-process integration. T4 (UI-rendered user-journey) deferred —
+      the public event page is shadowed by Cloudflare's JS challenge,
+      requiring full browser-with-challenge-handling test infrastructure
+      that should be designed once for the broader test suite, not
+      bolted onto this work. Slot-cap floor scaffolding in
       sponsor-allocation.yaml is reserved for FUTURE capped-rendering
-      surfaces — not active today (current architecture has no slot
-      caps, so the covenant is mechanically satisfied at the
-      display-priority layer alone).
+      surfaces — not active today.
 
   # ── #6 INERT MONETIZATION HOOKS ───────────────────────────────────────────
   - id: 6
@@ -576,15 +627,68 @@ enrichment_history:
       "auto-installer invoked from runner-setup script", parallel to the
       gap for invariant 11.
 
+  - invariant_id: 5
+    invariant_name: tier_equity
+    from_state: >-
+      rich partial (v1.1 2026-05-18 OSE-330 Phase 1 — brain artifact
+      sponsor-allocation.yaml + display-priority enforcement mechanism;
+      activation criterion: D1 migration + sponsor-resolver tierSort
+      upgrade + tier-equity.invariant.spec.ts in 0-architecture suite)
+    to_state: >-
+      rich live (v1.2 2026-05-19 OSE-330 Phase 2+3 — all activation
+      criteria met AND the criterion itself was tightened mid-arc by
+      founder directive "actually make sure the test pyramid is covered"
+      from substrate-components-in-place to pipeline-proves-the-covenant-
+      at-every-layer. Enforcement_statement upgraded from 3-layer
+      description to 6-layer pyramid: (a) L0 structural code-shape
+      invariant test, (b) L0 schema + index, (c) L0 migration safety,
+      (d) L0 brain↔OSE drift check, (e) L1 worker HTTP integration test
+      with 7 SELF.fetch cases, (f) T3 network-staging Newman test with
+      seed+assert+cleanup against deployed worker. References block
+      restructured to enumerate all 6 layer artifacts. Activation_note
+      records the full evidence chain. Status flipped partial → live.)
+    date: "2026-05-19"
+    pr_refs:
+      - "OSE#249"  # substrate Phase 2: L0 structural + L1 HTTP integration + schema/drift suite
+      - "OSE#251"  # substrate Phase 3: T3 network-staging Newman covenant test + CI workflow CF Access wiring
+      - "OCR-docs#PR-PENDING"  # this PR — brain flip partial → live + rich enrichment v2
+    rationale: >
+      The brain's originally-stated partial→live criterion was met by
+      OSE PR #249 alone (D1 migration 0036, sponsor-resolver tierSort
+      with locals-first, tier-equity.invariant.spec.ts in 0-architecture
+      suite). However, mid-arc the founder directive "actually make sure
+      the test pyramid is covered" reframed the criterion. The
+      Co-Architect surveyed the pyramid and found T2/T3/T4 missing for
+      a runtime brand-promise invariant. Per the doctrine "if there is
+      code, there must be a test — and the test must run in the
+      pipeline we trust", a covenant that ships without a deployed-
+      worker behavioral test would be cosmetic at the production
+      surface. OSE PR #251 closed the T3 gap with a Newman covenant
+      test against staging (4 seeds + 1 assertion + 4 cleanups, with
+      CF Access service token wiring and fail-loud-on-missing-creds
+      design to prevent silent-skip cosmetic compliance). T4 (UI-
+      rendered user-journey) deferred because the public event page is
+      shadowed by Cloudflare's JS challenge requiring browser-with-
+      challenge-handling infrastructure that should be designed once
+      for the broader test suite, not bolted onto this work. Doctrine
+      contribution: this is the first invariant whose flip waited on a
+      network-staging behavioral test; the pattern (L0 structural + L0
+      schema + L0 migration + L0 drift + L1 in-process + T3 network-
+      staging) is the template for future runtime brand-promise
+      invariants. Mirrors the activation rigor of #10 deprecation_lock
+      (which flipped earlier in the same multi-day arc via OCR-docs#56)
+      and inherits the rich-form template established by #1
+      anonymous_id (2026-05-17 trio enrichment).
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Live/partial/planned counts are recomputed on every
 # material change. Updated manually until level2_schema.py auto-computes.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 4    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation
-  partial: 7 # #5 tier_equity / Local Sponsor Covenant (rich partial, OSE-330 P1), #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  live: 5    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19)
+  partial: 6 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
   planned: 1 # #7 aggregate_only_reporting
   total: 12
-  rich_form: 3  # #1, #3, #5 enriched 2026-05-17 (trio)
+  rich_form: 3  # #1, #3, #5 enriched 2026-05-17 trio; #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
   lean_form: 9  # #2, #4, #6, #7, #8, #9, #10, #11, #12 — candidates for future enrichment
