@@ -332,17 +332,81 @@ invariants:
   - id: 10
     name: deprecation_lock
     title: Deprecation Lock
-    status: partial
+    status: live
     test_file: deprecation-lock.invariant.spec.ts
-    enforces: Once a runtime is removed (GAS, Sheets, etc.), CI forbids its
-      re-introduction. Generalizes the existing scripts/guard-no-gas.js and
-      the no-GAS CI gate. Future deprecations (e.g., embedded HTML when
-      Phase 3 Firebase lands) inherit this pattern.
+    enforces: Once a runtime is removed from the substrate (today's canonical
+      instance — Google Apps Script; future inheritors — Sheets, embedded
+      HTML when Phase 3 Firebase lands), CI MUST forbid its re-introduction.
+      The lock generalizes the existing scripts/guard-no-gas.js + CI wiring
+      so each future deprecation inherits the same pattern (one scanner +
+      one allowlist + one CI step + one structural test).
     applies_to:
       - ose
       - osm
       - wkrp
       - oaw
+    protective_statement: >
+      Without an automated lock, a future "small change" can silently
+      bring back the deprecated dependency — usually because someone
+      copied a snippet from old docs or imported a package that pulls it
+      in transitively. The entire migration to remove it becomes useless
+      overnight. The deprecation lock is the mechanism that makes a
+      one-way architectural decision actually one-way: once OSE moved off
+      Google Apps Script to Cloudflare Workers + D1, the brain promises
+      attendees a worker-only backend; a re-introduction violates that
+      promise. The pattern generalizes — when Phase 3 Firebase lands and
+      embedded HTML is deprecated, the same scaffolding catches its
+      re-entry; when GAS becomes Sheets, when Sheets becomes BigQuery,
+      each transition inherits the same lock shape.
+    enforcement_statement: >
+      Four-layer enforcement, all on the substrate side, all wired into
+      CI on every PR + push-to-main:
+      (a) Scanner — scripts/guard-no-gas.js scans the repo for any
+      forbidden GAS pattern (script.google.com, GAS_BASE_URL, doGet,
+      ContentService, SpreadsheetApp, PropertiesService, clasp,
+      action=api_, google.script.run, ScriptApp, UrlFetchApp). Exits
+      non-zero on any hit not in the allowlist.
+      (b) Allowlist — scripts/guard-no-gas.allowlist.json carries
+      explicit per-file allowed tokens for legitimate references
+      (clasp config, vendored adapter shims, archive directories,
+      historical security audit reports). Fail-closed — no allowlist
+      file means no exceptions.
+      (c) Self-tests — scripts/guard-no-gas.test.js verifies the
+      scanner's behavior (detection across all pattern classes, clean
+      directories pass, allowlist works for both specific-token and
+      wildcard forms, excluded directories like node_modules ignored,
+      fail-closed on missing allowlist). 17 cases minimum.
+      (d) CI wiring — .github/workflows/oursharedevents-ci.yml lint
+      shard invokes `npm run test:guard-no-gas` (self-tests) BEFORE
+      `npm run guard:no-gas` (the scan itself). The self-tests-first
+      ordering exists because of the OSE PR #249 discovery — the
+      scanner had a Windows-only path-normalization bug that silently
+      neutralized the allowlist for 2+ years; the self-tests caught it
+      the moment they were wired into CI. The structural invariant test
+      tests/e2e/0-architecture/deprecation-lock.invariant.spec.ts locks
+      this entire layer cake — every mechanism file must exist, the
+      package.json script must be registered, and the CI workflow must
+      actually invoke the guard. A guard that lives in scripts/ but is
+      never invoked by CI is theater; this invariant prevents that
+      failure mode.
+    references:
+      scanner: scripts/guard-no-gas.js
+      allowlist: scripts/guard-no-gas.allowlist.json
+      self_tests: scripts/guard-no-gas.test.js
+      runbook: docs/security/NO_GAS_GUARD.md
+      ci_workflow: .github/workflows/oursharedevents-ci.yml
+      structural_test: tests/e2e/0-architecture/deprecation-lock.invariant.spec.ts
+      activation_pr: "OSE#249 — substrate test + CI wiring + Windows-path bug fix (lint shard CI green 2026-05-18)"
+      template_pattern: "invariant #1 anonymous_id (rich-form template)"
+    activation_note: >
+      Status PARTIAL → LIVE on 2026-05-18 with OSE PR #249. Evidence:
+      OurSharedEvents CI/CD T0 Gate (lint) shard ran green on main with
+      both `npm run test:guard-no-gas` and `npm run guard:no-gas` steps
+      invoked — proves the four enforcement layers are all wired and
+      mutually-load-bearing. Future deprecations (Sheets removal,
+      embedded HTML removal when Phase 3 Firebase lands) inherit this
+      pattern: one scanner + one allowlist + one CI step + one
+      structural invariant test.
 
   # ── #11 SELF-HOSTED RUNNER BASH RESOLUTION ────────────────────────────────
   - id: 11
@@ -567,6 +631,45 @@ enrichment_history:
       partial → live happens in OSE-330 Phase 2 (OSE-side resolver +
       tier-equity.invariant.spec.ts promoted to 0-architecture suite).
 
+  - invariant_id: 10
+    invariant_name: deprecation_lock
+    from_state: >-
+      lean partial (pre-2026-05-18 — 1-paragraph enforces text;
+      scripts/guard-no-gas.js existed but was never invoked by any CI
+      workflow; package.json declared the npm script but no workflow
+      wired it; self-tests were never run in CI either)
+    to_state: >-
+      rich live (v1.1 2026-05-18 OSE PR #249 — protective_statement +
+      enforcement_statement + references block naming all four
+      enforcement layers (scanner + allowlist + self-tests + CI wiring)
+      + activation_note documenting the partial → live transition with
+      CI evidence. Status flipped partial → live based on OurSharedEvents
+      CI/CD T0 Gate lint shard going green on main with both `npm run
+      test:guard-no-gas` and `npm run guard:no-gas` steps invoked)
+    date: "2026-05-18"
+    pr_refs:
+      - "OSE#249"  # substrate: structural invariant test + CI wiring + Windows-path bug fix
+      - "OCR-docs#PR-PENDING"  # this PR — brain flip + enrichment
+    rationale: >
+      OSE PR #249 (merged 2026-05-18 23:51 UTC) made the deprecation
+      lock mechanism fully load-bearing for the first time. Prior to
+      that, scripts/guard-no-gas.js existed in the repo but no CI
+      workflow invoked it — pure cosmetic compliance. The PR added the
+      structural invariant test
+      tests/e2e/0-architecture/deprecation-lock.invariant.spec.ts which
+      ASSERTS the CI workflow invokes the guard; wired
+      `npm run test:guard-no-gas` + `npm run guard:no-gas` into the OSE
+      CI/CD lint shard; AND surfaced a 2-year-old Windows-only
+      path-normalization regression in the scanner itself
+      (91 allowlist entries silently inert, 137 false-positive findings
+      — caught the moment the self-tests were wired into CI). The
+      regression became visible only because the doctrine ("if there is
+      code, there must be a test, period; that test must run in CI")
+      was applied. CI T0 Gate (lint) ran green on main sha 8e5bf63
+      with all four enforcement layers active — sufficient evidence to
+      flip partial → live. Enrichment to rich form preserves the layered
+      enforcement architecture so the pattern can be inherited verbatim
+      by future deprecations (Sheets, embedded HTML, etc.).
   - invariant_id: 11
     invariant_name: self_hosted_runner_bash_resolution
     from_state: >-
@@ -685,10 +788,9 @@ enrichment_history:
 # orthogonal to status. Live/partial/planned counts are recomputed on every
 # material change. Updated manually until level2_schema.py auto-computes.
 # ═════════════════════════════════════════════════════════════════════════════
-status_summary:
-  live: 5    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19)
-  partial: 6 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
+  partial: 5 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
   planned: 1 # #7 aggregate_only_reporting
   total: 12
-  rich_form: 3  # #1, #3, #5 enriched 2026-05-17 trio; #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
-  lean_form: 9  # #2, #4, #6, #7, #8, #9, #10, #11, #12 — candidates for future enrichment
+  rich_form: 4  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
+  lean_form: 8  # #2, #4, #6, #7, #8, #9, #11, #12 — candidates for future enrichment
