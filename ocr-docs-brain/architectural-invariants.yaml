@@ -785,8 +785,9 @@ enrichment_history:
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
-# orthogonal to status. Live/partial/planned counts are recomputed on every
-# material change. Updated manually until level2_schema.py auto-computes.
+# orthogonal to status. Counts are hand-maintained on every material change
+# AND validated against the invariant records by level2_schema.py check 1.5d
+# on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
   live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
