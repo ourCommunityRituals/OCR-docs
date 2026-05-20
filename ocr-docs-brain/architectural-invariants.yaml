@@ -256,7 +256,7 @@ invariants:
       template_pattern: "invariant #1 anonymous_id (rich-form template) + #10 deprecation_lock (rich live activation pattern)"
       adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md"
       activation_pr_substrate: "OSE PR #249 (L0 structural + L1 worker HTTP integration); OSE PR #251 (T3 network-staging Newman)"
-      activation_pr_brain: "OCR-docs#57 (partial → live + rich enrichment v2, merged 2026-05-19); OCR-docs#PR-PENDING (honest revert live → partial while T3 layer (f) is red on OSE-349)"
+      activation_pr_brain: "OCR-docs#57 (partial → live + rich enrichment v2, merged 2026-05-19); OCR-docs#60 (honest revert live → partial while T3 layer (f) is red on OSE-349)"
       current_blocker: "OSE-349 — CF Access service token rotated in Cloudflare without updating the CI CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET repo secrets; T3 layer (f) red on OSE main since 2026-05-19. Re-flip criterion: T3 Contract green on OSE main after the token rotation."
     activation_note: >
       Status PARTIAL → LIVE on 2026-05-19 with the full six-layer
@@ -835,7 +835,7 @@ enrichment_history:
       status.)
     date: "2026-05-20"
     pr_refs:
-      - "OCR-docs#PR-PENDING"  # this PR — honest revert live → partial while T3 layer (f) red on OSE-349
+      - "OCR-docs#60"  # this PR — honest revert live → partial while T3 layer (f) red on OSE-349
     rationale: >
       Same defect class the founder flagged on OCR-docs#59 for invariant
       #8: a brain entry must not assert a CI-enforcement status it
