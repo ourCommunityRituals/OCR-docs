@@ -160,7 +160,7 @@ invariants:
   - id: 5
     name: tier_equity
     title: Local Sponsor Covenant
-    status: live
+    status: partial
     test_file: tier-equity.invariant.spec.ts
     enforces: Pricing tiers govern display priority within events only —
       never platform access. Local sponsors get top-of-display position
@@ -220,9 +220,21 @@ invariants:
       /api/v2/events/test-event-001/sponsors endpoint. Adversarial seed
       (bronze-local vs title-nonlocal) plus full 4-sponsor expected-
       order assertion. Requires CF_ACCESS_CLIENT_ID +
-      CF_ACCESS_CLIENT_SECRET in CI secrets (verified present). Fail-
-      loud on missing creds (not silent-skip) so cosmetic-compliance is
-      impossible.
+      CF_ACCESS_CLIENT_SECRET in CI secrets (wiring verified present).
+      Fail-loud on missing creds (not silent-skip) so cosmetic-
+      compliance is impossible.
+      CURRENT CI STATE (2026-05-20) — this T3 layer (f) is RED on OSE
+      main. The CF Access service token was rotated in Cloudflare
+      without updating the CI repo secrets, so the §11 covenant seed
+      POSTs are shadowed by a CF Access login challenge — the preflight
+      probe classifies the response (HTTP 302, text/html, 143 bytes) as
+      cf_access_shadow. This is an infra credential-staleness issue
+      tracked as OSE-349, NOT a covenant-logic regression: layers
+      (a)-(e) remain green on every PR + push. Because the brain's
+      live-criterion for this invariant requires a green runtime layer
+      (the "pipeline-proves-the-covenant" doctrine, see activation_note),
+      the status is `partial` — not `live` — until OSE-349 rotates the
+      token and T3 observes the covenant green on OSE main.
       Together: brain = source of truth for the covenant rule; gates
       a-d = no-drift enforcement at code shape, schema, migration, and
       brain contract; gate e = behavioral assertion in-process; gate f
@@ -244,7 +256,8 @@ invariants:
       template_pattern: "invariant #1 anonymous_id (rich-form template) + #10 deprecation_lock (rich live activation pattern)"
       adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md"
       activation_pr_substrate: "OSE PR #249 (L0 structural + L1 worker HTTP integration); OSE PR #251 (T3 network-staging Newman)"
-      activation_pr_brain: "OCR-docs#PR-PENDING (this PR — partial → live + rich enrichment v2)"
+      activation_pr_brain: "OCR-docs#57 (partial → live + rich enrichment v2, merged 2026-05-19); OCR-docs#PR-PENDING (honest revert live → partial while T3 layer (f) is red on OSE-349)"
+      current_blocker: "OSE-349 — CF Access service token rotated in Cloudflare without updating the CI CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET repo secrets; T3 layer (f) red on OSE main since 2026-05-19. Re-flip criterion: T3 Contract green on OSE main after the token rotation."
     activation_note: >
       Status PARTIAL → LIVE on 2026-05-19 with the full six-layer
       pyramid evidence chain in place:
@@ -269,6 +282,23 @@ invariants:
       bolted onto this work. Slot-cap floor scaffolding in
       sponsor-allocation.yaml is reserved for FUTURE capped-rendering
       surfaces — not active today.
+      STATUS UPDATE 2026-05-20 — LIVE → PARTIAL (honest revert): the
+      2026-05-19 flip to live (OCR-docs#57) rested on point (3) above —
+      T3 covenant green in OSE PR #251's PR-context CI. On OSE main,
+      however, the T3 Contract tier has been RED continuously since
+      2026-05-19 (4 consecutive main runs). Root cause is OSE-349: the
+      CF Access service token was rotated in Cloudflare without updating
+      the CI repo secrets, so the §11 covenant seed POSTs are shadowed
+      by a CF Access login challenge. The covenant mechanism itself is
+      unaffected — layers (a)-(e) are green on every PR + push — but the
+      brain's own live-criterion for this invariant requires a green
+      runtime layer, and the status field must report the actual CI
+      state, not the intended one. Status reverts to `partial`; rich
+      form is retained (form is orthogonal to status). Re-flip
+      criterion: T3 Contract green on OSE main after the OSE-349 token
+      rotation — a one-line follow-up PR. This is not a regression of
+      the covenant; it is the brain refusing to hold a `live` it cannot
+      currently back with a green pipeline.
 
   # ── #6 INERT MONETIZATION HOOKS ───────────────────────────────────────────
   - id: 6
@@ -754,7 +784,7 @@ enrichment_history:
     pr_refs:
       - "OSE#249"  # substrate Phase 2: L0 structural + L1 HTTP integration + schema/drift suite
       - "OSE#251"  # substrate Phase 3: T3 network-staging Newman covenant test + CI workflow CF Access wiring
-      - "OCR-docs#PR-PENDING"  # this PR — brain flip partial → live + rich enrichment v2
+      - "OCR-docs#57"  # brain flip partial → live + rich enrichment v2 (merged 2026-05-19)
     rationale: >
       The brain's originally-stated partial→live criterion was met by
       OSE PR #249 alone (D1 migration 0036, sponsor-resolver tierSort
@@ -783,15 +813,59 @@ enrichment_history:
       and inherits the rich-form template established by #1
       anonymous_id (2026-05-17 trio enrichment).
 
+  - invariant_id: 5
+    invariant_name: tier_equity
+    from_state: >-
+      rich live (v1.2 2026-05-19 OCR-docs#57 — flipped partial → live on
+      the six-layer pyramid evidence chain; the flip rested on the T3
+      covenant section running green in OSE PR #251's PR-context CI)
+    to_state: >-
+      rich partial (v1.3 2026-05-20 — honest revert live → partial. The
+      T3 Contract tier has been RED on OSE main continuously since
+      2026-05-19 (4 consecutive main runs). Root cause is OSE-349: the
+      CF Access service token was rotated in Cloudflare without updating
+      the CI repo secrets, so the §11 covenant seed POSTs are shadowed
+      by a CF Access login challenge (preflight probe classifies the
+      HTTP 302 + text/html response as cf_access_shadow). Layers (a)-(e)
+      remain green on every PR + push; the covenant mechanism is not
+      regressed. enforcement_statement layer (f) and activation_note
+      both annotated with a CURRENT CI STATE block + the re-flip
+      criterion; references block adds current_blocker: OSE-349. Status
+      reverts to partial; rich form retained — form is orthogonal to
+      status.)
+    date: "2026-05-20"
+    pr_refs:
+      - "OCR-docs#PR-PENDING"  # this PR — honest revert live → partial while T3 layer (f) red on OSE-349
+    rationale: >
+      Same defect class the founder flagged on OCR-docs#59 for invariant
+      #8: a brain entry must not assert a CI-enforcement status it
+      cannot currently back with a green pipeline. #5 was flipped live
+      on 2026-05-19 on the strength of #251's PR-context T3 green, but on
+      OSE main the T3 Contract tier has been red since merge — not
+      because the covenant logic broke, but because the CF Access
+      service token went stale (OSE-349). The doctrine the founder
+      codified — tests, execution, and verification surface truth;
+      false trust collapses on first contact with reality — requires the
+      status field to track the live CI state, not the intended one.
+      Reverting to partial is not a regression of the covenant:
+      structural layers (a)-(e) are unaffected and continue to gate
+      every PR + push. It is the brain refusing to hold a `live` it
+      cannot prove. Re-flip criterion: T3 Contract green on OSE main
+      after the OSE-349 token rotation — a one-line follow-up PR.
+      Doctrine contribution: a `live` status is not a one-way ratchet —
+      when a load-bearing enforcement layer goes red, the honest move is
+      to revert the status and record why, not to footnote the failure
+      under a `live` that no longer holds.
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Live/partial/planned counts are recomputed on every
 # material change. Updated manually until level2_schema.py auto-computes.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
-  partial: 5 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  live: 5    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
+  partial: 6 # #5 tier_equity / Local Sponsor Covenant (rich — flipped live 2026-05-19 OCR-docs#57, reverted to partial 2026-05-20: T3 layer (f) red on OSE main, blocked on OSE-349), #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
   planned: 1 # #7 aggregate_only_reporting
   total: 12
-  rich_form: 4  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
+  rich_form: 4  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation); #5 retains rich form though status reverted to partial 2026-05-20 (form is orthogonal to status)
   lean_form: 8  # #2, #4, #6, #7, #8, #9, #11, #12 — candidates for future enrichment
