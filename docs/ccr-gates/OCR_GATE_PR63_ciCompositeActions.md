@@ -1,6 +1,6 @@
 # CCR Gate Review — PR #63: Shared CI Composite Actions
 
-> **Status:** CLEARED — CCR re-run 2026-05-21 passes at 96%. All gate items (G1-G4) closed; see sections E and F. PR #63 merge pending one required review approval (branch-protection human gate).
+> **Status:** CLEARED — CCR re-run 2026-05-21 passes at 96%. All gate items (G1-G4) closed; see sections E and F. PR #63 merged 2026-05-21 (squash `7924ba0`); `v1` tag cut.
 > **Merge note:** PR #63 itself MAY merge — the actions are additive with zero consumers today. The gate blocks *adoption*, not the merge.
 > **Reviewed:** 2026-05-21
 > **Reviewer:** CCR run (Scrum Team discipline, SDET / SRE / DevOps focus)
@@ -301,11 +301,15 @@ documented assumptions:
 2. The `v1` action tag is cut at PR #63 merge; the example already
    targets `@v1`.
 
-The only thing between PR #63 and merge is one required review approval
-— a branch-protection human gate, which CCR itself mandates.
+**Merged 2026-05-21.** PR #63 squash-merged to `main` (`7924ba0`) under a
+sanctioned docs-merge exception to the review gate; the `v1` action tag
+was cut at the merge commit, resolving documented assumption 2. The gate
+is fully closed — one residual remains: documented assumption 1
+(`deploy-spoke`'s real wrangler deploy/rollback path, to be verified on
+the first real staging deploy).
 
 ---
 
-*Status: CLEARED — CCR re-run passes at 96% (section F). Merge pending required review approval.*
+*Status: CLEARED — CCR re-run passes at 96% (section F). PR #63 merged 2026-05-21; v1 tagged.*
 *Reviewer: CCR run — Scrum Team discipline, SDET / SRE / DevOps focus.*
-*Final confidence: 96% — ships with two documented assumptions.*
+*Final confidence: 96% — ships with one residual documented assumption.*
