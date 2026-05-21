@@ -1,0 +1,58 @@
+# identity-contract — OCR shared composite action
+# ----------------------------------------------------------------------------
+# Enforces "The Choice" — the identity contracts in
+# OCR-docs/docs/CHOICE-INVARIANTS.md. Reads the spoke's declared identity_mode
+# and runs the matching contract:
+#
+#   anonymous -> Anonymous Contract  (A-1..A-8)
+#   named     -> Identity Contract   (I-1..I-8)
+#   both      -> Anonymous + Identity + Bridge Contract (B-1..B-7)
+#   internal  -> no identity contract
+#
+# Leave identity_mode as 'auto' to read it straight from the spoke's CLAUDE.md.
+#
+# Building block: use alone or alongside universal-checks / brain-conformance /
+# deploy-spoke. The checker FAILs only on unambiguous violations; softer
+# findings are surfaced as ::warning:: without blocking CI.
+# ----------------------------------------------------------------------------
+name: 'OCR Identity Contract'
+description: 'Runs The Choice identity contract checks (Anonymous / Identity / Bridge) dispatched by the spoke identity_mode.'
+
+inputs:
+  identity_mode:
+    description: 'anonymous | named | both | internal. Use "auto" to read identity_mode from the spoke CLAUDE.md.'
+    required: false
+    default: 'auto'
+  working-directory:
+    description: 'Spoke repo root to check.'
+    required: false
+    default: '.'
+  python-version:
+    description: 'Python version used for the contract checker.'
+    required: false
+    default: '3.11'
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve action path
+      id: ap
+      shell: bash
+      run: |
+        # Normalize the Windows-style action path to mixed-mode (C:/...) so it
+        # passes cleanly to native python.exe on self-hosted runners.
+        p='${{ github.action_path }}'
+        p="${p//\\//}"
+        echo "dir=$(cd "$p" && { pwd -W 2>/dev/null || pwd; })" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Run identity contract checks
+      shell: bash
+      run: |
+        python3 "${{ steps.ap.outputs.dir }}/identity_contract_check.py" \
+          --repo "${{ inputs.working-directory }}" \
+          --identity-mode "${{ inputs.identity_mode }}"
