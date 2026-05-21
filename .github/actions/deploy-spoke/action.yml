@@ -7,11 +7,15 @@
 # passes the Cloudflare API token in as the cloudflare-api-token input
 # (e.g. cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}).
 #
+# If the deploy goes live but the health check fails, the action rolls the
+# worker back to the previous deployment (rollback-on-failure, default true)
+# so a bad deploy is recoverable, not merely reported.
+#
 # Building block: use alone or as the final stage after universal-checks /
 # identity-contract / brain-conformance / the spoke's own test job.
 # ----------------------------------------------------------------------------
 name: 'OCR Deploy Spoke'
-description: 'Deploys a spoke Cloudflare Worker with wrangler and runs a post-deploy health check.'
+description: 'Deploys a spoke Cloudflare Worker with wrangler, health-checks it, and rolls back on failure.'
 
 inputs:
   environment:
@@ -44,6 +48,10 @@ inputs:
     description: 'wrangler version to run via npx. Empty = the repo-local wrangler.'
     required: false
     default: ''
+  rollback-on-failure:
+    description: 'If the deploy goes live but the health check fails, roll back to the previous deployment.'
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -65,6 +73,7 @@ runs:
         node-version: ${{ inputs.node-version }}
 
     - name: Wrangler deploy
+      id: deploy
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
@@ -83,6 +92,7 @@ runs:
         npx --yes "$WRANGLER" "${ARGS[@]}"
 
     - name: Post-deploy health check
+      id: health
       shell: bash
       run: |
         URL="${{ inputs.health-check-url }}"
@@ -101,4 +111,46 @@ runs:
           sleep 5
         done
         echo "::error::health check failed — $URL never returned HTTP 200"
+        exit 1
+
+    # Rollback runs only when the deploy went live AND the health check
+    # failed — that is the unhealthy-but-deployed case. A failed `wrangler
+    # deploy` does not go live, so no rollback is needed there.
+    - name: Roll back on failed health check
+      if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.health.outcome == 'failure' && inputs.rollback-on-failure == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: |
+        echo "::warning::health check failed — rolling ${{ inputs.environment }} back to the previous deployment"
+        WRANGLER="wrangler"
+        if [ -n "${{ inputs.wrangler-version }}" ]; then
+          WRANGLER="wrangler@${{ inputs.wrangler-version }}"
+        fi
+        ARGS=(rollback --env "${{ inputs.environment }}" --message "automated rollback: health check failed for ${{ github.sha }}")
+        if [ -n "${{ inputs.worker-name }}" ]; then
+          ARGS+=(--name "${{ inputs.worker-name }}")
+        fi
+        # GitHub Actions exports CI=true, so wrangler runs non-interactively.
+        echo "+ npx --yes $WRANGLER ${ARGS[*]}"
+        if npx --yes "$WRANGLER" "${ARGS[@]}"; then
+          echo "Rollback complete — previous deployment restored on ${{ inputs.environment }}"
+        else
+          echo "::error::automated rollback FAILED — manual recovery required"
+          echo "Run from the worker directory:"
+          echo "  npx wrangler deployments list --env ${{ inputs.environment }}"
+          echo "  npx wrangler rollback --env ${{ inputs.environment }} --message \"manual recovery\""
+          exit 1
+        fi
+
+    - name: Manual-recovery notice
+      if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.health.outcome == 'failure' && inputs.rollback-on-failure != 'true' }}
+      shell: bash
+      run: |
+        echo "::error::health check failed and rollback-on-failure is disabled — the unhealthy version is still live on ${{ inputs.environment }}"
+        echo "Manual recovery — run from the worker directory:"
+        echo "  npx wrangler deployments list --env ${{ inputs.environment }}"
+        echo "  npx wrangler rollback --env ${{ inputs.environment }} --message \"manual recovery\""
         exit 1
