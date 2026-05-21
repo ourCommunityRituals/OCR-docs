@@ -130,9 +130,16 @@ def load_exceptions(brain_dir: Path) -> set[str]:
         data = yaml.safe_load(inv_path.read_text(encoding="utf-8"))
     except (yaml.YAMLError, UnicodeDecodeError):
         return set()
-    if not isinstance(data, list):
+    # architectural-invariants.yaml is a mapping; the invariant records live
+    # under the `invariants:` key. A prior version read `data` as a top-level
+    # list, so this function silently returned an empty set on every call —
+    # the exception mechanism was dead. Read the `invariants:` list.
+    if not isinstance(data, dict):
         return set()
-    for entry in data:
+    invariants = data.get("invariants")
+    if not isinstance(invariants, list):
+        return set()
+    for entry in invariants:
         if not isinstance(entry, dict):
             continue
         if entry.get("id") != 13:

@@ -123,8 +123,8 @@ is no list to be absent from.
 | # | Name | Scope | Enforces |
 |---|---|---|---|
 | 1 | `anonymous_id` *(exists)* | `profile-exclusive: anonymous` | Zero-PII; correlation only via an anonymous token. |
-| 13 | `explicit_identity` *(new)* | `profile-exclusive: identified` | Identity captured only behind an explicit opt-in gate; consent record persisted; bounded retention; no surface copy claiming anonymity. |
-| 14 | `exit_always_available` *(new)* | `universal` | **Every product MUST offer a participation path on the `untracked` profile, and that path MUST capture nothing** — no token minted, no identifying row written, no correlation key. CI fails the build if every surface of a product forces `identified` or `anonymous`. |
+| 14 | `explicit_identity` *(new)* | `profile-exclusive: identified` | Identity captured only behind an explicit opt-in gate; consent record persisted; bounded retention; no surface copy claiming anonymity. |
+| 15 | `exit_always_available` *(new)* | `universal` | **Every product MUST offer a participation path on the `untracked` profile, and that path MUST capture nothing** — no token minted, no identifying row written, no correlation key. CI fails the build if every surface of a product forces `identified` or `anonymous`. |
 
 `untracked` has no dedicated `profile-exclusive` invariant: `anonymous` and
 `identified` are *active* capture modes that each need a rich contract;
@@ -226,17 +226,17 @@ it, are the point.
 - **Brain migration touches four pyramid levels** — `level2_schema.py`,
   `level5_boundary.py`, `level7_contract.py`, `level8_pact.py` — plus
   `check_brain_contract.py` and `architectural-invariants.yaml`.
-- **Net-new invariants + contracts.** #13 `explicit_identity` and #14
+- **Net-new invariants + contracts.** #14 `explicit_identity` and #15
   `exit_always_available`, each with a `*.invariant.spec.ts` per product, are
   real engineering.
-- **#13 is Legal-gated.** Its consent-record and retention terms are BIPA
+- **#14 is Legal-gated.** Its consent-record and retention terms are BIPA
   (Illinois) and COPPA adjacent. Legal is human-only in the operating model —
-  #13's contract content must be Legal-reviewed before it is authored.
+  #14's contract content must be Legal-reviewed before it is authored.
 
 ### Neutral
 
 - Most of the 12 existing invariants become `universal`; only #1 changes shape
-  (`profile-exclusive`), and #13/#14 are appended. Numbers and names preserved.
+  (`profile-exclusive`), and #14/#15 are appended. Numbers and names preserved.
 - ourSharedMagnets (Postman tooling), OCR-docs, and ocr-platform-tests declare
   `identity_surfaces: []` — not identity-governed. OurOpenTable and
   OurSharedPulse are shelved/pre-tech; surfaces deferred until they have code.
@@ -255,10 +255,10 @@ Phased migration — each phase a focused PR:
   replace the `applies_to`-ID checks with surface/profile validity checks.
   `level8_pact.py`: membership assertions resolve via profile/surface.
 - **Phase 3 — registry + contracts.** Migrate `identity_layer` →
-  `identity_surfaces` for every product (map below). Author #13
-  `explicit_identity` and #14 `exit_always_available` and their
+  `identity_surfaces` for every product (map below). Author #14
+  `explicit_identity` and #15 `exit_always_available` and their
   `*.invariant.spec.ts` for each governed product. **Legal sign-off on the
-  #13 contract is a pre-condition of this phase.**
+  #14 contract is a pre-condition of this phase.**
 - **Phase 4 — PACT.** Confirm consumer-driven assertions resolve through the
   new model.
 
@@ -272,8 +272,8 @@ Product map → registry `identity_surfaces`:
 | ourSharedMagnets | none — Postman tooling, not identity-governed |
 | OurOpenTable · OurSharedPulse | shelved / pre-tech — deferred until they have code |
 
-- **Pre-condition:** Legal review of invariant #13's contract before Phase 3.
-- **Review gate:** the Phase-3 commit authoring the #13 contract requires
+- **Pre-condition:** Legal review of invariant #14's contract before Phase 3.
+- **Review gate:** the Phase-3 commit authoring the #14 contract requires
   Legal sign-off.
 
 ## References
