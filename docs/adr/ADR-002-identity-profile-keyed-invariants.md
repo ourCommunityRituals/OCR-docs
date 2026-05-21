@@ -5,325 +5,351 @@
 **Deciders:** mzdan + Co-Architect
 **Scope:** Fleet-wide
 
+> **Revision note (2026-05-21):** This ADR was hardened by a 5-loop CCR run
+> (Critical · Conservative · Recursive) before being put forward. The first
+> draft resolved a product to one identity contract via a single
+> whole-product `identity_layer` field. CCR Loop 2 caught that WKRP has
+> **two** identity surfaces at once — non-anonymous contributors *and* an
+> anonymous Fist-of-Five QR-voting surface — so a single key would force
+> WKRP wholly into the non-anonymous contract and leave its anonymous
+> surface ungoverned, reproducing the very hole this ADR closes. The
+> Decision below resolves contracts **per identity surface**, not per
+> product. CCR also corrected the migration file list and removed an
+> invariant rename. See References.
+
 ## Context
 
 The governance brain (`OCR-docs/ocr-docs-brain/architectural-invariants.yaml`)
 binds each architectural invariant to the products it governs through a
 hand-maintained `applies_to` list of product IDs. Invariant #1 `anonymous_id`
 carries `applies_to: [ose, osm]`; #10 `deprecation_lock` carries
-`applies_to: [ose, osm, wkrp, oaw]`; and so on. `check_brain_contract.py`
-reads that list to decide whether a given invariant gates a given product's CI.
+`applies_to: [ose, osm, wkrp, oaw]`; and so on. `check_brain_contract.py`,
+and four levels of the brain test pyramid, read that list to decide whether a
+given invariant gates a given product.
 
-This model was sufficient while every product in the fleet shared one identity
-model. It no longer is. The fleet now spans two genuinely different end-user
-identity models, and the brain has no vocabulary for the difference:
+This model was sufficient while every product shared one identity model. It
+no longer is. The fleet now spans two end-user identity models — and, as the
+CCR run found, a single product can present **both at once**:
 
-- **Anonymous-identity products** — OSE (`ourSharedEvents`), OSM
-  (`ourSharedMagnets`). The brand promise is "you're part of the group,
-  anonymously." Zero-PII, two-database separation, no correlation back to a
-  person. Invariant #1 `anonymous_id` is the architectural commitment.
-- **Non-anonymous-identity products** — WKRP (`ourWKRP`), OAW
-  (`ourAirwaves`). The brand promise is the opposite by design: a contributor
+- **Anonymous-identity surfaces** — OSE (`ourSharedEvents`), OSM
+  (`ourSharedMagnets`), and WKRP's Fist-of-Five QR voting. The promise is
+  "you're part of the group, anonymously": zero-PII, no correlation of a
+  record back to a person; the only correlation key is an anonymous token.
+- **Non-anonymous-identity surfaces** — WKRP (`ourWKRP`) contributors, OAW
+  (`ourAirwaves`) DJs. The promise is the opposite by design: a person
   *deliberately* plants a flag — "I want my name on this" — authenticates,
-  and their identity is on the record. WKRP stores a contributor name, a
-  generational lineage tag, and a Spotify identity. That is not drift from
-  the anonymous invariant; it *is the product*.
+  and their identity is on the record.
 
-The trigger for this ADR is the WKRP brain-conformance work
-(branch `claude/wkrp-conformance-phase-gate`, ourWKRP PR #26). Bringing WKRP
-under the brain surfaced three structural failures in the `applies_to` model:
+Identity is therefore a property of a **surface**, not of a whole product. A
+product is a *set* of surfaces. OSE has one (anonymous). WKRP has two.
+
+The trigger for this ADR is the WKRP brain-conformance work (ourWKRP PR #26,
+OCR-docs branch `claude/wkrp-conformance-phase-gate`). Bringing WKRP under the
+brain surfaced three structural failures in the `applies_to` model:
 
 1. **The opt-out hole.** WKRP is correctly absent from `anonymous_id`'s
-   `applies_to` list — the zero-PII rule genuinely does not apply to it. But
-   the brain has *no* positive identity invariant for non-anonymous products.
-   The way a non-anonymous product "passes" identity governance today is by
-   being *absent from a list*. Absence-by-design and absence-by-omission are
-   indistinguishable. A product that should be governed but was forgotten
-   looks byte-identical to a product that is correctly exempt. For the
-   single most load-bearing concern in the fleet — how a product handles a
-   human being's identity — silent omission is the most dangerous failure
-   mode, and the current schema makes it the *default* one.
+   `applies_to` list. But the brain has *no* positive identity invariant for
+   non-anonymous surfaces. The way a non-anonymous product "passes" identity
+   governance today is by being *absent from a list*. Absence-by-design and
+   absence-by-omission are indistinguishable: a product that should be
+   governed but was forgotten looks byte-identical to one correctly exempt.
+   For the most load-bearing concern in the fleet — how a product handles a
+   human's identity — silent omission is the worst failure mode, and the
+   schema makes it the *default* one.
 
 2. **One invariant cannot carry two correct answers.** The invariant *is* the
-   anonymous rule. There is no way to express "identity must be handled
-   correctly" as a single concern whose *correct implementation differs* by
-   product. Non-anonymous products do not need a relaxed `anonymous_id`; they
-   need a *different* identity contract — explicit opt-in, a consent record,
-   bounded PII retention, and brand copy that does not falsely claim
-   anonymity. The brain can currently say only "anonymous_id applies / does
-   not apply." It cannot say "the non-anonymous form of identity-correctness
-   applies to you, and here is what that form requires."
+   anonymous rule. There is no way to express identity-correctness as a
+   concern whose correct implementation *differs* by surface. Non-anonymous
+   surfaces do not need a relaxed `anonymous_id`; they need a *different*
+   contract — explicit opt-in, a consent record, bounded retention, honest
+   copy.
 
 3. **`applies_to` restates the registry, by hand, and drifts.**
-   `product-registry.yaml` already declares `identity_layer` per product
-   (`anonymous`, `non-anonymous`, `pre-tech`, `n/a`). The invariant file
-   re-encodes that same fact, by hand, scattered across a dozen `applies_to`
-   lists. Every new product and every identity reclassification requires a
-   human to remember to touch N lists. The two files can — and eventually
-   will — silently disagree. Single source of truth is violated.
-
-The forces are: the fleet is multi-identity-model and will stay that way
-(`OCR_VISION.md` and the privacy-boundary doctrine make anonymous OSE and
-non-anonymous WKRP both permanent); the brain must *gain* signal as products
-diverge, not lose it; and identity classification must live in exactly one
-place.
+   `product-registry.yaml` already declares identity per product. The
+   invariant file re-encodes that fact, by hand, across a dozen `applies_to`
+   lists. Every new product and every reclassification means editing N
+   lists. The two files can — and will — silently disagree.
 
 ## Decision
 
-**Architectural invariants are keyed to identity profile, resolved from the
-product registry — not to hand-maintained product-ID lists.**
-
-Introduce a two-level model and a registry-driven resolver.
+**Architectural invariants are keyed to identity profile and resolved per
+identity surface from the product registry — not to hand-maintained
+product-ID lists.**
 
 ### 1. Invariant vs. contract
 
-Separate the **invariant** (the named architectural concern — stable, numbered,
-never deleted) from the **contract** (the concrete, testable rule — a
-`test_file` + `enforces` statement). An invariant owns one or more contracts.
+Separate the **invariant** (the named architectural concern — stable,
+numbered, never renamed, never deleted) from the **contract** (the concrete,
+testable rule — a `test_file` + an `enforces` statement). An invariant owns
+one or more contracts.
 
-### 2. Every invariant declares a `scope`
+### 2. A product declares its identity surfaces
 
-| `scope`         | Meaning |
-|-----------------|---------|
-| `universal`     | One contract. Applies to every product that has code, regardless of identity profile. |
-| `identity-keyed`| A *map* of contracts — one entry per identity profile. A product resolves the contract matching its `identity_layer`. |
-
-### 3. Contracts are keyed to identity profile
-
-The canonical profiles are exactly the `identity_layer` values already in
-`product-registry.yaml`:
-
-| Profile         | Products today        | Identity model |
-|-----------------|-----------------------|----------------|
-| `anonymous`     | OSE, OSM              | Zero-PII; no correlation back to a person. |
-| `non-anonymous` | WKRP, OAW             | Identity on the record by deliberate user choice. |
-| `pre-tech`      | OSP, OSR, OSG, OOT    | No application code yet; identity model not realized. |
-| `n/a`           | OCR-docs, ocr-platform-tests | Governance / CI repos; no end-user identity surface. |
-
-An `identity-keyed` invariant **must enumerate every profile** — including the
-ones it does not govern — with an explicit contract *or* an explicit
-`not-applicable` plus a one-line `reason`. Example shape:
+`product-registry.yaml` replaces the scalar `identity_layer` with
+`identity_surfaces` — a list of `{name, profile}`:
 
 ```yaml
+# product-registry.yaml
+- product_id: ose
+  identity_surfaces:
+    - name: public
+      profile: anonymous
+- product_id: wkrp
+  identity_surfaces:
+    - name: contributor       # the deliberate "plant a flag" opt-in
+      profile: non-anonymous
+    - name: tourney_voting    # Fist of Five — anonymous QR / button votes
+      profile: anonymous
+```
+
+`profile` is `anonymous` or `non-anonymous`. Governance/CI repos (OCR-docs,
+ocr-platform-tests) declare `identity_surfaces: []` — no end-user surface.
+Pre-tech products declare `[]` until they have code.
+
+**Load-bearing registry rule:** a product with application code
+(`code_present` is not false) **must** declare a non-empty `identity_surfaces`.
+Code with no declared surface fails conformance. This closes the pre-tech
+transition gap — a product cannot acquire code while its identity model is
+still unstated.
+
+### 3. Every invariant declares a `scope`
+
+| `scope`            | Meaning |
+|--------------------|---------|
+| `universal`        | One `contract`. Applies to every product that has code, regardless of identity. (`deprecation_lock`, `tenant_isolation`, the runner invariants.) |
+| `profile-exclusive`| Declares one `profile` and one `contract`. Applies to a product's surfaces whose profile matches; resolves to `not-applicable` for the others — **computed**, not hand-written. |
+| `identity-keyed`   | Declares a `contracts` map with an entry for **every** profile — a real contract or an explicit `{status: not-applicable, reason}`. For the rare invariant whose correct rule genuinely differs by profile. |
+
+```yaml
+# #1 — name UNCHANGED (invariant names are stable identity — see §5)
 - id: 1
-  name: identity_handling
-  title: Identity Handling
+  name: anonymous_id
+  title: Anonymous ID
+  scope: profile-exclusive
+  profile: anonymous
+  contract:
+    test_file: anonymous-id.invariant.spec.ts
+    enforces: Zero-PII. No record correlates to identifiable PII; the only
+      sanctioned correlation key is an anonymous token. (OSE realises this
+      as the DB/FORMS_DB split + the ose_anon cookie.)
+
+# #13 — NEW invariant, appended (never renumber; numbers assigned at write)
+- id: 13
+  name: non_anonymous_identity
+  title: Non-Anonymous Identity
+  scope: profile-exclusive
+  profile: non-anonymous
+  contract:
+    test_file: non-anonymous-identity.invariant.spec.ts
+    enforces: Identity is captured only behind an explicit opt-in gate
+      ("plant a flag"). A consent record is persisted. PII retention is
+      bounded. No surface copy claims anonymity.
+
+# #10 — universal
+- id: 10
+  name: deprecation_lock
+  scope: universal
+  contract:
+    test_file: deprecation-lock.invariant.spec.ts
+    enforces: A removed runtime/flow MUST NOT be re-introduced.
+
+# #8 — genuine identity-keyed: the rule itself differs by profile
+- id: 8
+  name: bounded_pii_retention
   scope: identity-keyed
   contracts:
     anonymous:
-      test_file: anonymous-id.invariant.spec.ts
-      enforces: Zero-PII scan system. Two-database separation (DB / FORMS_DB).
-        ose_anon cookie contract. No cross-linking.
+      test_file: pii-retention.invariant.spec.ts
+      enforces: Opt-in PII has a finite TTL; daily lifecycle cron purges it.
     non-anonymous:
-      test_file: non-anonymous-identity.invariant.spec.ts
-      enforces: Explicit opt-in ("plant a flag") gate before identity capture.
-        Consent record persisted. Bounded PII retention. No brand copy that
-        claims anonymity.
-    pre-tech:
-      status: not-applicable
-      reason: No application code; identity model not yet chosen. Resolves to
-        a real contract automatically when identity_layer is set.
-    n/a:
-      status: not-applicable
-      reason: Governance/CI repo; no end-user identity surface.
+      test_file: pii-retention-identity.invariant.spec.ts
+      enforces: The identity record is retained only for the consent term;
+        revocation purges it within the declared window.
 ```
 
-### 4. Membership is resolved, never declared
+### 4. Membership is resolved per surface, never declared
 
-The `applies_to` product-ID list is **removed**. `check_brain_contract.py`
-resolves membership on every run:
+The `applies_to` product-ID list is **removed**. The resolver
+(`check_brain_contract.py`) computes, for every product:
 
-1. Read the product's `identity_layer` from `product-registry.yaml`.
+1. Read `identity_surfaces` from `product-registry.yaml`.
 2. For each invariant:
-   - `universal` → the single contract applies (subject to the existing
-     lifecycle gates — `code_present`, `pipeline_present` — unchanged).
-   - `identity-keyed` → look up `contracts[identity_layer]`. A
-     `not-applicable` entry PASSes with its recorded reason. A real contract
-     is enforced against the product's `test_file`.
-3. There is no list to consult. Membership is *derived*, every run, from the
-   registry. The two files cannot drift because one no longer restates the
-   other.
+   - `universal` → the single contract applies (subject to `code_present`).
+   - `profile-exclusive` / `identity-keyed` → for **each** surface, resolve
+     the contract for `surface.profile`. A surface whose profile does not
+     match a `profile-exclusive` invariant resolves to a computed
+     `not-applicable`.
+3. Record an explicit result for every `(surface × identity-scoped
+   invariant)` pair.
 
-### 5. `not-applicable` must be explicit — this is the load-bearing rule
+### 5. The load-bearing rules
 
-The conformance check **fails** if an `identity-keyed` invariant omits any
-profile. Absence ceases to be a valid state. Exemption now requires a
-positive, reviewed declaration with a reason. This single rule closes the
-opt-out hole: a forgotten product can no longer masquerade as an exempt one,
-because exemption is now a thing someone had to *write down*.
+- **No silent skip.** The resolver must produce an explicit result — a
+  contract to enforce or a `not-applicable` with a reason — for every
+  `(surface × identity-scoped invariant)` pair. An unresolved pair, an
+  unknown profile, or an `identity-keyed` map missing a profile fails CI.
+  There is no list to be absent from; membership is exhaustively *computed*.
+- **Invariant names are immutable.** `name` is referenced by
+  `enrichment_history`, by PACT assertions, and by `*.invariant.spec.ts`
+  filenames. Invariant #1 stays `anonymous_id`; the non-anonymous rule is the
+  **new** invariant #13, not a rename of #1. Invariants evolve in place
+  (gain `scope` + `contract`/`contracts`); they are never renumbered,
+  renamed, or deleted — per the existing brain doctrine.
 
 ### 6. Identity profile is orthogonal to lifecycle phase
 
-This decision does **not** touch the lifecycle-phase gates. `pipeline_present`,
-`code_present`, and `pipeline_activation_phase` answer *"is the mechanism
-built yet?"* — and keep doing exactly that. Identity profile answers *"which
-rule is the correct one once it is built?"* The two axes are independent: a
-`pre-tech` product resolves to the `pre-tech` contract slot (`not-applicable`)
-until it picks an identity model, at which point the registry's
-`identity_layer` flips and the product automatically resolves to a real
-contract with no edit to the invariant file.
+This decision does not touch `pipeline_present`, `code_present`, or
+`pipeline_activation_phase`. Those answer *"is the mechanism built yet?"*
+Identity profile answers *"which rule is correct once it is built?"* The two
+axes stay independent.
 
 ## Alternatives Considered
 
-### Alternative A: Keep `applies_to` lists; add WKRP/OAW to a new non-anonymous invariant
+### Alternative A: Keep `applies_to`; add WKRP/OAW to a new non-anonymous invariant
 
-Leave the schema alone. Write a second invariant — `non_anonymous_identity` —
-with `applies_to: [wkrp, oaw]`.
-
-**Rejected because:** it patches today's two products without fixing the
-mechanism. The *next* non-anonymous product still depends on a human
-remembering to edit a list; absence still equals exemption; the registry is
-still restated by hand and still drifts. It treats the symptom (WKRP is
-ungoverned) and leaves the disease (omission is silent, and the schema cannot
-tell exempt-by-design from forgotten). It also leaves `anonymous_id` and
-`non_anonymous_identity` as two unrelated invariants when they are two
-contracts of one concern — "identity is handled correctly" — which is exactly
-the comparability a fleet brain exists to provide.
+**Rejected because:** it patches today's products without fixing the
+mechanism. The next product still depends on a human editing a list; absence
+still equals exemption; the registry still drifts. It treats the symptom.
 
 ### Alternative B: Per-product invariant files
 
-Give each product its own invariant set under
-`ocr-docs-brain/products/<name>/invariants.yaml`.
-
-**Rejected because:** it explodes the brain into N copies and destroys the
-cross-product comparability that makes a fleet brain valuable. Universal
-concerns (`deprecation_lock`, `tenant_isolation`, the runner invariants) would
-be copy-pasted N times and *guaranteed* to drift apart. The whole point of a
-single brain is one source of truth for shared contracts; per-product files
-are the opposite of that.
+**Rejected because:** it explodes the brain into N copies, destroys
+cross-product comparability, and guarantees universal concerns drift apart.
 
 ### Alternative C: Boolean governed/not-governed matrix per invariant per product
 
-Replace `applies_to` with an explicit `{product: true|false}` map so every
-cell is stated and none can be silently omitted.
+**Rejected because:** a boolean says "governed / not governed" — not *which
+rule*. It cannot express that a non-anonymous surface needs a different,
+differently-strict contract. It records the gap without closing it.
 
-**Rejected because:** a boolean closes the opt-out hole (Failure 1) but not
-Failure 2. It can say "governed / not governed" — it cannot say *which rule*.
-It cannot express that WKRP needs a different, differently-strict identity
-contract rather than an exemption from the anonymous one. Non-anonymous
-products would still get *no* identity contract, just now-explicitly-no
-instead of silently-no. It records the gap without closing it.
+### Alternative D: Auto-derive `applies_to` from identity, keep one rule per invariant
 
-### Alternative D: Auto-derive `applies_to` from `identity_layer`, keep one rule per invariant
+**Rejected because:** it closes the drift failure only. One invariant still
+cannot carry two correct answers; non-anonymous surfaces still resolve to no
+identity contract, now automatically.
 
-Keep one contract per invariant, but compute the product list from the
-registry instead of hand-maintaining it.
+### Alternative E: Resolve from a single whole-product `identity_layer`
 
-**Rejected because:** it closes Failure 3 (drift) only. One invariant still
-cannot carry two correct answers (Failure 2), so the identity invariant stays
-anonymous-only and non-anonymous products still resolve to *no* identity
-contract — now automatically. Automating the derivation of an incomplete
-model just produces the incomplete result faster.
+Key each product to one identity profile and resolve one contract from it.
+*(This was this ADR's own first draft.)*
+
+**Rejected because:** a product is not monolithic in identity. WKRP has a
+non-anonymous contributor surface **and** an anonymous Fist-of-Five
+QR-voting surface simultaneously. A single key forces WKRP wholly into the
+non-anonymous contract and leaves its anonymous voting surface with **zero**
+anonymous-identity governance — reproducing, for that surface, the exact
+opt-out hole this ADR exists to close. A "mixed-surface carve-out" exception
+was also considered and rejected: it is a special case bolted onto a wrong
+model. Identity belongs to a *surface*; a product is a set of surfaces; a
+single-surface product is the degenerate case. Per-surface resolution is the
+principled model — caught by the 5-loop CCR run before this ADR shipped.
 
 ## Consequences
 
 ### Positive
 
-- **The opt-out hole is closed.** Every product, on every conformance run,
-  resolves to an *explicit* identity contract — a real rule or a reviewed
-  `not-applicable` with a reason. A forgotten product fails CI; it cannot pass
-  by omission. Exempt-by-design and forgotten are now distinguishable.
-- **Non-anonymous products gain real identity governance for the first
-  time.** WKRP's "plant a flag" opt-in gate, its consent record, and its
-  bounded PII retention become brain-enforced contracts with test files —
-  not untested intentions. OAW inherits the same contract the day its code
-  lands, with no invariant-file edit.
-- **`product-registry.yaml` is the single source of truth for identity
-  classification.** The invariant file consumes `identity_layer` and never
-  restates it. The two files cannot disagree.
-- **Adding or reclassifying a product is a one-field edit.** Change
-  `identity_layer` in the registry; every invariant re-resolves automatically
-  on the next run.
-- **Identity profile and lifecycle phase are cleanly separated.** The
-  `pipeline_present` / `code_present` escape hatches keep doing their job; the
-  identity axis does its own. Neither contaminates the other.
+- **The opt-out hole is closed per surface.** Every surface of every product
+  resolves, on every run, to an explicit identity contract or a reasoned
+  `not-applicable`. A forgotten product or surface fails CI; nothing passes
+  by omission.
+- **WKRP is governed correctly.** Its contributor surface resolves invariant
+  #13 (opt-in gate, consent record, bounded retention); its Fist-of-Five
+  voting surface resolves invariant #1 (anonymity). Both, not one.
+- **Non-anonymous surfaces gain real identity governance for the first
+  time** — WKRP's "plant a flag" moment and OAW's DJ identity become
+  brain-enforced contracts with test files.
+- **`product-registry.yaml` is the single source of truth for identity.**
+  The invariant file consumes `identity_surfaces` and never restates it.
+- **Reclassifying a product is a registry edit.** Add a surface, change a
+  profile; every invariant re-resolves automatically.
 
 ### Negative
 
-- **One-time schema migration.** `architectural-invariants.yaml`,
-  `level2_schema.py`, `check_brain_contract.py`, and the PACT-level test
-  (`level8_pact.py`) all change. The migration must respect the existing
-  `enrichment_history` discipline — never renumber, never delete an invariant,
-  append a history entry for the shape change.
-- **More verbose YAML.** Every `identity-keyed` invariant must now enumerate
-  all four profiles, including `not-applicable` slots. This verbosity is the
-  feature — it is precisely what makes omission impossible — but it is more
-  lines to read.
-- **The non-anonymous identity contract is net-new work.** Writing the
-  `non-anonymous` contract and its `non-anonymous-identity.invariant.spec.ts`
-  for WKRP/OAW is real engineering, not a rename. The brain will be honestly
-  `planned`/`partial` on that contract until the test file lands and gates
-  WKRP CI.
+- **Registry schema change.** Scalar `identity_layer` becomes the
+  `identity_surfaces` list. The `identity_layer_contract` conformance check
+  must be rewritten to read surfaces.
+- **One-time brain migration touching four pyramid levels** —
+  `level2_schema.py`, `level5_boundary.py`, `level7_contract.py`,
+  `level8_pact.py` — plus `check_brain_contract.py` and
+  `architectural-invariants.yaml`. (See Implementation Notes — this list is
+  the CCR-corrected full surface; the first draft named only two of the four
+  levels.)
+- **Net-new invariant + contracts.** Invariant #13 and its
+  `non-anonymous-identity.invariant.spec.ts` are real engineering. WKRP also
+  needs an anonymous-surface test for `tourney_voting`.
+- **The #13 contract is Legal-gated.** Its "consent record" and retention
+  terms are BIPA (Illinois) and COPPA adjacent. Per the agent operating
+  model, Legal is human-only — #13's contract content must be Legal-reviewed
+  before it is authored.
 
 ### Neutral
 
-- Of the 12 current invariants, most become `universal` (deprecation_lock,
-  tenant_isolation, the runner invariants, geo-resolution, etc.). Only the
-  identity-sensitive few become `identity-keyed` — clearly `anonymous_id`,
-  and candidates `aggregate_only_reporting` and `bounded_pii_retention`
-  (anonymous and non-anonymous products bound PII for different reasons and
-  to different rules).
-- Invariant numbers are preserved. The change is to the *shape* of each
-  entry, tracked in `enrichment_history` exactly as the past lean→rich
-  transitions were.
+- Most of the 12 existing invariants become `universal`. Only
+  identity-sensitive ones change: #1 becomes `profile-exclusive`, #13 is
+  added, #8 (and possibly #7 `aggregate_only_reporting`) become
+  `identity-keyed`.
+- Invariant numbers and names are preserved. The change is to entry *shape*,
+  tracked in `enrichment_history` as past lean→rich transitions were.
 
 ## Implementation Notes
 
-Suggested phased migration (each phase a focused PR):
+Phased migration — each phase a focused PR:
 
-- **Phase 1 — brain schema.** Bump `architectural-invariants.yaml` to
-  `schema_version: 2.0.0`. Add `scope` and the `contracts` map. Teach
-  `level2_schema.py` the new shape and add a check that every `identity-keyed`
-  invariant enumerates all four profiles. Append an `enrichment_history`
-  entry for the schema transition.
-- **Phase 2 — resolver.** Rewrite the `applies_to` lookup in
-  `check_brain_contract.py` as a registry-driven resolver keyed on
-  `identity_layer`. Remove `applies_to` from the YAML.
-- **Phase 3 — contracts.** Author the `non-anonymous` identity contract and
-  its `non-anonymous-identity.invariant.spec.ts` in WKRP (and OAW when its
-  code lands). Note: `deprecation_lock` is `universal`, so WKRP resolves to
-  it directly — the outstanding WKRP `deprecation-lock.invariant.spec.ts`
-  conformance item is satisfied by the universal contract with no list edit.
-- **Phase 4 — PACT.** Update `level8_pact.py` so invariant↔product assertions
-  resolve through the new model rather than through `applies_to`.
+- **Phase 1 — brain schema.** `architectural-invariants.yaml` →
+  `schema_version: 2.0.0`: add `scope`, `profile`, `contract`/`contracts`;
+  remove `applies_to`. `level2_schema.py`: drop `applies_to` from
+  `INV_REQUIRED`, validate the new shape, require `identity-keyed` maps to
+  enumerate every profile. Append an `enrichment_history` entry.
+- **Phase 2 — resolver + pyramid.** `check_brain_contract.py`: per-surface
+  resolver keyed on `identity_surfaces`. `level5_boundary.py`: replace the
+  `applies_to`-ID validity check with a surface/profile validity check.
+  `level7_contract.py`: rewrite CONTRACT 5 (currently asserts `applies_to`
+  product IDs are valid) against surfaces. `level8_pact.py`: the membership
+  assertions (`'ose' in applies_to`, `'wkrp' in applies_to`, …) resolve via
+  profile/surface instead.
+- **Phase 3 — registry + contracts.** Migrate every product's
+  `identity_layer` to `identity_surfaces`. Author invariant #13 and
+  `non-anonymous-identity.invariant.spec.ts` for WKRP and OAW; author WKRP's
+  anonymous-surface test for `tourney_voting`. **Legal sign-off on the #13
+  contract is a pre-condition of this phase.**
+- **Phase 4 — PACT.** Confirm consumer-driven assertions resolve through the
+  new model.
 
-- **Affected repos:** OCR-docs (brain + scripts + tests), ourWKRP, ourAirwaves;
-  OSE/OSM unaffected at the contract level (their `anonymous` contract is the
-  current `anonymous_id` rule, unchanged).
-- **Brain invariant:** `OCR-docs/ocr-docs-brain/architectural-invariants.yaml`
-  invariant #1 and the schema as a whole.
-- **Registry:** `OCR-docs/ocr-docs-brain/product-registry.yaml` —
-  `identity_layer` becomes the resolution key (no schema change to the
-  registry itself).
-- **Related:** the `pipeline_present: false` WKRP escape hatch
-  (ourWKRP PR #26 / branch `claude/wkrp-conformance-phase-gate`) is the
-  lifecycle-phase axis and is *retained* unchanged by this decision.
+- **Affected repos:** OCR-docs (brain, scripts, four pyramid levels),
+  ourWKRP, ourAirwaves. OSE/OSM: their `anonymous` contract is the current
+  `anonymous_id` rule with the same `test_file` — unchanged.
+- **Pre-condition:** Legal review of invariant #13's contract before Phase 3.
+- **Review gate:** the Phase-3 commit that authors the #13 contract requires
+  Legal sign-off.
 
 ## References
 
+- **CCR run, 2026-05-21 (5-loop, Critical·Conservative·Recursive)** — caught
+  the whole-product `identity_layer` flaw (Alternative E), the incomplete
+  migration file list, an invariant rename, and the missing Legal gate. This
+  revision is that run's output. CCR protocol:
+  `OCR-docs/docs/standards/OCR_STANDARD_agentOperatingModel.md`.
 - Trigger: WKRP brain-conformance work — ourWKRP PR #26, OCR-docs branch
   `claude/wkrp-conformance-phase-gate`.
-- Builds on: ADR-001 (docs-as-code scaffold) — the `identity_layer` field and
-  the anon / non-anon / both taxonomy referenced in ADR-001's Revisit Criteria.
+- Builds on: ADR-001 — the `identity_layer` field and the anon/non-anon
+  taxonomy referenced in ADR-001's Revisit Criteria.
 - Brain contracts codifying enforcement: `architectural-invariants.yaml`,
-  `ocr-docs-brain/scripts/check_brain_contract.py`,
-  `ocr-docs-brain/tests/level2_schema.py`,
-  `ocr-docs-brain/tests/level8_pact.py`.
+  `scripts/check_brain_contract.py`, `tests/level2_schema.py`,
+  `tests/level5_boundary.py`, `tests/level7_contract.py`,
+  `tests/level8_pact.py`.
 - Doctrine memory: `project_privacy_boundary.md` (WKRP non-anonymous opted-in;
-  OSE anonymous; the individual chooses the tracking level) — the product
-  doctrine this ADR makes the brain able to enforce.
+  OSE anonymous; the individual chooses the tracking level);
+  `project_fist_of_five.md` (the anonymous QR-voting surface).
 - Standard: `OCR-docs/docs/standards/OCR_STANDARD_brainEnforcementLocation.md`.
 
 ## Revisit Criteria
 
-- If a fourth end-user identity profile is introduced beyond `anonymous` /
-  `non-anonymous`, the `contracts` map simply gains a key — by design, no
-  schema change. Revisit only to confirm the resolver and `level2_schema.py`
-  enumerate the new profile.
-- If a single product ever needs *two* identity profiles simultaneously (a
-  genuinely dual-mode application), the single-`identity_layer` resolution key
-  breaks and the resolver must accept a list — that is a material schema
-  change and warrants a superseding ADR.
-- If the fleet ever collapses back to a single identity model across every
-  product, the two-level invariant/contract model becomes overhead and could
+- If a third end-user identity profile is introduced beyond `anonymous` /
+  `non-anonymous`, the `profile` enum and the `identity-keyed` `contracts`
+  map gain a key — confirm the resolver and `level2_schema.py` enumerate it.
+- If a single surface needs more than a flat profile — e.g. per-region
+  identity rules on one surface — the `{name, profile}` surface shape needs a
+  richer profile object, warranting a superseding ADR.
+- If the fleet ever collapses to a single identity model across every
+  surface, the two-level invariant/contract model becomes overhead and could
   fold back to flat invariants.
