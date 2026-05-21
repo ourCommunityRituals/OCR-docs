@@ -1014,8 +1014,8 @@ enrichment_history:
 # on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 7    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19), #8 bounded_pii_retention (rich, OSE PR #252+#255 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
-  partial: 4 # #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #8 bounded_pii_retention (rich, OSE PR #252+#255 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
+  partial: 5 # #5 tier_equity / Local Sponsor Covenant (OSE-349 honest partial), #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
   planned: 1 # #7 aggregate_only_reporting
   total: 12
   rich_form: 5  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation) + #8 (2026-05-19 OSE PR #252+#255 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
