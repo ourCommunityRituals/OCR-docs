@@ -1,0 +1,115 @@
+# universal-checks — OCR shared composite action
+# ----------------------------------------------------------------------------
+# Runs the universal invariant checks every OCR spoke must pass, regardless of
+# identity mode. Maps to the Universal Rules in OCR-docs/docs/CHOICE-INVARIANTS.md:
+#
+#   U-2  CI pipeline runs typecheck + lint
+#   U-3  CLAUDE.md exists
+#   U-5  .ocr-standards/ is present and synced with OCR-docs
+#   U-6  no leaked secrets
+#   U-7  CLAUDE.md declares identity_mode
+#
+# U-1 (security headers) and U-4 (layered tests) are verified by the spoke's
+# own test suite — a hub action cannot see them — so they are out of scope.
+#
+# A spoke calls this from its own CI YAML. It is a building block: use it
+# alone or alongside identity-contract / brain-conformance / deploy-spoke.
+# ----------------------------------------------------------------------------
+name: 'OCR Universal Checks'
+description: 'Runs the OCR universal invariant checks (U-2/U-3/U-5/U-6/U-7) for a spoke repo.'
+
+inputs:
+  working-directory:
+    description: 'Spoke repo root to check.'
+    required: false
+    default: '.'
+  node-version:
+    description: 'Node version used for the typecheck/lint steps.'
+    required: false
+    default: '20'
+  python-version:
+    description: 'Python version used for the standards-sync and secret-scan steps.'
+    required: false
+    default: '3.11'
+  run-typecheck:
+    description: 'Run `npm run typecheck` (U-2). Set false for docs-only repos with no TS build.'
+    required: false
+    default: 'true'
+  run-lint:
+    description: 'Run `npm run lint` (U-2). Set false for docs-only repos with no lint script.'
+    required: false
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve OCR-docs paths
+      shell: bash
+      run: |
+        # github.action_path arrives Windows-style on self-hosted runners.
+        # Normalize backslashes, then emit mixed-mode (C:/...) paths so they
+        # pass cleanly to native python.exe without MSYS argument mangling.
+        p='${{ github.action_path }}'
+        p="${p//\\//}"
+        ad=$(cd "$p" && { pwd -W 2>/dev/null || pwd; })
+        root=$(cd "$p/../../.." && { pwd -W 2>/dev/null || pwd; })
+        echo "OCR_ACTION_DIR=$ad" >> "$GITHUB_ENV"
+        echo "OCR_DOCS_ROOT=$root" >> "$GITHUB_ENV"
+        echo "Resolved OCR-docs root: $root"
+
+    - name: 'U-3/U-7 — CLAUDE.md declares identity_mode'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ ! -f CLAUDE.md ]; then
+          echo "::error::U-3 failed — CLAUDE.md not found in spoke repo"
+          exit 1
+        fi
+        if grep -Eiq 'identity_mode:[[:space:]]*(anonymous|named|both|internal|none)' CLAUDE.md; then
+          echo "U-3/U-7 pass — $(grep -Ei 'identity_mode:' CLAUDE.md | head -1 | sed 's/^[[:space:]]*//')"
+        else
+          echo "::error::U-7 failed — CLAUDE.md must declare 'identity_mode:' (anonymous|named|both|internal)"
+          exit 1
+        fi
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: 'U-5/U-6 — standards sync + secret scan'
+      shell: bash
+      run: |
+        python3 "$OCR_ACTION_DIR/universal_checks.py" \
+          --shared "$OCR_DOCS_ROOT/shared" \
+          --ocr-docs "$OCR_DOCS_ROOT" \
+          --spoke "${{ inputs.working-directory }}"
+
+    - name: Set up Node
+      if: inputs.run-typecheck == 'true' || inputs.run-lint == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install dependencies
+      if: inputs.run-typecheck == 'true' || inputs.run-lint == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          npm install
+        fi
+
+    - name: 'U-2 — typecheck'
+      if: inputs.run-typecheck == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npm run typecheck
+
+    - name: 'U-2 — lint'
+      if: inputs.run-lint == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: npm run lint

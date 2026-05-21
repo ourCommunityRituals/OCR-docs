@@ -1,0 +1,85 @@
+# brain-conformance — OCR shared composite action
+# ----------------------------------------------------------------------------
+# Packages ocr-docs-brain/scripts/check_brain_contract.py as a composite
+# action. Compares a spoke repo's actual state against what the OCR-docs
+# brain declares (registry, taxonomy, invariants, tier gates) and uploads
+# the JSON conformance report as a build artifact.
+#
+# The brain ships inside this action's repo, so brain-path defaults to the
+# bundled brain — a spoke needs no extra checkout. Override brain-path only
+# to pin a brain from a different location.
+#
+# Exit behaviour mirrors the script: 0 conformant (or skipped per
+# code_present:false), 1 drift detected, 2 execution error.
+#
+# Building block: use alone or alongside universal-checks / identity-contract
+# / deploy-spoke.
+# ----------------------------------------------------------------------------
+name: 'OCR Brain Conformance'
+description: 'Runs check_brain_contract.py to verify a spoke against the OCR-docs brain and uploads the conformance report.'
+
+inputs:
+  product-id:
+    description: 'Product id in the brain registry (ose, osm, wkrp, oaw, osg, osr, osp, ...).'
+    required: true
+  repo:
+    description: 'Path to the spoke repo root to check.'
+    required: false
+    default: '.'
+  brain-path:
+    description: 'Path to the ocr-docs-brain directory. Empty = the brain bundled with this action.'
+    required: false
+    default: ''
+  report-path:
+    description: 'Where to write the JSON conformance report.'
+    required: false
+    default: 'conformance-report.json'
+  python-version:
+    description: 'Python version used to run the conformance check.'
+    required: false
+    default: '3.11'
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve brain + script paths
+      id: paths
+      shell: bash
+      run: |
+        # Normalize the Windows-style action path to mixed-mode (C:/...) so it
+        # passes cleanly to native python.exe on self-hosted runners.
+        p='${{ github.action_path }}'
+        p="${p//\\//}"
+        root=$(cd "$p/../../.." && { pwd -W 2>/dev/null || pwd; })
+        echo "script=$root/ocr-docs-brain/scripts/check_brain_contract.py" >> "$GITHUB_OUTPUT"
+        if [ -n "${{ inputs.brain-path }}" ]; then
+          echo "brain=${{ inputs.brain-path }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "brain=$root/ocr-docs-brain" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install brain dependencies
+      shell: bash
+      run: pip install --disable-pip-version-check pyyaml packaging
+
+    - name: Run brain conformance check
+      shell: bash
+      run: |
+        python3 "${{ steps.paths.outputs.script }}" \
+          --brain "${{ steps.paths.outputs.brain }}" \
+          --repo "${{ inputs.repo }}" \
+          --product-id "${{ inputs.product-id }}" \
+          --report-path "${{ inputs.report-path }}"
+
+    - name: Upload conformance report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: brain-conformance-${{ inputs.product-id }}
+        path: ${{ inputs.report-path }}
+        if-no-files-found: warn
