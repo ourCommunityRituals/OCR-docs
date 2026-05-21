@@ -771,7 +771,7 @@ enrichment_history:
       rendering surfaces)
     date: "2026-05-18"
     pr_refs:
-      - "OCR-docs#PR-PENDING"  # OSE-330 Phase 1 — will update post-PR-create
+      - "OCR-docs#53"  # OSE-330 Phase 1 — Local Sponsor Covenant brain artifact + #5 planned → partial (merged 2026-05-18)
     rationale: >
       Path C of OSE-330 per founder direction 2026-05-18: "If we are
       this early I suggest going all the way." Co-Architect
@@ -806,7 +806,7 @@ enrichment_history:
     date: "2026-05-18"
     pr_refs:
       - "OSE#249"  # substrate: structural invariant test + CI wiring + Windows-path bug fix
-      - "OCR-docs#PR-PENDING"  # this PR — brain flip + enrichment
+      - "OCR-docs#56"  # brain flip #10 deprecation_lock partial → live + rich enrichment (merged 2026-05-18)
     rationale: >
       OSE PR #249 (merged 2026-05-18 23:51 UTC) made the deprecation
       lock mechanism fully load-bearing for the first time. Prior to
