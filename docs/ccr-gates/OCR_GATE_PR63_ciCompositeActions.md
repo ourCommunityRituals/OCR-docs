@@ -1,6 +1,6 @@
 # CCR Gate Review — PR #63: Shared CI Composite Actions
 
-> **Status:** BLOCKED for spoke adoption — must close the human gate before any spoke consumes these actions.
+> **Status:** BLOCKED for spoke adoption — one gate item remains (G1). G2/G3/G4 were executed 2026-05-21; see section E.
 > **Merge note:** PR #63 itself MAY merge — the actions are additive with zero consumers today. The gate blocks *adoption*, not the merge.
 > **Reviewed:** 2026-05-21
 > **Reviewer:** CCR run (Scrum Team discipline, SDET / SRE / DevOps focus)
@@ -174,12 +174,12 @@ zero consumers today, so merging the hub side is low-risk. The gate blocks
 
 ### Human Gate — what must be true before adoption (SCRUM backlog)
 
-| Story | Role        | Size | What | Gate type |
-| ----- | ----------- | ---- | ---- | --------- |
-| G1 | SDET / DevOps | S | Live smoke run of all four actions on BLOODRAVEN — prove `pwd -W` resolution and composite `setup-python` / `setup-node` work on the self-hosted runner | **Human** — needs runner access |
-| G2 | SRE         | M | `deploy-spoke`: add `wrangler rollback` on health-check failure, or capture the prior deployment id (`wrangler deployments`) and document a manual rollback procedure | Code |
-| G3 | SDET        | M | `identity-contract`: add a `ccr: allow <rule>` pragma / allowlist to the FAIL-level checks, mirroring `security_gate.py`'s `security-gate: allow` mechanism | Code |
-| G4 | DevOps      | M | Tag the actions `v1`; repoint the example from `@main` to `@v1`; add an OCR-docs self-test workflow that runs all four actions on every PR touching `.github/actions/**` | Code + process |
+| Story | Role        | Size | What | Status |
+| ----- | ----------- | ---- | ---- | ------ |
+| G1 | SDET / DevOps | S | Live smoke run of the actions on the self-hosted runner — prove `pwd -W` and composite `setup-python` / `setup-node` work | **Automated** by `actions-selftest.yml` (G4) — closes on its first green run on BLOODRAVEN |
+| G2 | SRE         | M | `deploy-spoke` rolls back to the previous deployment on a failed health check — recoverable, not just reported | **Done** — commit `0283ed1` |
+| G3 | SDET        | M | `identity-contract` FAIL checks gained a `ccr: allow <rule>` pragma, mirroring `security_gate.py` | **Done** — commit `0449d90` |
+| G4 | DevOps      | M | Self-test workflow + metadata validator; example repointed `@main` → `@v1` (`v1` tag cut at merge) | **Done** — commits `593bfa2`, `8748de9` |
 
 **Sequence:** G1 first — cheapest and de-risks the most; if composite actions
 cannot run on the runner at all, G2–G4 are moot. Then G3 (false positives
@@ -215,6 +215,46 @@ was under-specified (runner verification, rollback, pragma, versioning).
 
 ---
 
-*Status: BLOCKED for spoke adoption pending G1–G4.*
+## E. Update — 2026-05-21: gate items G2–G4 executed
+
+The three code-change stories were implemented on the PR #63 branch
+immediately after the run.
+
+- **G3** (`0449d90`) — `identity-contract` FAIL checks (A-7, I-4) gained a
+  `ccr: allow <rule>` inline pragma. A benign forbidden token in a test
+  fixture or a comment no longer hard-FAILs a spoke; suppressed counts are
+  printed so each pragma stays auditable. Verified locally: a real leak
+  still FAILs, a pragma'd occurrence is suppressed and the run goes green.
+- **G2** (`0283ed1`) — `deploy-spoke` now rolls the worker back to the
+  previous deployment when the deploy went live but the health check
+  failed (`rollback-on-failure`, default true). If the rollback command
+  itself fails, the exact manual recovery commands are printed. The deploy
+  is recoverable, not merely reported — the Loop 3 finding is closed.
+- **G4** (`593bfa2`, `8748de9`) — added `actions-selftest.yml`: every PR
+  touching `.github/actions/**` runs the actions on the self-hosted runner
+  against a fixture spoke, plus `validate_action_metadata.py` for
+  structural checks. The example was repointed `@main` → `@v1`.
+
+**Effect on G1.** G1 asked for a live smoke run on the runner. The G4
+self-test *is* that run, automated — it executes `universal-checks`,
+`identity-contract`, and `brain-conformance` on BLOODRAVEN, exercising
+`pwd -W`, composite `setup-python`, and (with the fixture's no-op npm
+scripts) composite `setup-node`. G1 therefore closes automatically on the
+first green `actions-selftest` run.
+
+**Residual.** `deploy-spoke`'s actual `wrangler deploy` / `wrangler
+rollback` calls cannot be exercised by a self-test — they require a real
+Cloudflare deploy. Its `action.yml` is structurally validated by the
+self-test's `metadata` job; its runtime path still needs one real staging
+deploy before production adoption. The `v1` tag is cut at PR #63 merge,
+not before — a tag on an unmerged branch would be premature.
+
+**Next.** Re-run CCR once `actions-selftest` is green on the runner. With
+G2/G3/G4 closed and G1 verified, the unverified-environment assumption
+that capped this run at 82% is removed.
+
+---
+
+*Status: BLOCKED for spoke adoption pending G1 — G2/G3/G4 executed (section E).*
 *Reviewer: CCR run — Scrum Team discipline, SDET / SRE / DevOps focus.*
-*Final confidence: 82% — below the 95% ship gate.*
+*Final confidence: 82% at review time — re-run CCR after G1 closes.*
