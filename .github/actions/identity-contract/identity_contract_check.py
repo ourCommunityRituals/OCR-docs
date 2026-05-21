@@ -24,6 +24,14 @@ FAIL is reserved for the genuinely unambiguous cross-coupling cases so the
 gate never flakes. Everything softer is WARN/INFO, mirroring the honest
 "manual review" style of check_brain_contract.py.
 
+Escape hatch: a FAIL-capable scan (A-7 named-identity coupling, I-4
+insecure cookie) is suppressed for a given occurrence when that line, or
+the line directly above it, carries a `ccr: allow <rule>` pragma -- e.g.
+`ccr: allow A-7`. This mirrors security_gate.py's `security-gate: allow`
+mechanism: a legitimate occurrence (a test fixture, a comment) stays
+green without forcing obfuscated source. Pragmas are auditable in code
+review and should carry a why-comment.
+
 Exit: 0 = no FAIL, 1 = at least one FAIL, 2 = execution error.
 """
 import argparse
@@ -54,6 +62,10 @@ TTL_TOKENS = ['expires_at', 'expires', 'ttl', 'retention', 'purge_after']
 INSECURE_COOKIE_TOKENS = ['httponly: false', 'httponly:false',
                           'httponly = false']
 
+# A FAIL-capable occurrence is suppressed when its line, or the line
+# directly above, carries `ccr: allow <rule>` (e.g. `ccr: allow A-7`).
+PRAGMA_RE = re.compile(r'ccr:\s*allow\s+([a-z0-9-]+)')
+
 
 def iter_files(root: Path, suffixes):
     for f in root.rglob('*'):
@@ -79,6 +91,48 @@ def grep(root: Path, needles, suffixes=CODE_SUFFIXES) -> dict[str, list[str]]:
             if low in text:
                 found.setdefault(orig, []).append(str(f.relative_to(root)))
     return found
+
+
+def _pragma_allows(low_lines: list[str], idx: int, rule: str) -> bool:
+    """True if line `idx`, or the line directly above it, carries a
+    `ccr: allow <rule>` pragma for this rule id."""
+    for j in (idx, idx - 1):
+        if j < 0:
+            continue
+        m = PRAGMA_RE.search(low_lines[j])
+        if m and m.group(1) == rule:
+            return True
+    return False
+
+
+def scan_tokens(root: Path, needles, rule: str,
+                suffixes=CODE_SUFFIXES) -> tuple[dict[str, list[str]], int]:
+    """Substring search with CCR pragma suppression, for FAIL-capable rules.
+
+    An occurrence is suppressed when its line, or the line directly above,
+    carries `ccr: allow <rule>`. Returns ({needle: [relpaths]}, n_suppressed).
+    """
+    found: dict[str, list[str]] = {}
+    suppressed = 0
+    rule = rule.lower()
+    lowered = [(n, n.lower()) for n in needles]
+    for f in iter_files(root, suffixes):
+        try:
+            low_lines = f.read_text(encoding='utf-8',
+                                    errors='ignore').lower().splitlines()
+        except Exception:
+            continue
+        for i, line in enumerate(low_lines):
+            for orig, low in lowered:
+                if low in line:
+                    if _pragma_allows(low_lines, i, rule):
+                        suppressed += 1
+                    else:
+                        found.setdefault(orig, []).append(
+                            str(f.relative_to(root)))
+    for k in found:
+        found[k] = sorted(set(found[k]))
+    return found, suppressed
 
 
 def schema_files(root: Path) -> list[Path]:
@@ -142,19 +196,22 @@ def anonymous_checks(repo: Path, strict_no_named: bool):
                          'no FORMS_DB binding found - not required unless the '
                          'product stores opt-in PII'))
 
-    # A-3 / A-7 - no named-identity coupling.
-    named = grep(repo, NAMED_AUTH_TOKENS)
+    # A-3 / A-7 - no named-identity coupling (FAIL-capable; pragma-aware).
+    named, suppressed = scan_tokens(repo, NAMED_AUTH_TOKENS, 'A-7')
+    sup = f' ({suppressed} suppressed by ccr:allow)' if suppressed else ''
     if named:
         detail = '; '.join(f'{k}: {v[:2]}' for k, v in named.items())
         if strict_no_named:
             results.append(('A-7', FAIL,
-                             f'anonymous product couples to named identity: {detail}'))
+                             f'anonymous product couples to named identity: '
+                             f'{detail}{sup}'))
         else:
             results.append(('A-7', WARN,
                              'named-identity references present - allowed under '
-                             f'the Bridge Contract; verify layer separation: {detail}'))
+                             f'the Bridge Contract; verify layer separation: '
+                             f'{detail}{sup}'))
     else:
-        results.append(('A-7', PASS, 'no named-identity coupling found'))
+        results.append(('A-7', PASS, f'no named-identity coupling found{sup}'))
 
     # A-4 - every PII column has an expiration.
     if pii:
@@ -209,13 +266,15 @@ def identity_checks(repo: Path):
                     'provenance fields present' if prov else
                     'verify provenance (source + timestamp) is tracked on imports'))
 
-    # I-4 - sessions are secure (HttpOnly cookies).
-    insecure = grep(repo, INSECURE_COOKIE_TOKENS)
+    # I-4 - sessions are secure (HttpOnly cookies) (FAIL-capable; pragma-aware).
+    insecure, suppressed = scan_tokens(repo, INSECURE_COOKIE_TOKENS, 'I-4')
+    sup = f' ({suppressed} suppressed by ccr:allow)' if suppressed else ''
     if insecure:
         detail = '; '.join(f'{k}: {v[:2]}' for k, v in insecure.items())
-        results.append(('I-4', FAIL, f'session cookie is not HttpOnly: {detail}'))
+        results.append(('I-4', FAIL,
+                         f'session cookie is not HttpOnly: {detail}{sup}'))
     else:
-        results.append(('I-4', PASS, 'no httpOnly:false cookie found'))
+        results.append(('I-4', PASS, f'no httpOnly:false cookie found{sup}'))
 
     # I-3 / I-5..I-8 - behavioral, not statically checkable.
     results.append(('I-3', INFO,
