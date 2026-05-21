@@ -10,8 +10,8 @@ universal checks that need Python:
 
 The remaining universal checks are shell steps in action.yml (U-2
 typecheck + lint, U-3/U-7 CLAUDE.md identity_mode). U-1 security headers
-and U-4 layered tests are verified by the spoke's own test suite — a hub
-action cannot see them — so they are intentionally out of scope here.
+and U-4 layered tests are verified by the spoke's own test suite - a hub
+action cannot see them - so they are intentionally out of scope here.
 
 security_gate.py is a library (no __main__) and is imported by every app
 repo's level0_security.py. This wrapper exists so the action can reuse it
@@ -35,11 +35,11 @@ def sha256(p: Path) -> str:
 
 
 def check_standards(spoke: Path, ocr_docs: Path) -> list[tuple[str, str, str]]:
-    """U-5 — .ocr-standards/ present and synced with OCR-docs."""
+    """U-5 - .ocr-standards/ present and synced with OCR-docs."""
     std = spoke / '.ocr-standards'
     if not std.is_dir() or not any(std.rglob('*')):
         return [('U-5', FAIL,
-                 '.ocr-standards/ missing or empty — run the OCR-docs '
+                 '.ocr-standards/ missing or empty - run the OCR-docs '
                  'propagate-standards workflow to seed it')]
 
     results = [('U-5', PASS, '.ocr-standards/ present')]
@@ -50,22 +50,22 @@ def check_standards(spoke: Path, ocr_docs: Path) -> list[tuple[str, str, str]]:
             results.append(('U-5', PASS, 'OCR_VISION.md matches OCR-docs'))
         else:
             results.append(('U-5', WARN,
-                             'OCR_VISION.md has drifted from OCR-docs — a '
+                             'OCR_VISION.md has drifted from OCR-docs - a '
                              'propagate-standards PR is pending; merge it to '
                              'resync (nightly-sync-check tracks this)'))
     elif not spoke_vision.exists():
         results.append(('U-5', WARN,
-                         '.ocr-standards/docs/OCR_VISION.md absent — standards '
+                         '.ocr-standards/docs/OCR_VISION.md absent - standards '
                          'dir is stale; re-run propagate-standards'))
     return results
 
 
 def check_secrets(spoke: Path, shared: Path) -> list[tuple[str, str, str]]:
-    """U-6 — token-shaped secret scan via the canonical security gate."""
+    """U-6 - token-shaped secret scan via the canonical security gate."""
     sys.path.insert(0, str(shared))
     try:
         from security_gate import scan_secrets
-    except Exception as e:  # noqa: BLE001 — surface any import failure as a check failure
+    except Exception as e:  # noqa: BLE001 - surface any import failure as a check failure
         return [('U-6', FAIL, f'cannot load security_gate from {shared}: {e}')]
 
     fails = scan_secrets(spoke)
@@ -91,7 +91,7 @@ def main() -> None:
 
     fails = [r for r in results if r[1] == FAIL]
     print('=' * 76)
-    print('  UNIVERSAL CHECKS — U-5 standards sync / U-6 secret scan')
+    print('  UNIVERSAL CHECKS - U-5 standards sync / U-6 secret scan')
     print('=' * 76)
     for rule, status, detail in results:
         print(f'  [{status:4}] {rule:4} {detail}')

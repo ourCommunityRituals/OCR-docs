@@ -16,8 +16,8 @@ contract:
 Most rules in CHOICE-INVARIANTS.md are behavioral and cannot be fully
 proven by a static hub-side scan. This checker is deliberately conservative:
 
-  FAIL  unambiguous violation — CI blocks
-  WARN  needs human review — printed, does NOT block
+  FAIL  unambiguous violation - CI blocks
+  WARN  needs human review - printed, does NOT block
   INFO  rule acknowledged, not statically checkable from the hub
 
 FAIL is reserved for the genuinely unambiguous cross-coupling cases so the
@@ -112,7 +112,7 @@ def detect_mode(repo: Path) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Contracts — each check returns (rule, status, detail)
+# Contracts - each check returns (rule, status, detail)
 # ---------------------------------------------------------------------------
 
 def anonymous_checks(repo: Path, strict_no_named: bool):
@@ -125,24 +125,24 @@ def anonymous_checks(repo: Path, strict_no_named: bool):
     results = []
     pii = schema_pii_hits(repo)
 
-    # A-1 — no PII in the main event database.
+    # A-1 - no PII in the main event database.
     if pii:
         results.append(('A-1', WARN,
-                         'PII-shaped columns in schema — confirm they live in '
+                         'PII-shaped columns in schema - confirm they live in '
                          f'FORMS_DB, not the main event DB: {pii[:5]}'))
     else:
         results.append(('A-1', PASS, 'no PII-shaped columns in schema files'))
 
-    # A-2 — PII lives in a separate database.
+    # A-2 - PII lives in a separate database.
     forms = grep(repo, ['FORMS_DB', 'forms_db'], CODE_SUFFIXES | CONFIG_SUFFIXES)
     if forms:
         results.append(('A-2', PASS, 'separate forms/PII database binding present'))
     else:
         results.append(('A-2', INFO,
-                         'no FORMS_DB binding found — not required unless the '
+                         'no FORMS_DB binding found - not required unless the '
                          'product stores opt-in PII'))
 
-    # A-3 / A-7 — no named-identity coupling.
+    # A-3 / A-7 - no named-identity coupling.
     named = grep(repo, NAMED_AUTH_TOKENS)
     if named:
         detail = '; '.join(f'{k}: {v[:2]}' for k, v in named.items())
@@ -151,12 +151,12 @@ def anonymous_checks(repo: Path, strict_no_named: bool):
                              f'anonymous product couples to named identity: {detail}'))
         else:
             results.append(('A-7', WARN,
-                             'named-identity references present — allowed under '
+                             'named-identity references present - allowed under '
                              f'the Bridge Contract; verify layer separation: {detail}'))
     else:
         results.append(('A-7', PASS, 'no named-identity coupling found'))
 
-    # A-4 — every PII column has an expiration.
+    # A-4 - every PII column has an expiration.
     if pii:
         ttl = grep(repo, TTL_TOKENS, CODE_SUFFIXES | {'.sql'})
         if ttl:
@@ -164,26 +164,26 @@ def anonymous_checks(repo: Path, strict_no_named: bool):
         else:
             results.append(('A-4', WARN,
                              'PII columns present but no expires_at/ttl/retention '
-                             'column found — opt-in PII must have a TTL'))
+                             'column found - opt-in PII must have a TTL'))
     else:
-        results.append(('A-4', PASS, 'no PII columns — TTL not applicable'))
+        results.append(('A-4', PASS, 'no PII columns - TTL not applicable'))
 
-    # A-6 — a cleanup job runs on a schedule.
+    # A-6 - a cleanup job runs on a schedule.
     cron = grep(repo, ['scheduled', 'cron', 'lifecycle'],
                 CODE_SUFFIXES | CONFIG_SUFFIXES)
     if cron:
         results.append(('A-6', INFO,
-                         'scheduled handler present — confirm it scrubs expired PII'))
+                         'scheduled handler present - confirm it scrubs expired PII'))
     else:
         results.append(('A-6', INFO,
-                         'no scheduled handler found — required only once opt-in '
+                         'no scheduled handler found - required only once opt-in '
                          'PII exists'))
 
-    # A-5 / A-8 — not statically checkable from the hub.
+    # A-5 / A-8 - not statically checkable from the hub.
     results.append(('A-5', INFO,
-                     'PII encryption-at-rest — verify in code review / infra config'))
+                     'PII encryption-at-rest - verify in code review / infra config'))
     results.append(('A-8', INFO,
-                     'scan timestamps must round to 15-minute windows — verify in '
+                     'scan timestamps must round to 15-minute windows - verify in '
                      'the scan handler'))
     return results
 
@@ -192,7 +192,7 @@ def identity_checks(repo: Path):
     """Identity Contract I-1..I-8."""
     results = []
 
-    # I-1 — every contribution is attributed.
+    # I-1 - every contribution is attributed.
     attr = grep(repo, ATTRIBUTION_TOKENS, CODE_SUFFIXES | {'.sql'})
     if attr:
         results.append(('I-1', PASS,
@@ -200,16 +200,16 @@ def identity_checks(repo: Path):
     else:
         results.append(('I-1', WARN,
                          'no attribution field (contributor/created_by/...) found '
-                         '— contributions must carry a name'))
+                         '- contributions must carry a name'))
 
-    # I-2 — provenance is tracked.
+    # I-2 - provenance is tracked.
     prov = grep(repo, ['provenance', 'source_type', 'imported_from',
                        'import_source'])
     results.append(('I-2', PASS if prov else INFO,
                     'provenance fields present' if prov else
                     'verify provenance (source + timestamp) is tracked on imports'))
 
-    # I-4 — sessions are secure (HttpOnly cookies).
+    # I-4 - sessions are secure (HttpOnly cookies).
     insecure = grep(repo, INSECURE_COOKIE_TOKENS)
     if insecure:
         detail = '; '.join(f'{k}: {v[:2]}' for k, v in insecure.items())
@@ -217,18 +217,18 @@ def identity_checks(repo: Path):
     else:
         results.append(('I-4', PASS, 'no httpOnly:false cookie found'))
 
-    # I-3 / I-5..I-8 — behavioral, not statically checkable.
+    # I-3 / I-5..I-8 - behavioral, not statically checkable.
     results.append(('I-3', INFO,
-                     'roles must be earned by action, not self-declared — verify '
+                     'roles must be earned by action, not self-declared - verify '
                      'role-grant logic'))
     results.append(('I-5', INFO,
                      'identity-write actions must require a name; reads may stay '
                      'anonymous'))
     results.append(('I-6', INFO,
                      'catalog must deduplicate while preserving every contributor '
-                     '— verify dedup keeps attribution'))
+                     '- verify dedup keeps attribution'))
     results.append(('I-7', INFO,
-                     'no platform lock-in — verify Spotify / Apple / CSV are all '
+                     'no platform lock-in - verify Spotify / Apple / CSV are all '
                      'supported'))
     results.append(('I-8', INFO,
                      'document platform limitations honestly (e.g. Spotify user '
@@ -237,12 +237,12 @@ def identity_checks(repo: Path):
 
 
 def bridge_checks(repo: Path):
-    """Bridge Contract B-1..B-7 — behavioral; reported for human review."""
+    """Bridge Contract B-1..B-7 - behavioral; reported for human review."""
     return [
         ('B-1', INFO, 'check-in must always offer Named / Anonymous / Skip'),
         ('B-2', INFO, 'named data -> identity layer, anonymous data -> anonymous '
                       'layer; the two never cross'),
-        ('B-3', WARN, 'no query may join an anonymous scan to a named person — '
+        ('B-3', WARN, 'no query may join an anonymous scan to a named person - '
                       'verify no such join exists'),
         ('B-4', INFO, 'SharedReport shows the total only, never the '
                       'named/anonymous split'),
@@ -270,7 +270,7 @@ def main() -> None:
     if mode == 'auto':
         detected = detect_mode(repo)
         if not detected:
-            print('ERROR: could not detect identity_mode — no `identity_mode:` '
+            print('ERROR: could not detect identity_mode - no `identity_mode:` '
                   'line in CLAUDE.md. Pass --identity-mode explicitly.',
                   file=sys.stderr)
             sys.exit(2)
@@ -284,8 +284,8 @@ def main() -> None:
 
     results: list[tuple[str, str, str]] = []
     if mode == 'internal':
-        results.append(('—', PASS,
-                         'internal product — universal checks only, no identity '
+        results.append(('-', PASS,
+                         'internal product - universal checks only, no identity '
                          'contract applies'))
     if mode in ('anonymous', 'both'):
         results += anonymous_checks(repo, strict_no_named=(mode == 'anonymous'))
@@ -297,7 +297,7 @@ def main() -> None:
     fails = [r for r in results if r[1] == FAIL]
     warns = [r for r in results if r[1] == WARN]
     print('=' * 76)
-    print(f'  IDENTITY CONTRACT — {mode}')
+    print(f'  IDENTITY CONTRACT - {mode}')
     print('=' * 76)
     for rule, status, detail in results:
         print(f'  [{status:4}] {rule:5} {detail}')
