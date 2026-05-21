@@ -1,0 +1,104 @@
+# deploy-spoke — OCR shared composite action
+# ----------------------------------------------------------------------------
+# Deploys a spoke Cloudflare Worker with wrangler and runs a post-deploy
+# health check.
+#
+# Composite actions cannot read `secrets` directly — the calling workflow
+# passes the Cloudflare API token in as the cloudflare-api-token input
+# (e.g. cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}).
+#
+# Building block: use alone or as the final stage after universal-checks /
+# identity-contract / brain-conformance / the spoke's own test job.
+# ----------------------------------------------------------------------------
+name: 'OCR Deploy Spoke'
+description: 'Deploys a spoke Cloudflare Worker with wrangler and runs a post-deploy health check.'
+
+inputs:
+  environment:
+    description: 'Deploy target — staging or production.'
+    required: true
+  worker-name:
+    description: 'Worker name. Overrides the name in wrangler.toml. Optional.'
+    required: false
+    default: ''
+  cloudflare-api-token:
+    description: 'Cloudflare API token. Pass secrets.CLOUDFLARE_API_TOKEN.'
+    required: true
+  cloudflare-account-id:
+    description: 'Cloudflare account id. Optional if set in wrangler.toml.'
+    required: false
+    default: ''
+  health-check-url:
+    description: 'URL polled for HTTP 200 after deploy. Health check is skipped if empty.'
+    required: false
+    default: ''
+  working-directory:
+    description: 'Directory containing wrangler.toml.'
+    required: false
+    default: '.'
+  node-version:
+    description: 'Node version used to run wrangler.'
+    required: false
+    default: '20'
+  wrangler-version:
+    description: 'wrangler version to run via npx. Empty = the repo-local wrangler.'
+    required: false
+    default: ''
+
+runs:
+  using: composite
+  steps:
+    - name: Validate environment
+      shell: bash
+      run: |
+        case "${{ inputs.environment }}" in
+          staging|production)
+            echo "Deploy target: ${{ inputs.environment }}" ;;
+          *)
+            echo "::error::environment must be 'staging' or 'production', got '${{ inputs.environment }}'"
+            exit 1 ;;
+        esac
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Wrangler deploy
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+      run: |
+        WRANGLER="wrangler"
+        if [ -n "${{ inputs.wrangler-version }}" ]; then
+          WRANGLER="wrangler@${{ inputs.wrangler-version }}"
+        fi
+        ARGS=(deploy --env "${{ inputs.environment }}")
+        if [ -n "${{ inputs.worker-name }}" ]; then
+          ARGS+=(--name "${{ inputs.worker-name }}")
+        fi
+        echo "+ npx --yes $WRANGLER ${ARGS[*]}"
+        npx --yes "$WRANGLER" "${ARGS[@]}"
+
+    - name: Post-deploy health check
+      shell: bash
+      run: |
+        URL="${{ inputs.health-check-url }}"
+        if [ -z "$URL" ]; then
+          echo "::notice::no health-check-url provided — skipping post-deploy health check"
+          exit 0
+        fi
+        echo "Polling $URL for HTTP 200..."
+        for i in $(seq 1 12); do
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$URL" || echo 000)
+          if [ "$CODE" = "200" ]; then
+            echo "Health check passed (HTTP 200) on attempt $i"
+            exit 0
+          fi
+          echo "  attempt $i: HTTP $CODE — retrying in 5s"
+          sleep 5
+        done
+        echo "::error::health check failed — $URL never returned HTTP 200"
+        exit 1
