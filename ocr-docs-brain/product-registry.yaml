@@ -306,6 +306,15 @@ products:
   layer: non-anonymous
   repo: OurCommunityRituals/ourWKRP
   repo_status: planned
+  # ourWKRP has application code but has not built its OCR data pipeline yet
+  # (see pipeline_activation_phase: 2 below). The brain conformance check
+  # (scripts/check_brain_contract.py) honors this flag and skips the
+  # data-pipeline checks — required_tags_used, regulatory_pools_present —
+  # until the pipeline lands. Distinct from code_present: ourWKRP DOES have
+  # application code (catalog, auth, CSV import), so the other conformance
+  # checks still run. Flip to true (or remove) when the BigQuery write path
+  # is built.
+  pipeline_present: false
   identity_layer: non-anonymous
   description: 'Community free space. Spotify fists-of-5 compete for top playlist. QR code votes tallied
     at end of night. Winner takes home the belt. All free. Cultural reclaiming against AI. Legal clearance

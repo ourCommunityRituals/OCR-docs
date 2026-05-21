@@ -88,6 +88,15 @@ def find_schema_files(repo: Path) -> list[Path]:
 def check_regulatory_pools_present(repo: Path, product: dict) -> tuple[str, str, str]:
     """Every regulatory pool the brain says this product routes to must have
     evidence in the codebase (env var, dataset name, or binding)."""
+    # pipeline_present=false: the product has application code but has not
+    # built its OCR data pipeline yet (pre data-pipeline activation phase).
+    # Pool datasets only get referenced once that pipeline lands, so checking
+    # now is guaranteed drift noise. Mirrors the code_present escape hatch;
+    # flip/remove the flag in product-registry.yaml when the pipeline is built.
+    if product.get('pipeline_present') is False:
+        return ('regulatory_pools_present', PASS,
+                'data pipeline not built yet (pipeline_present=false) — '
+                'pool datasets validated when the pipeline activates')
     required = product.get('regulatory_pools', []) or []
     if not required:
         return ('regulatory_pools_present', PASS, 'no pools required')
@@ -110,6 +119,12 @@ def check_regulatory_pools_present(repo: Path, product: dict) -> tuple[str, str,
 
 def check_required_tags_used(repo: Path, product: dict) -> tuple[str, str, str]:
     """The tags the brain requires for this product's writes must appear in code."""
+    # See check_regulatory_pools_present — required tags are pipeline-write
+    # concerns; skip until the product's data pipeline is built.
+    if product.get('pipeline_present') is False:
+        return ('required_tags_used', PASS,
+                'data pipeline not built yet (pipeline_present=false) — '
+                'required tags validated when the pipeline activates')
     required_tags = product.get('required_tags', []) or []
     if not required_tags:
         return ('required_tags_used', PASS, 'no required tags')
