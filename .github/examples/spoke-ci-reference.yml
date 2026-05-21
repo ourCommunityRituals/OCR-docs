@@ -19,6 +19,11 @@
 #
 # Each stage is its own job chained with `needs:`, so a failure stops the
 # pipeline at the first broken stage and the GitHub UI shows exactly where.
+#
+# Action refs below are pinned to @v1 — a released major-version tag, not
+# @v1. Pinning a tag means this spoke's CI changes only when OCR-docs cuts
+# a new action release, never silently on an unrelated hub commit. OCR-docs
+# publishes the v1 tag once the actions pass actions-selftest on the runner.
 # ============================================================================
 name: CI
 
@@ -39,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR universal checks
-        uses: ourCommunityRituals/OCR-docs/.github/actions/universal-checks@main
+        uses: ourCommunityRituals/OCR-docs/.github/actions/universal-checks@v1
         with:
           node-version: '20'
           run-typecheck: 'true'
@@ -53,7 +58,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR identity contract
-        uses: ourCommunityRituals/OCR-docs/.github/actions/identity-contract@main
+        uses: ourCommunityRituals/OCR-docs/.github/actions/identity-contract@v1
         with:
           # OW is a named-identity product. Use 'auto' to read identity_mode
           # straight from this repo's CLAUDE.md instead of hard-coding it.
@@ -67,7 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR brain conformance
-        uses: ourCommunityRituals/OCR-docs/.github/actions/brain-conformance@main
+        uses: ourCommunityRituals/OCR-docs/.github/actions/brain-conformance@v1
         with:
           product-id: wkrp                # <-- EDIT: this spoke's id in product-registry.yaml
 
@@ -98,7 +103,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy spoke worker
-        uses: ourCommunityRituals/OCR-docs/.github/actions/deploy-spoke@main
+        uses: ourCommunityRituals/OCR-docs/.github/actions/deploy-spoke@v1
         with:
           environment: production
           worker-name: ourwkrp            # <-- EDIT: this spoke's worker name

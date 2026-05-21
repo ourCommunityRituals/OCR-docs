@@ -1,0 +1,92 @@
+# actions-selftest.yml
+# ----------------------------------------------------------------------------
+# Exercises the shared composite actions in .github/actions/ on every PR that
+# touches them. A defect in an action.yml or a bundled checker is caught HERE,
+# in OCR-docs, instead of in a spoke's pipeline.
+#
+# The jobs run on the self-hosted Windows runner and invoke the composite
+# actions for real, so this workflow also verifies the environment
+# assumptions the actions depend on — `pwd -W` path resolution and
+# setup-python / setup-node inside a composite action. It is the automated
+# form of CCR gate OCR_GATE_PR63 story G1.
+#
+# deploy-spoke is NOT exercised — it performs a real Cloudflare deploy. Its
+# action.yml is structurally validated by the `metadata` job.
+# ----------------------------------------------------------------------------
+name: Actions self-test
+
+on:
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/actions-selftest.yml'
+      - 'tests/validate_action_metadata.py'
+      - 'tests/ci-selftest-fixture/**'
+  workflow_dispatch:
+
+concurrency:
+  group: actions-selftest-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  metadata:
+    name: action.yml metadata is valid
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pyyaml
+        run: pip install --disable-pip-version-check pyyaml
+      - name: Validate every composite action
+        run: python3 tests/validate_action_metadata.py
+
+  universal:
+    name: universal-checks against fixture
+    needs: metadata
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run universal-checks
+        uses: ./.github/actions/universal-checks
+        with:
+          working-directory: tests/ci-selftest-fixture
+          run-typecheck: 'false'
+          run-lint: 'false'
+
+  identity:
+    name: identity-contract against fixture
+    needs: metadata
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run identity-contract
+        uses: ./.github/actions/identity-contract
+        with:
+          identity_mode: auto
+          working-directory: tests/ci-selftest-fixture
+
+  brain:
+    name: brain-conformance against fixture
+    needs: metadata
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run brain-conformance
+        uses: ./.github/actions/brain-conformance
+        with:
+          # osm is marked code_present:false in the registry, so the brain
+          # check SKIP-passes — this exercises the action wiring (Python
+          # setup, deps, script, artifact upload) without needing a fully
+          # conformant fixture.
+          product-id: osm
+          repo: tests/ci-selftest-fixture
