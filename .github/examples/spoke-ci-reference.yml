@@ -1,0 +1,106 @@
+# spoke-ci-reference.yml — REFERENCE, NOT AN ACTIVE WORKFLOW
+# ============================================================================
+# This file lives in .github/examples/ so GitHub Actions never executes it
+# (only .github/workflows/ runs). It is a copy-paste template.
+#
+# To adopt the hub-and-spoke CI pattern in a spoke repo:
+#   1. Copy this file to the spoke's .github/workflows/ci.yml
+#   2. Adjust the values marked  <-- EDIT  for that product
+#
+# The pattern: OCR-docs is the hub. It ships four shared composite actions
+# under .github/actions/. Each spoke calls them from its own CI YAML, so the
+# check logic lives in exactly one place and every spoke stays in lockstep.
+#
+# The actions are independent building blocks — a spoke may use any subset.
+# This example wires the full pipeline for OurWKRP (OW), a named-identity
+# product:
+#
+#   universal-checks -> identity-contract -> brain-conformance -> tests -> deploy-spoke
+#
+# Each stage is its own job chained with `needs:`, so a failure stops the
+# pipeline at the first broken stage and the GitHub UI shows exactly where.
+# ============================================================================
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # --- Stage 1: universal invariant checks (every spoke, every identity mode)
+  universal-checks:
+    name: Universal checks
+    runs-on: [self-hosted, windows]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run OCR universal checks
+        uses: ourCommunityRituals/OCR-docs/.github/actions/universal-checks@main
+        with:
+          node-version: '20'
+          run-typecheck: 'true'
+          run-lint: 'true'
+
+  # --- Stage 2: The Choice — identity contract for this spoke's mode
+  identity-contract:
+    name: Identity contract
+    needs: universal-checks
+    runs-on: [self-hosted, windows]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run OCR identity contract
+        uses: ourCommunityRituals/OCR-docs/.github/actions/identity-contract@main
+        with:
+          # OW is a named-identity product. Use 'auto' to read identity_mode
+          # straight from this repo's CLAUDE.md instead of hard-coding it.
+          identity_mode: named            # <-- EDIT: anonymous | named | both | auto
+
+  # --- Stage 3: brain conformance — repo state vs. the OCR-docs brain
+  brain-conformance:
+    name: Brain conformance
+    needs: identity-contract
+    runs-on: [self-hosted, windows]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run OCR brain conformance
+        uses: ourCommunityRituals/OCR-docs/.github/actions/brain-conformance@main
+        with:
+          product-id: wkrp                # <-- EDIT: this spoke's id in product-registry.yaml
+
+  # --- Stage 4: the spoke's own test suite (U-4 — layered tests)
+  tests:
+    name: Tests
+    needs: brain-conformance
+    runs-on: [self-hosted, windows]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
+      - name: Run tests
+        run: npm test
+
+  # --- Stage 5: deploy — production, only on push to main
+  deploy:
+    name: Deploy (production)
+    needs: tests
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: [self-hosted, windows]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy spoke worker
+        uses: ourCommunityRituals/OCR-docs/.github/actions/deploy-spoke@main
+        with:
+          environment: production
+          worker-name: ourwkrp            # <-- EDIT: this spoke's worker name
+          cloudflare-api-token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          health-check-url: https://ourwkrp.ourcommunityrituals.com/health   # <-- EDIT
