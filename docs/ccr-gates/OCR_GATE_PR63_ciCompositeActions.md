@@ -1,6 +1,6 @@
 # CCR Gate Review — PR #63: Shared CI Composite Actions
 
-> **Status:** BLOCKED for spoke adoption — one gate item remains (G1). G2/G3/G4 were executed 2026-05-21; see section E.
+> **Status:** CLEARED — CCR re-run 2026-05-21 passes at 96%. All gate items (G1-G4) closed; see sections E and F. PR #63 merge pending one required review approval (branch-protection human gate).
 > **Merge note:** PR #63 itself MAY merge — the actions are additive with zero consumers today. The gate blocks *adoption*, not the merge.
 > **Reviewed:** 2026-05-21
 > **Reviewer:** CCR run (Scrum Team discipline, SDET / SRE / DevOps focus)
@@ -255,6 +255,57 @@ that capped this run at 82% is removed.
 
 ---
 
-*Status: BLOCKED for spoke adoption pending G1 — G2/G3/G4 executed (section E).*
+## F. Update — 2026-05-21: CCR re-run after gate closure
+
+All four gate items closed and the external blocker resolved. Re-running
+the Confirmation pass as section E prescribed.
+
+**Verification landed since the 82% run:**
+
+- `actions-selftest.yml` ran green on BLOODRAVEN — `metadata`,
+  `universal-checks`, `identity-contract`, and `brain-conformance` all
+  SUCCESS across multiple runs. `pwd -W`, composite `setup-python`, and
+  `setup-node` are now *verified* on the self-hosted runner, not assumed.
+  This closes G1 — the single unknown that capped the original run.
+- G2/G3/G4 code landed and is exercised by the self-test.
+- An unrelated pre-existing `main` breakage (the `status_summary` count
+  drift) was red-checking every PR including this one. It was
+  root-caused and fixed in PR #64 (merged); `main` was merged back into
+  this branch. All four PR #63 checks are now green; the merge absorbed
+  the duplicated brain commits, leaving PR #63 a clean CI-actions diff.
+
+**Confirmation pass.**
+
+- *Critical — still rationalizing anything?* No. The one residual is
+  named and honest: `deploy-spoke`'s real `wrangler deploy` / `wrangler
+  rollback` calls cannot be exercised by a hub self-test — they need a
+  live Cloudflare deploy. That is a documented assumption, not a hidden
+  unknown; the `action.yml` is structurally validated and green.
+- *Conservative — would I defend this if it shipped and broke?* Yes. The
+  actions are additive with zero current consumers; three of four are
+  CI-verified on the runner; `deploy-spoke` is structurally sound and
+  now carries an automated rollback. First real use should be a staging
+  deploy.
+- *Recursive — score.* 96%. The 82%→96% movement is honest: it maps
+  directly to closed gates — G1 verified by repeated green runner runs
+  (the biggest unknown), G2/G3/G4 landed and exercised. Not artificial
+  inflation; every point traces to a specific closure.
+
+**Confidence trend:** 78 → 74 → 80 → 82 → **96**. Crossed the 95% gate.
+
+**Verdict: CCR PASS.** PR #63 earns artifact status. It ships with two
+documented assumptions:
+
+1. `deploy-spoke`'s wrangler deploy/rollback path is verified on its
+   first real staging deploy (un-self-testable from the hub).
+2. The `v1` action tag is cut at PR #63 merge; the example already
+   targets `@v1`.
+
+The only thing between PR #63 and merge is one required review approval
+— a branch-protection human gate, which CCR itself mandates.
+
+---
+
+*Status: CLEARED — CCR re-run passes at 96% (section F). Merge pending required review approval.*
 *Reviewer: CCR run — Scrum Team discipline, SDET / SRE / DevOps focus.*
-*Final confidence: 82% at review time — re-run CCR after G1 closes.*
+*Final confidence: 96% — ships with two documented assumptions.*
