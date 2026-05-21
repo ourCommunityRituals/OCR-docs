@@ -304,15 +304,142 @@ invariants:
   - id: 8
     name: bounded_pii_retention
     title: Bounded PII Retention
-    status: partial
+    status: live
     test_file: pii-retention.invariant.spec.ts
     enforces: All opt-in PII has a finite TTL (expires_at,
       retention_expires_at). Daily lifecycle cron deletes expired
       registrations (90d), scrubs survey PII, deletes expired email signups
       (30d). No PII has unbounded retention. Cron + TTL columns + PRIVACY.md
-      exist; promote unified test to 0-architecture suite.
+      exist; structural invariant test in 0-architecture suite locks the
+      cron mechanism; in-process integration test verifies behavioral
+      outcome against real D1.
     applies_to:
       - ose
+    protective_statement: >
+      Without an automated retention lock, opt-in PII (event registrations,
+      survey freeform fields, email signups) accumulates indefinitely.
+      That looks like a tech-debt problem; it is actually a brand-promise
+      problem and a compliance liability. OSE collects identity-bearing
+      data on a covenant: you give it to participate in your community
+      event; we honor it briefly; we delete it. A 90-day registration
+      retention silently growing to 18 months because someone refactors
+      the cron and nobody notices is not a small bug — it converts the
+      platform from "ephemeral participation infrastructure" to "passive
+      surveillance archive", and it does so without any visible product
+      change. The retention floor is a load-bearing brand commitment;
+      the cron is the load-bearing mechanism. The invariant test is the
+      mechanism that makes the mechanism mechanically un-deletable.
+    enforcement_statement: >
+      Five-layer enforcement on the substrate side. Two of the five are
+      CI-executed tests that gate every PR + push-to-main; the other
+      three are the runtime hook, the audit table, and the brand-promise
+      doc that those two tests lock in place:
+      (a) L0 STRUCTURAL CODE SHAPE LOCK —
+      tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases,
+      added by OSE PR #252) asserts the worker entry exports
+      `async scheduled()`, that scheduled() invokes runFormDataLifecycle,
+      that the DELETE phases for form_registrations + email_signups
+      remain keyed on expires_at / retention_expires_at (never an
+      unbounded DELETE), that the SCRUB phase for form_surveys remains
+      keyed on pii_scrubbed=0 → pii_scrubbed=1, that logPiiAudit() is
+      called ≥6 times (3 phases × success+error paths) with INSERT INTO
+      pii_audit_log, that ≥3 try blocks remain inside
+      runFormDataLifecycle (phase isolation — one fail can't abort the
+      others), and that the LIFECYCLE_COMPLETE structured log marker is
+      emitted (SRE cron-success signal). Any refactor that silently
+      drops a phase, removes a TTL column from a WHERE clause (would
+      DELETE every row), removes audit writes, or collapses try/catch
+      isolation fails CI at PR-time — not as a regulatory incident
+      months later. This spec runs in the T0 Gate `invariants` matrix
+      shard on every PR + push-to-main. That shard was created by OSE
+      PR #255 / OSE-350, which wired the 0-architecture structural
+      subset onto the gating path; before #255 the suite ran only in
+      dispatch-only T4 Functional, so the code-shape lock did not
+      actually gate normal development. tests/integration/infra-
+      consistency.test.js carries a placement guard that classifies
+      every 0-architecture spec structural-vs-runtime and fails CI if a
+      structural spec is missing from the T0 `invariants` step — so the
+      wiring itself cannot silently regress.
+      (b) L1 IN-PROCESS INTEGRATION —
+      workers/oursharedevents/tests/lifecycle.spec.ts exercises
+      worker.scheduled() against real D1 (miniflare) with seeded rows
+      for all three phases (form_registrations DELETE on expires_at,
+      form_surveys SCRUB on pii_scrubbed=0, email_signups DELETE on
+      retention_expires_at) and verifies pii_audit_log entries are
+      written after each scheduled run. The behavioral counterpart to
+      (a) — proves the code-shape locked by (a) actually executes the
+      intended deletes/scrubs against a real database, not just that
+      the code reads right. This spec runs in the T0 Gate `tests`
+      matrix shard on every PR + push-to-main.
+      (c) RUNTIME CRON TRIGGER —
+      workers/oursharedevents/wrangler.toml [triggers] crons configures
+      the daily fire (`0 3 * * *` — 03:00 UTC); the scheduled() handler
+      at workers/oursharedevents/src/index.ts entry-point line 37 is
+      the registered cron consumer; runFormDataLifecycle(env) at
+      line 129 is the actual workhorse called inside ctx.waitUntil().
+      Both (a) and (b) lock the existence and shape of these hooks.
+      (d) PII AUDIT TABLE — pii_audit_log D1 table (schema in worker
+      migrations) receives one row per (phase, success_or_error) tuple
+      on every cron fire. Operators can query audit_log directly for
+      compliance evidence — "show me every retention-cron action over
+      the last 90 days" answers in one query. Audit writes are required
+      by the L0 assertion (≥6 calls); they are not optional.
+      (e) HUMAN-READABLE COVENANT — docs/features/PRIVACY.md documents
+      the retention windows in plain English (90d registrations / 30d
+      email signups / immediate scrub of survey freeform fields). The
+      doc is the brand-promise contract surface; (a)–(d) are the
+      mechanism that ensures the doc remains truthful. A refactor that
+      silently extends retention without updating PRIVACY.md would
+      first fail CI at (a) or (b), surfacing the inconsistency before
+      the brand promise becomes a lie.
+    references:
+      structural_test: tests/e2e/0-architecture/pii-retention.invariant.spec.ts
+      integration_test: workers/oursharedevents/tests/lifecycle.spec.ts
+      cron_handler: workers/oursharedevents/src/index.ts (scheduled — line 37; runFormDataLifecycle — line 129)
+      cron_config: workers/oursharedevents/wrangler.toml ([triggers] crons = ["0 3 * * *"])
+      audit_table: pii_audit_log (D1 — written by logPiiAudit in src/index.ts)
+      privacy_doc: docs/features/PRIVACY.md
+      activation_pr: "OSE#252 — L0 structural test tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases) added to the 0-architecture suite (merge sha bbc161f5, 2026-05-19 12:05 UTC)"
+      ci_gating_pr: "OSE#255 / OSE-350 — wired the 0-architecture structural subset (including pii-retention.invariant.spec.ts) into the T0 Gate `invariants` matrix shard so L0 gates every PR + push-to-main; before #255 the suite ran only in dispatch-only T4 Functional. T0 `invariants` shard verified green on OSE main at sha f27e8de14."
+      placement_guard: "tests/integration/infra-consistency.test.js — invariant-enforcement-continuity placement guard; classifies every 0-architecture spec structural-vs-runtime and fails CI if a structural spec is not on the T0 gating path"
+      origin_story: "OSE-203 / BE-14 — scheduled PII cleanup cron design + first lifecycle test"
+      template_pattern: "invariant #10 deprecation_lock (rich-form CI-enforcement template)"
+    activation_note: >
+      Status PARTIAL → LIVE via a two-PR chain completed 2026-05-19.
+      The originally-stated partial→live criterion was "promote the
+      unified test to the 0-architecture suite". The honest reading of
+      that criterion is that the test must not merely live in the suite
+      but actually gate change — PR #252 placed it, PR #255 made it
+      gate, and only the pair satisfies the criterion. Evidence chain:
+      (1) OSE PR #252 added the L0 structural code-shape test
+      tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases)
+      to the 0-architecture suite — 78 of 86 tests pass, 8 unrelated WCAG
+      skips, 0 regressions; (2) OSE PR #255 / OSE-350 wired the
+      0-architecture structural subset (including this spec) into the
+      T0 Gate `invariants` matrix shard, so the L0 lock now gates every
+      PR + push-to-main — before #255 the suite ran only in
+      dispatch-only T4 Functional and so did not gate normal
+      development; the T0 `invariants` shard is verified green on OSE
+      main at sha f27e8de14; (3) the L1 in-process integration test
+      workers/oursharedevents/tests/lifecycle.spec.ts already existed
+      (OSE-203 / BE-14), runs in the T0 Gate `tests` shard, and remains
+      green; (4) the runtime cron handler scheduled() +
+      runFormDataLifecycle in workers/oursharedevents/src/index.ts is
+      wired to the daily 03:00 UTC trigger via wrangler.toml; (5) the
+      pii_audit_log audit table receives one row per phase-outcome tuple
+      per cron fire (operator compliance evidence); (6) PRIVACY.md
+      documents the human-readable retention windows. T3 network-staging
+      coverage is NOT in the pyramid for this invariant because the cron
+      is a once-per-day mechanism, not a per-request behavior — L0 + L1
+      prove the mechanism without needing to observe a deployed cron
+      fire against staging. This invariant has NO dependency on OSE-349
+      (the CF Access service-token rotation that currently holds the
+      unrelated T3 sponsor-covenant check); brain #8 was never blocked
+      on it. This is the second invariant to use the rich-form
+      activation pattern; mirrors the rigor of #10 deprecation_lock
+      (which flipped 2026-05-18 via OSE PR #249 / OCR-docs#56) and
+      inherits the layered-enforcement template that #1 anonymous_id
+      established (2026-05-17 trio enrichment).
 
   # ── #9 TENANT ISOLATION ───────────────────────────────────────────────────
   - id: 9
@@ -783,15 +910,82 @@ enrichment_history:
       and inherits the rich-form template established by #1
       anonymous_id (2026-05-17 trio enrichment).
 
+  - invariant_id: 8
+    invariant_name: bounded_pii_retention
+    from_state: >-
+      lean partial (pre-2026-05-19 — short enforces text naming cron +
+      TTL columns + PRIVACY.md; no protective_statement; no
+      enforcement_statement layered breakdown; no references block; no
+      activation_note; the partial→live criterion stated inline in
+      enforces was "promote unified test to 0-architecture suite")
+    to_state: >-
+      rich live (v1 2026-05-19 OSE PR #252 — L0 structural code-shape
+      lock test pii-retention.invariant.spec.ts (9 cases) added to the
+      0-architecture suite; brain entry expanded to rich form:
+      protective_statement names the brand-promise stakes (ephemeral
+      participation infrastructure vs passive surveillance archive),
+      enforcement_statement enumerates 5 enforcement layers
+      ((a) L0 structural code-shape + (b) L1 in-process behavioral +
+      (c) runtime cron trigger + (d) audit_log compliance table +
+      (e) PRIVACY.md human-readable contract), references block names
+      all 5 layer artifacts + activation_pr + origin story OSE-203/BE-14
+      + template_pattern #10, activation_note records the evidence
+      chain and the doctrine point that T3 network-staging is correctly
+      NOT in this pyramid (cron is a once-per-day mechanism, not a
+      per-request behavior — L0 + L1 prove the mechanism). The L0
+      lock genuinely gates every PR + push only because OSE PR #255 /
+      OSE-350 wired the 0-architecture structural subset into the T0
+      Gate `invariants` shard; PR #252 placed the test, #255 made it
+      gate, and the pair completes the partial→live criterion. Status
+      flipped partial → live.)
+    date: "2026-05-19"
+    pr_refs:
+      - "OSE#252"  # substrate: L0 structural code-shape lock test added to the 0-architecture suite (merged 2026-05-19 sha bbc161f5)
+      - "OSE#255"  # substrate: OSE-350 — wired the 0-architecture structural subset into the T0 Gate `invariants` shard so L0 gates every PR + push (verified green on main sha f27e8de14)
+      - "OCR-docs#59"  # this PR — brain flip partial → live + rich enrichment v1
+    rationale: >
+      The brain's originally-stated partial→live criterion ("promote
+      unified test to 0-architecture suite") was met by a two-PR chain:
+      OSE PR #252 placed the L0 test in the suite, and OSE PR #255 /
+      OSE-350 wired that suite's structural subset into the T0 Gate
+      `invariants` shard so it actually gates change. A test sitting in
+      the suite that never runs on a PR would satisfy the letter of the
+      criterion but not its intent.
+      The promotion required care not because the cron mechanism was
+      new (it has shipped under OSE-203 since the cron-design pass),
+      but because the substrate previously lacked a structural lock
+      preventing silent refactor-drift on a load-bearing compliance
+      mechanism. The L0 invariant test now mechanically guarantees:
+      a phase removed from runFormDataLifecycle fails CI (table-phase
+      regex misses); a TTL column reference removed from a WHERE
+      clause fails CI (regex misses → would DELETE every row, not
+      just expired ones); logPiiAudit() calls removed fail CI (count
+      < 6 → operators lose compliance evidence); try/catch isolation
+      collapsed to a single try fails CI (count < 3 → one phase fail
+      could abort the rest); LIFECYCLE_COMPLETE log marker removed
+      fails CI (SRE loses cron success signal). Each failure mode
+      surfaces at PR-time, not as a HIPAA/COPPA liability after a
+      regulator's first audit. Doctrine contribution: T3 network-
+      staging coverage is DELIBERATELY NOT in the pyramid for this
+      invariant — the cron is a once-per-day mechanism, not a per-
+      request behavior, and constructing a flaky "wait 24h and observe
+      a cron fire" T3 test would add noise without adding signal.
+      L0 + L1 prove the mechanism; cron-trigger reliability is a
+      Cloudflare scheduler concern, not a brain invariant concern.
+      Inherits the rich-form layered-enforcement template established
+      by #1 anonymous_id (2026-05-17) and refined by #10
+      deprecation_lock (2026-05-18); mirrors the activation rigor of
+      #5 Local Sponsor Covenant (2026-05-19, same multi-day arc).
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Live/partial/planned counts are recomputed on every
 # material change. Updated manually until level2_schema.py auto-computes.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
-  partial: 5 # #6 inert_monetization_hooks, #8 bounded_pii_retention, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  live: 7    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #5 tier_equity / Local Sponsor Covenant (rich, OSE-330 Phase 2+3 activation 2026-05-19), #8 bounded_pii_retention (rich, OSE PR #252+#255 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
+  partial: 4 # #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
   planned: 1 # #7 aggregate_only_reporting
   total: 12
-  rich_form: 4  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
-  lean_form: 8  # #2, #4, #6, #7, #8, #9, #11, #12 — candidates for future enrichment
+  rich_form: 5  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation) + #8 (2026-05-19 OSE PR #252+#255 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
+  lean_form: 7  # #2, #4, #6, #7, #9, #11, #12 — candidates for future enrichment
