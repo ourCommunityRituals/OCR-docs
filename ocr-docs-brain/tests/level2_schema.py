@@ -219,6 +219,66 @@ if 'enrichment_history' in inv:
                   if inv_name not in existing_invariant_names else f'"{inv_name}" exists')
 
 # ---------------------------------------------------------------------------
+# 1.5d — status_summary consistency (added 2026-05-20)
+# ---------------------------------------------------------------------------
+# status_summary is a derived aggregate: live/partial/planned counts, total,
+# and rich_form/lean_form counts. The file header used to read "Updated
+# manually until level2_schema.py auto-computes" — this check closes that
+# gap. It recomputes every count from the actual invariant records and
+# asserts the declared summary matches. Catches:
+#   - a status flip whose author forgot to update the summary (the #5 / #8
+#     activation arc hand-checked this on every brain PR)
+#   - a dropped or malformed `status_summary:` block (the OCR-docs#58
+#     incident — a missing parent key broke YAML parse on brain main)
+#   - drift between rich_form / lean_form and the real form distribution
+# An invariant is "rich form" iff it carries a non-empty enforcement_statement
+# (the load-bearing rich-form field; protective_statement + references travel
+# with it). Form is orthogonal to status — a rich invariant may be partial.
+invariants = inv.get('invariants', [])
+ss = inv.get('status_summary')
+check('status_summary_present',
+      isinstance(ss, dict),
+      f'expected dict, got {type(ss).__name__}' if not isinstance(ss, dict)
+      else f'{len(ss)} keys')
+
+if isinstance(ss, dict):
+    SS_KEYS = ['live', 'partial', 'planned', 'total', 'rich_form', 'lean_form']
+    missing_ss = [k for k in SS_KEYS if k not in ss]
+    check('status_summary_keys', not missing_ss,
+          f'missing {missing_ss}' if missing_ss else f'all {len(SS_KEYS)} present')
+
+    # Recompute every count straight from the invariant records.
+    actual = {
+        'live':    sum(1 for i in invariants if i.get('status') == 'live'),
+        'partial': sum(1 for i in invariants if i.get('status') == 'partial'),
+        'planned': sum(1 for i in invariants if i.get('status') == 'planned'),
+        'total':   len(invariants),
+        'rich_form': sum(1 for i in invariants
+                         if isinstance(i.get('enforcement_statement'), str)
+                         and i['enforcement_statement'].strip()),
+    }
+    actual['lean_form'] = actual['total'] - actual['rich_form']
+
+    for key, expected in actual.items():
+        declared = ss.get(key)
+        check(f'status_summary_count:{key}', declared == expected,
+              f'declared {declared}, recomputed {expected}' if declared != expected
+              else f'{declared}')
+
+    # Internal arithmetic — the summary must be self-consistent even before
+    # it is compared against the records.
+    lpp = ss.get('live', 0) + ss.get('partial', 0) + ss.get('planned', 0)
+    check('status_summary_sum:live+partial+planned==total',
+          lpp == ss.get('total'),
+          f'live+partial+planned = {lpp}, total = {ss.get("total")}'
+          if lpp != ss.get('total') else f'{lpp}')
+    rl = ss.get('rich_form', 0) + ss.get('lean_form', 0)
+    check('status_summary_sum:rich+lean==total',
+          rl == ss.get('total'),
+          f'rich_form+lean_form = {rl}, total = {ss.get("total")}'
+          if rl != ss.get('total') else f'{rl}')
+
+# ---------------------------------------------------------------------------
 # 1.6 — Corridor definitions: required fields per founding corridor
 # ---------------------------------------------------------------------------
 CORR_REQUIRED = ['corridor_id', 'role']
