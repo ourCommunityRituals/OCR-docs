@@ -57,9 +57,10 @@ jobs:
       - name: Run universal-checks
         uses: ./.github/actions/universal-checks
         with:
+          # typecheck + lint left at their default (true) so the self-test
+          # also exercises setup-node and the npm path on the runner. The
+          # fixture's typecheck/lint scripts are no-ops.
           working-directory: tests/ci-selftest-fixture
-          run-typecheck: 'false'
-          run-lint: 'false'
 
   identity:
     name: identity-contract against fixture
