@@ -21,13 +21,15 @@ ADRs and Brain invariants are complementary, not redundant:
 | #                                                  | Title                                          | Status   | Date       |
 | -------------------------------------------------- | ---------------------------------------------- | -------- | ---------- |
 | [ADR-001](ADR-001-docs-as-code-scaffold.md)        | Documentation-as-code scaffold before code     | Accepted | 2026-04-01 |
+| [ADR-002](ADR-002-identity-profile-keyed-invariants.md) | Key invariants to identity profile, not product-ID lists | Proposed | 2026-05-21 |
 
-ADR series planned (fleet scope, not yet written):
+ADR series planned (fleet scope, not yet written — numbers are provisional and
+assigned at write time per the Numbering rule below):
 
-- ADR-002 — Self-hosted runner pool as the single CI runtime (fleet rule from `feedback_self_hosted_only.md`)
-- ADR-003 — Security-first test pyramid: every product runs the same pyramid; security gates before lint
-- ADR-004 — `@ocr/flags` shared package as the runtime-binding contract surface for the Brain `flags-contract.yaml`
-- ADR-005 — Two-axis tier model: sponsor pricing (local/mid/premium) × flag presets (free/mid/enterprise) — never merged
+- Self-hosted runner pool as the single CI runtime (fleet rule from `feedback_self_hosted_only.md`)
+- Security-first test pyramid: every product runs the same pyramid; security gates before lint
+- `@ocr/flags` shared package as the runtime-binding contract surface for the Brain `flags-contract.yaml`
+- Two-axis tier model: sponsor pricing (local/mid/premium) × flag presets (free/mid/enterprise) — never merged
 
 ## Numbering
 
