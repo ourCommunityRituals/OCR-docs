@@ -21,7 +21,7 @@ ADRs and Brain invariants are complementary, not redundant:
 | #                                                  | Title                                          | Status   | Date       |
 | -------------------------------------------------- | ---------------------------------------------- | -------- | ---------- |
 | [ADR-001](ADR-001-docs-as-code-scaffold.md)        | Documentation-as-code scaffold before code     | Accepted | 2026-04-01 |
-| [ADR-002](ADR-002-identity-profile-keyed-invariants.md) | Key invariants to identity profile, not product-ID lists | Proposed | 2026-05-21 |
+| [ADR-002](ADR-002-identity-profile-keyed-invariants.md) | Key invariants to identity profile, not product-ID lists | Accepted — impl. pending | 2026-05-22 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):

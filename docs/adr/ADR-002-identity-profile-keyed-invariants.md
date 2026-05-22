@@ -1,6 +1,6 @@
 # ADR-002: Key architectural invariants to identity profile, not product-ID lists
 
-**Status:** Proposed
+**Status:** Accepted — implementation pending
 **Date:** 2026-05-21
 **Deciders:** mzdan + Co-Architect
 **Scope:** Fleet-wide
@@ -11,6 +11,15 @@
 > product. Founder direction then expanded the model to the full three-rung
 > identity choice — `identified` / `anonymous` / `untracked` — and named its
 > purpose: **the invariant set is choice infrastructure.** See References.
+>
+> **Accepted 2026-05-22.** CCR-verified at ~96%; the founder delegated the
+> acceptance call to the Co-Architect (the ADR's two deciders). The decision
+> is committed — the four-phase migration in Implementation Notes is the
+> roadmap, not a maybe. Status is `Accepted — implementation pending` rather
+> than plain `Accepted` because the code, gates, and brain contracts are not
+> yet live; the status promotes to `Accepted` when Phase 4 lands. Phase 3 is
+> Legal-gated (the `explicit_identity` consent-record contract — BIPA / COPPA
+> adjacent) and is not scheduled until that human review is complete.
 
 ## Context
 
