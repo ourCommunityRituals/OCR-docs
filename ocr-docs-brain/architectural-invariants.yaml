@@ -671,6 +671,47 @@ invariants:
     depends_on:
       - self_hosted_runner_bash_resolution
 
+  # ── #13 BRAIN ENFORCEMENT CO-LOCATION ─────────────────────────────────────
+  # Added 2026-05-21 to resolve a phantom: five artifacts referenced
+  # "invariant 13" as real — docs/standards/OCR_STANDARD_brainEnforcementLocation.md
+  # plus the audit script's docstring, its JSON report (invariant_id: 13), its
+  # load_exceptions() reader, and its remediation text — yet #13 was never
+  # encoded here. The rule, the audit, and the standard all predate this entry
+  # (standard effective 2026-05-15); #13 is now real. The brain's "numbers
+  # assigned at write time, never reserved" rule was bent by the standard
+  # pre-naming "13"; the remedy is to finish the invariant, not gut a working
+  # subsystem. `applies_to` is empty by design — #13 is enforced centrally by
+  # the audit, not by per-repo *.invariant.spec.ts files, so
+  # check_invariant_test_files never expects an app repo to carry it.
+  # `exceptions` holds basenames of documented, approved files with a
+  # forbidden-looking name; the audit's load_exceptions() reads it.
+  - id: 13
+    name: brain_enforcement_location
+    title: Brain Enforcement Co-location
+    status: partial
+    test_file: audit_brain_enforcement_location.py
+    enforces: 'Any script, test, or check whose purpose is to enforce the
+      shape of ocr-docs-brain/*.yaml MUST live in ocr-docs-brain/scripts/ or
+      ocr-docs-brain/tests/ — never in the workspace root, an application
+      repo, or a separate ci-scripts package. Co-locating Brain content with
+      Brain enforcement keeps every contract change to one PR, one review,
+      one diff. Enforced centrally (not by per-repo test files) by
+      scripts/audit_brain_enforcement_location.py — a filename-pattern scan of
+      the workspace root and every app repo — wired into
+      .github/workflows/brain-location-audit.yml nightly and on PRs touching
+      ocr-docs-brain/ or docs/standards/. Status partial: the audit runs, but
+      v1 detection is filename-pattern-based (a non-conforming filename can
+      slip past) and no structural invariant test yet locks the mechanism.
+      Promote to live once detection is hardened and a structural test is
+      added.'
+    applies_to: []
+    exceptions: []
+    references:
+      standard: docs/standards/OCR_STANDARD_brainEnforcementLocation.md
+      audit_script: ocr-docs-brain/scripts/audit_brain_enforcement_location.py
+      audit_workflow: .github/workflows/brain-location-audit.yml
+      origin: "CCR review 2026-05-21 — resolved a phantom #13 referenced by five artifacts but never encoded"
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
 # invariant transitions. Documents the evolution of the registry over time so
@@ -1015,8 +1056,8 @@ enrichment_history:
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
   live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #8 bounded_pii_retention (rich, OSE PR #252+#255 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
-  partial: 5 # #5 tier_equity / Local Sponsor Covenant (OSE-349 honest partial), #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe
+  partial: 6 # #5 tier_equity / Local Sponsor Covenant (OSE-349 honest partial), #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location
   planned: 1 # #7 aggregate_only_reporting
-  total: 12
+  total: 13
   rich_form: 5  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation) + #8 (2026-05-19 OSE PR #252+#255 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
-  lean_form: 7  # #2, #4, #6, #7, #9, #11, #12 — candidates for future enrichment
+  lean_form: 8  # #2, #4, #6, #7, #9, #11, #12, #13 — candidates for future enrichment
