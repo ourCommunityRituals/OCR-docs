@@ -1,0 +1,144 @@
+# phantom-scan.yml — Catch phantom invariant references across OCR-docs.
+#
+# Sibling to brain-validate.yml. The brain pyramid validates the YAML
+# registry's internal consistency; this workflow validates that references
+# to the registry across docs are consistent — fails CI when any standards
+# doc, README, or vision doc claims an invariant number not present in
+# architectural-invariants.yaml.
+#
+# Triggers:
+#   - pull_request: when docs, the registry, the scanner, or this workflow change
+#   - push to main: same paths
+#   - workflow_dispatch: manual rerun
+#   - schedule: deferred until OCR-75 propagation work creates per-product
+#     drift detection that needs a daily catch (vendored .ocr-standards/).
+#     PR + push covers the introduction path today.
+#
+# Behavior (post-CCR 2026-06-02):
+#   - PR events: BLOCKING. Phantoms in PRs are cheap to fix in-PR and expensive
+#     to chase post-merge. Comment is informational; workflow still fails.
+#   - Push to main: BLOCKING. Catches what --no-verify bypassed locally.
+#   - No auto-Linear-ticket emission yet. Deferred to sibling Story:
+#     "L5 — Wire phantom-scan to open_drift_ticket.py" (requires scanner to
+#     emit a JSON report matching the helper's --report contract). Until
+#     that lands, CI failure is the forcing function; humans triage from
+#     workflow logs + PR comments.
+#
+# Doctrine: ADR-003 Self-Checking Infrastructure (L1 conformance machinery).
+# Source script: ocr-docs-brain/scripts/scan_phantom_invariants.py
+# Local mirror: ocr-docs-brain/hooks/pre-commit (same scanner, --pre-commit mode)
+
+name: Phantom invariant scan
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'ocr-docs-brain/architectural-invariants.yaml'
+      - 'ocr-docs-brain/scripts/scan_phantom_invariants.py'
+      - 'ocr-docs-brain/hooks/**'
+      - '.github/workflows/phantom-scan.yml'
+      - 'README.md'
+      - 'ocr-docs-brain/README.md'
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'ocr-docs-brain/architectural-invariants.yaml'
+      - 'ocr-docs-brain/scripts/scan_phantom_invariants.py'
+      - 'ocr-docs-brain/hooks/**'
+      - '.github/workflows/phantom-scan.yml'
+      - 'README.md'
+      - 'ocr-docs-brain/README.md'
+  workflow_dispatch:
+
+concurrency:
+  group: phantom-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  scan:
+    name: Scan for phantom invariant references
+    runs-on: self-hosted
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Per brain-validate.yml's note: no pip cache (hashFiles() fails on
+      # self-hosted Windows under _work). The scanner has zero deps anyway —
+      # pure stdlib regex + subprocess. No pip install needed.
+
+      # On PR events: capture scanner output, allow step to fail without aborting
+      # the job (so the comment step can run with the findings), then fail the job
+      # at the end if scan exit was non-zero. PR-blocking behavior — not
+      # informational. CCR-2026-06-02 H2 resolution.
+      - name: Run phantom invariant scanner
+        id: scan
+        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        run: python3 ocr-docs-brain/scripts/scan_phantom_invariants.py --sweep
+
+      # On PR with findings, post a structured comment naming the phantom(s).
+      # Comment is helpful UX; the workflow still fails (see job-result step).
+      - name: Comment on PR with phantom list
+        if: steps.scan.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { execSync } = require('child_process');
+            let scanOutput = '(scanner output unavailable — see job log)';
+            try {
+              scanOutput = execSync(
+                'python3 ocr-docs-brain/scripts/scan_phantom_invariants.py --sweep 2>&1 || true',
+                { encoding: 'utf8' }
+              );
+            } catch (_) {}
+            const body = [
+              '### Phantom invariant reference(s) found',
+              '',
+              'Standards docs and READMEs MUST reference only invariants encoded in',
+              '`ocr-docs-brain/architectural-invariants.yaml`. ADRs are exempt — see',
+              'ADR-002 §"Invariant numbers are indicative" for the doctrine.',
+              '',
+              '```',
+              scanOutput.split('\n').slice(0, 30).join('\n'),
+              '```',
+              '',
+              'Local mirror: `git config core.hooksPath ocr-docs-brain/hooks` installs',
+              'the pre-commit hook that catches this before it reaches CI.',
+              '',
+              'Doctrine: [ADR-003 Self-Checking Infrastructure](docs/adr/ADR-003-self-checking-infrastructure.md).',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+      # H2 resolution: PR events are BLOCKING. continue-on-error above lets the
+      # comment step run; this final step then propagates the scan exit code
+      # to the workflow result. CCR Loop 1 #1.2 — phantoms in PRs are cheap
+      # to fix in-PR, expensive post-merge. Block.
+      - name: Fail job if phantoms were found
+        if: steps.scan.outcome == 'failure'
+        run: |
+          echo "::error title=Phantom invariant references found::See the scan step output and PR comment for details. Local mirror: git config core.hooksPath ocr-docs-brain/hooks."
+          exit 1
+
+      # Auto-ticket emission deliberately omitted from v1 — see header comment
+      # and the sibling Linear Story. open_drift_ticket.py's required args
+      # (--report JSON, --repo, --pr-number, --pr-author, etc.) demand the
+      # scanner emit a structured report, which is sibling-story work.

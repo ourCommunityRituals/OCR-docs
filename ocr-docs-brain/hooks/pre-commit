@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# OCR-docs pre-commit hook — regression-tolerant infrastructure trigger.
+#
+# What this catches:
+#   Phantom invariant references in standards docs and READMEs.
+#   "invariant #N" where N is not in architectural-invariants.yaml.
+#
+# What this does NOT catch (yet):
+#   Conformance drift  → check_brain_contract.py in CI.
+#   Vendored .ocr-standards/ drift  → OCR-75 (per-product hooks).
+#
+# Kill switch:
+#   git commit --no-verify     (use sparingly; doctrine ADR-003)
+#
+# Doctrine: ADR-003 Self-Checking Infrastructure, L1 layer.
+# Installed by: ocr-docs-brain/hooks/install.sh
+# Source script: ocr-docs-brain/scripts/scan_phantom_invariants.py
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+SCANNER="$REPO_ROOT/ocr-docs-brain/scripts/scan_phantom_invariants.py"
+
+if [ ! -f "$SCANNER" ]; then
+    echo "pre-commit: scanner not found at $SCANNER" >&2
+    echo "  Did you check out the brain on a stale branch? Run:" >&2
+    echo "    git config --unset core.hooksPath" >&2
+    echo "  to disable hooks until resolved." >&2
+    exit 2
+fi
+
+# Find a Python interpreter — Windows (py launcher), then Unix.
+if command -v py >/dev/null 2>&1; then
+    exec py -3 "$SCANNER" --pre-commit
+elif command -v python3 >/dev/null 2>&1; then
+    exec python3 "$SCANNER" --pre-commit
+elif command -v python >/dev/null 2>&1; then
+    exec python "$SCANNER" --pre-commit
+else
+    echo "pre-commit: no Python found on PATH (tried: py, python3, python)" >&2
+    echo "  Install Python 3.9+ or disable hooks:" >&2
+    echo "    git config --unset core.hooksPath" >&2
+    exit 2
+fi

@@ -20,6 +20,17 @@
 > yet live; the status promotes to `Accepted` when Phase 4 lands. Phase 3 is
 > Legal-gated (the `explicit_identity` consent-record contract — BIPA / COPPA
 > adjacent) and is not scheduled until that human review is complete.
+>
+> **Renumbered 2026-06-01.** Per this ADR's own "Invariant numbers are
+> indicative — assigned at implementation per the brain's write-time
+> numbering rule" note, the proposed invariant numbers shift: #14
+> `explicit_identity` becomes #15 throughout this ADR; #15
+> `exit_always_available` becomes #16. The number #14 was claimed by
+> `mobile_workability` (encoded in `architectural-invariants.yaml`
+> 2026-06-01 to resolve a phantom referenced by
+> `OCR_STANDARD_mobileWorkability.md` since 2026-05-16 — second
+> phantom-resolution after #13 brain_enforcement_location encoded
+> 2026-05-21). Tracked in Linear OCR-74.
 
 ## Context
 
@@ -132,8 +143,8 @@ is no list to be absent from.
 | # | Name | Scope | Enforces |
 |---|---|---|---|
 | 1 | `anonymous_id` *(exists)* | `profile-exclusive: anonymous` | Zero-PII; correlation only via an anonymous token. |
-| 14 | `explicit_identity` *(new)* | `profile-exclusive: identified` | Identity captured only behind an explicit opt-in gate; consent record persisted; bounded retention; no surface copy claiming anonymity. |
-| 15 | `exit_always_available` *(new)* | `universal` | **Every product MUST offer a participation path on the `untracked` profile, and that path MUST capture nothing** — no token minted, no identifying row written, no correlation key. CI fails the build if every surface of a product forces `identified` or `anonymous`. |
+| 15 | `explicit_identity` *(new)* | `profile-exclusive: identified` | Identity captured only behind an explicit opt-in gate; consent record persisted; bounded retention; no surface copy claiming anonymity. |
+| 16 | `exit_always_available` *(new)* | `universal` | **Every product MUST offer a participation path on the `untracked` profile, and that path MUST capture nothing** — no token minted, no identifying row written, no correlation key. CI fails the build if every surface of a product forces `identified` or `anonymous`. |
 
 `untracked` has no dedicated `profile-exclusive` invariant: `anonymous` and
 `identified` are *active* capture modes that each need a rich contract;
@@ -235,17 +246,17 @@ it, are the point.
 - **Brain migration touches four pyramid levels** — `level2_schema.py`,
   `level5_boundary.py`, `level7_contract.py`, `level8_pact.py` — plus
   `check_brain_contract.py` and `architectural-invariants.yaml`.
-- **Net-new invariants + contracts.** #14 `explicit_identity` and #15
+- **Net-new invariants + contracts.** #15 `explicit_identity` and #16
   `exit_always_available`, each with a `*.invariant.spec.ts` per product, are
   real engineering.
-- **#14 is Legal-gated.** Its consent-record and retention terms are BIPA
+- **#15 is Legal-gated.** Its consent-record and retention terms are BIPA
   (Illinois) and COPPA adjacent. Legal is human-only in the operating model —
-  #14's contract content must be Legal-reviewed before it is authored.
+  #15's contract content must be Legal-reviewed before it is authored.
 
 ### Neutral
 
-- Most of the 12 existing invariants become `universal`; only #1 changes shape
-  (`profile-exclusive`), and #14/#15 are appended. Numbers and names preserved.
+- Most of the 14 existing invariants become `universal`; only #1 changes shape
+  (`profile-exclusive`), and #15/#16 are appended. Numbers and names preserved.
 - ourSharedMagnets (Postman tooling), OCR-docs, and ocr-platform-tests declare
   `identity_surfaces: []` — not identity-governed. OurOpenTable and
   OurSharedPulse are shelved/pre-tech; surfaces deferred until they have code.
@@ -264,10 +275,10 @@ Phased migration — each phase a focused PR:
   replace the `applies_to`-ID checks with surface/profile validity checks.
   `level8_pact.py`: membership assertions resolve via profile/surface.
 - **Phase 3 — registry + contracts.** Migrate `identity_layer` →
-  `identity_surfaces` for every product (map below). Author #14
-  `explicit_identity` and #15 `exit_always_available` and their
+  `identity_surfaces` for every product (map below). Author #15
+  `explicit_identity` and #16 `exit_always_available` and their
   `*.invariant.spec.ts` for each governed product. **Legal sign-off on the
-  #14 contract is a pre-condition of this phase.**
+  #15 contract is a pre-condition of this phase.**
 - **Phase 4 — PACT.** Confirm consumer-driven assertions resolve through the
   new model.
 
@@ -281,8 +292,8 @@ Product map → registry `identity_surfaces`:
 | ourSharedMagnets | none — Postman tooling, not identity-governed |
 | OurOpenTable · OurSharedPulse | shelved / pre-tech — deferred until they have code |
 
-- **Pre-condition:** Legal review of invariant #14's contract before Phase 3.
-- **Review gate:** the Phase-3 commit authoring the #14 contract requires
+- **Pre-condition:** Legal review of invariant #15's contract before Phase 3.
+- **Review gate:** the Phase-3 commit authoring the #15 contract requires
   Legal sign-off.
 
 ## References

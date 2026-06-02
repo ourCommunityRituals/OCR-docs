@@ -712,6 +712,165 @@ invariants:
       audit_workflow: .github/workflows/brain-location-audit.yml
       origin: "CCR review 2026-05-21 — resolved a phantom #13 referenced by five artifacts but never encoded"
 
+  # ── #14 MOBILE WORKABILITY ────────────────────────────────────────────────
+  # Added 2026-06-01 to resolve a second phantom (same failure mode as #13):
+  # OCR_STANDARD_mobileWorkability.md (effective 2026-05-16) referenced
+  # "invariant 14" four times — in the exception-allowlist procedure (line
+  # 104), enforcement layer 3 (line 168), the history block (line 212), and
+  # the first-validation history entry (line 214) — yet #14 was never
+  # encoded here. ADR-002 (accepted 2026-05-22) also proposed numbers 14
+  # and 15 for explicit_identity and exit_always_available, with the
+  # explicit flag that those numbers were indicative ("Invariant numbers
+  # are indicative — assigned at implementation per the brain's write-time
+  # numbering rule"). The mobileWorkability claim is senior — predates
+  # ADR-002 by six days, has a deployed OSE audit, and is propagated to
+  # every product's vendored .ocr-standards/. ADR-002's proposals shift
+  # to #15 and #16 at implementation. Resolves Linear OCR-74.
+  - id: 14
+    name: mobile_workability
+    title: Mobile Workability
+    status: partial
+    test_file: mobile-workability.invariant.spec.ts
+    enforces: 'Every customer-facing surface in every OCR product MUST be
+      usable at the 375×812 viewport (iPhone 13 Mini / X / 11 Pro — the
+      smallest modern iPhone in significant active use). Five contracts per
+      surface: (1) no horizontal scroll at 375 px viewport, (2) tap targets
+      ≥ 44×44 pt, (3) text font-size ≥ 16 px and contrast WCAG AA, (4)
+      primary CTA above the fold without scroll, (5) input font-size ≥ 16
+      px to suppress iOS auto-zoom on focus. Per-product Playwright audit
+      at `tests/playwright/mobile-workability.spec.ts` exercises each
+      customer-facing surface against the five contracts. Documented
+      exemptions: /display (venue TV — landscape kiosk) and /briefing
+      (internal CEO tool). Additional exemptions added inline in the
+      standard. Status partial — the audit exists in OSE (first validation
+      2026-05-16, OSE audit run 25951483089). Promote to live per-product
+      when the audit lands in that product''s CI, passes for every
+      customer-facing surface, and per OCR-53 the conformance check
+      verifies the audit is invoked by an active workflow.'
+    applies_to:
+      - ose
+      - osm
+      - wkrp
+      - oaw
+      - osr
+      - osg
+    exceptions: []
+    protective_statement: >
+      Every OCR product is a mobile product first. The customer surface —
+      the page someone is looking at on their phone at 7am at the bus stop
+      — must be usable on the smallest modern iPhone viewport (375×812).
+      Drift — surfaces that require horizontal scroll, tap targets smaller
+      than 44 pt, input fonts that trigger iOS zoom, primary CTAs below
+      the fold, text that fails contrast at common phone brightness —
+      turns the brand promise into a lie surface-by-surface. The customer
+      doesn't experience the *intended* layout; they experience the
+      *broken* layout. The audit is the mechanism that keeps the intent
+      honest at scale across every product, every release.
+    enforcement_statement: >
+      Four-layer enforcement per product:
+      (a) Per-product Playwright audit at
+      `<product>/tests/playwright/mobile-workability.spec.ts` exercises
+      each customer-facing surface against the five contracts above.
+      (b) Nightly + on-PR workflow runs the audit — same shape as
+      brain-location-audit.yml. On PR runs the audit is informational
+      (does not block); on schedule + manual dispatch it blocks and
+      opens a Linear ticket on violation (the L5 auto-drift mechanism,
+      per ADR-003).
+      (c) Exemption list — /display (venue TV — landscape kiosk) and
+      /briefing (internal CEO tool) are documented exemptions inline in
+      the standard. The audit reads the exemption list; if /briefing
+      ever becomes customer-facing, the exemption is removed and the
+      audit picks up the gap on the next run.
+      (d) Propagated standard —
+      OCR-docs/docs/standards/OCR_STANDARD_mobileWorkability.md is
+      canonical and is fanned out to every product's
+      `.ocr-standards/standards/` via the standards propagator (Linear
+      OCR-75 Epic). Every developer in any OCR repo sees the rule
+      locally. Drift between vendored and canonical fails CI on the
+      product side once OCR-75 ships.
+      Status partial because (a) only ships in OSE today; partial → live
+      per-product as audits land in each product's CI.
+    references:
+      standard: docs/standards/OCR_STANDARD_mobileWorkability.md
+      ose_audit: "ourSharedEvents/tests/playwright/mobile-workability.spec.ts"
+      first_validation: "OSE audit run 25951483089 (2026-05-16) — first full validation cycle, surfaced three standard-debt items refined by OCR-42 (WCAG 2.5.5 inline-text-link exemption; page-state steady-state model; error-page sub-contract)"
+      adr_coordination: "ADR-002 — its proposed invariants explicit_identity and exit_always_available shift to #15 and #16 at implementation, per the ADR's own 'numbers are indicative' note"
+      doctrine_link: "ADR-003 — this invariant's enforcement layer (b) is the manual-invoke version of the L5 auto-drift-tickets mechanism the framework's self-improvement loop will automate"
+      linear_epic: "OCR-74 — phantom #14 resolution"
+      origin: "CCR review 2026-06-01 — resolved a phantom #14 referenced by six artifacts (mobileWorkability standard ×4, ADR-002 ×2) but never encoded. Sibling cleanup: OCR-53 (phantom-number guard in conformance check); OCR-75 (re-propagation to vendored .ocr-standards copies)."
+    # ── Role sections (ADR-004 worked example — first backfill 2026-06-01) ──
+    # Demonstrates that all six role sections defined in ADR-004 (Role-Ready
+    # Invariants) can be populated for a real invariant without contortion —
+    # the proof point that converts ADR-004 from Proposed to ready-for-CCR.
+    # Per OCR-76 (Phase 1 sub-Story under OCR-49), `level2_schema.py` will
+    # validate these section shapes when schema v2.0.0 lands. Today they are
+    # forward-compatible documentation: the current validator (INV_REQUIRED
+    # check) ignores unknown fields, so this backfill is harmless. When the
+    # validator extension ships, the existing data already satisfies it.
+    pm:
+      acceptance_criteria:
+        - "Every customer-facing surface in <product> passes the five-contract audit at 375×812"
+        - "Audit runs nightly on schedule (blocking) and on every PR (informational)"
+        - "Drift opens a Linear ticket via the L5 auto-drift mechanism"
+        - "Each documented exemption (/display, /briefing, future) has rationale inline in the standard"
+      user_impact: >-
+        Mobile-first audience. The customer experiences the broken layout
+        surface-by-surface and trust erodes silently — there is no error
+        page, no exception, no recovery moment.
+      sprint_decomposition: >-
+        Per-product: 1 sprint to wire the audit + bring the first surface
+        list into compliance. The OSE audit (2026-05-16) is the reference
+        implementation. WKRP, OSM, OAW each take their own sprint to reach
+        all five contracts on every customer-facing surface.
+    devops:
+      ci_gates:
+        - "<product>/.github/workflows/mobile-workability-audit.yml"
+      workflow_paths:
+        - "<product>/tests/playwright/mobile-workability.spec.ts"
+      secrets: []
+      deploy_gates:
+        - "staging — blocking on nightly schedule; informational on PR"
+      rollback: >-
+        No runtime rollback. This is a pre-deploy gate. If a violation
+        ships via override (--no-verify, workflow skip), the next nightly
+        catch surfaces it within 24 hours.
+    sre:
+      applicable: false
+      reason: "Pre-deploy gate — no runtime SLO, no alerting, no on-call action."
+    frontend:
+      governed_surfaces: >-
+        All customer-facing routes. Per-product manifests in each repo
+        (e.g., <product>/routes/customer.ts). OSE examples: /, /events/*,
+        /sponsor, /signup. WKRP examples: /, /catalog, /create.
+      component_constraints:
+        - "Tap targets ≥ 44×44 pt — use the product's Button component minimum"
+        - "Input font-size ≥ 16 px — Tailwind text-base floor — suppresses iOS auto-zoom"
+        - "Text contrast WCAG AA at minimum on every readable surface"
+        - "Primary CTA above the fold without scroll on the floor viewport"
+        - "No horizontal scroll at 375 px viewport"
+      design_system_dependencies:
+        - "ose: ouroboros-ds (Button, Input, Card)"
+        - "wkrp: TBD design system (currently HTML placeholders per project_frontend_plan)"
+        - "osm: n/a — Postman tooling, no customer UI"
+      browser_matrix: >-
+        iPhone 13 Mini (375×812) is the floor. iPhone X / XS / 11 Pro
+        share the same viewport. iPhone 12+ (390+) passes by being wider.
+        Android 360px verified separately as an edge case.
+    playwright:
+      spec_files:
+        - path: "<product>/tests/playwright/mobile-workability.spec.ts"
+          asserts: "Per-surface: each customer-facing route passes the five contracts at 375×812; error-page sub-contract via 404 fixture"
+      fixtures: >-
+        Seeded test event (evt_test_2026) for OSE surfaces; equivalent
+        per-product fixtures. Error-page sub-contract uses a 404 fixture
+        (non-existent event id) so the recovery flow is also validated.
+      viewport_matrix: >-
+        Primary: 375×812 (iPhone 13 Mini). Edge case: 360×640 (small
+        Android — separate verification).
+    postman:
+      applicable: false
+      reason: "UI invariant. No API endpoints in scope; mobile-workability is a layout/interaction contract, not a request/response contract."
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
 # invariant transitions. Documents the evolution of the registry over time so
@@ -1048,6 +1207,59 @@ enrichment_history:
       deprecation_lock (2026-05-18); mirrors the activation rigor of
       #5 Local Sponsor Covenant (2026-05-19, same multi-day arc).
 
+  - invariant_id: 14
+    invariant_name: mobile_workability
+    from_state: >-
+      phantom — referenced as "invariant 14" by
+      docs/standards/OCR_STANDARD_mobileWorkability.md in four places
+      (lines 104, 168, 212, 214; effective 2026-05-16) and by ADR-002
+      in two places (lines 135-136 table and lines 238/240/270/284
+      narrative; accepted 2026-05-22) yet never encoded in this
+      registry. Pre-existing infrastructure on the substrate side: OSE's
+      `ourSharedEvents/tests/playwright/mobile-workability.spec.ts` had
+      already run a first full validation cycle (2026-05-16, OSE audit
+      run 25951483089) producing real audit findings against the
+      claimed-but-uncoded #14.
+    to_state: >-
+      rich partial (v1 2026-06-01 — full enforcement schema:
+      protective_statement names the brand-promise stakes (the bus-stop
+      customer at 7am); enforcement_statement enumerates four
+      enforcement layers ((a) Playwright audit per product + (b)
+      nightly + on-PR workflow + (c) exemption-list discipline + (d)
+      standards propagation); references block names the canonical
+      standard, the OSE audit, the first-validation cycle, the
+      ADR-002 numbering coordination, the ADR-003 doctrine link, and
+      the originating CCR review; applies_to lists six customer-facing
+      OCR products (ose, osm, wkrp, oaw, osr, osg). Status partial
+      because layer (a) only ships in OSE today; flips to live
+      per-product as audits land in each product's CI.)
+    date: "2026-06-01"
+    pr_refs:
+      - "Linear OCR-74 — phantom #14 resolution Epic"
+    rationale: >
+      Second phantom-resolution after #13 brain_enforcement_location
+      (encoded 2026-05-21). Pattern: a standards doc + an ADR +
+      deployed substrate all referenced "#14" as real before the
+      registry encoded it. ADR-002 explicitly flagged its #14/#15 as
+      indicative ("Invariant numbers are indicative — assigned at
+      implementation per the brain's write-time numbering rule"); the
+      mobileWorkability standard did NOT flag its #14 as proposed —
+      so the standards layer violated the brain's write-time numbering
+      rule. The senior claim (mobileWorkability — predates ADR-002 by
+      six days, has deployed audit, is propagated) takes the number;
+      ADR-002's explicit_identity and exit_always_available proposals
+      shift to #15 and #16 at their implementation, per the ADR's own
+      "indicative" note. Sibling hardening planned in OCR-53: the
+      conformance check will fail CI when any standards doc references
+      an invariant number not present in the registry — closes the
+      phantom-creation loophole at the source. Sibling re-propagation
+      planned in OCR-75: vendored .ocr-standards/ copies inherit the
+      now-non-phantom reference automatically on next propagator run.
+      Doctrine commitment: ADR-003 (Self-Checking Infrastructure)
+      operationalizes the framework that catches this pattern
+      automatically — this resolution is the last manual phantom
+      catch the registry should ever record.
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Counts are hand-maintained on every material change
@@ -1056,8 +1268,8 @@ enrichment_history:
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
   live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #8 bounded_pii_retention (rich, OSE PR #252+#255 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
-  partial: 6 # #5 tier_equity / Local Sponsor Covenant (OSE-349 honest partial), #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location
+  partial: 7 # #5 tier_equity / Local Sponsor Covenant (OSE-349 honest partial), #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #14 mobile_workability (rich, encoded 2026-06-01 as phantom-resolution per OCR-74)
   planned: 1 # #7 aggregate_only_reporting
-  total: 13
-  rich_form: 5  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation) + #8 (2026-05-19 OSE PR #252+#255 activation); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
+  total: 14
+  rich_form: 6  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation) + #8 (2026-05-19 OSE PR #252+#255 activation) + #14 (2026-06-01 phantom-resolution OCR-74); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
   lean_form: 8  # #2, #4, #6, #7, #9, #11, #12, #13 — candidates for future enrichment
