@@ -11,9 +11,13 @@ future-encoded numbers under the "Invariant numbers are indicative" escape
 hatch (see ADR-002 provenance).
 
 Modes:
-  --pre-commit   Scan staged files only (fast, for git pre-commit hook).
-  --sweep        Scan all relevant files (manual invoke; default).
-  -h / --help    Print this help and exit.
+  --pre-commit          Scan staged files only (fast, for git pre-commit hook).
+  --sweep               Scan all relevant files (manual invoke; default).
+  --emit-report PATH    Write a JSON report at PATH in the shape consumed by
+                        ocr-docs-brain/scripts/open_drift_ticket.py. Written
+                        on every run regardless of pass/fail so it can be
+                        uploaded as a CI artifact in both states.
+  -h / --help           Print this help and exit.
 
 Exit codes:
   0 — clean (or nothing to scan in pre-commit mode).
@@ -35,6 +39,7 @@ Coordination:
     the auto-drift pipeline files a Linear ticket.
 """
 
+import json
 import re
 import subprocess
 import sys
@@ -161,20 +166,97 @@ def scan_file(abs_path: Path, legal_ids: set) -> list:
     return findings
 
 
+# ─── Report emission ──────────────────────────────────────────────────────────
+def build_report(findings_by_file: dict, legal_ids: set, files_checked: int,
+                 mode: str) -> dict:
+    """Build a report dict in the shape open_drift_ticket.py consumes.
+
+    product_id="brain" routes the ticket to OCR-doc team via the helper's
+    TEAM_ROUTING table. Each phantom finding becomes one entry in `failures`
+    with check="phantom_invariant_reference".
+    """
+    failures = []
+    for rel, findings in findings_by_file.items():
+        for lineno, _text, n in findings:
+            # Use forward slashes in the detail string so reports are stable
+            # across Windows/Linux runners (Path uses backslash on Windows).
+            rel_str = str(rel).replace("\\", "/")
+            failures.append({
+                "check": "phantom_invariant_reference",
+                "detail": (
+                    f"{rel_str}:{lineno}: claims invariant #{n} "
+                    "(not in registry)"
+                ),
+            })
+
+    if failures:
+        summary = {"failed": len(failures), "passed": 0, "total": len(failures)}
+        passes = []
+    else:
+        summary = {"failed": 0, "passed": 1, "total": 1}
+        passes = [{
+            "check": "phantom_invariant_reference",
+            "detail": (
+                f"Scanned {files_checked} files; all references resolve to "
+                f"the {len(legal_ids)} invariants in the registry."
+            ),
+        }]
+
+    return {
+        "product_id": "brain",
+        "scanner": "scan_phantom_invariants.py",
+        "scanner_mode": mode,
+        "registry_invariant_count": len(legal_ids),
+        "registry_invariant_ids": sorted(legal_ids),
+        "files_scanned": files_checked,
+        "summary": summary,
+        "failures": failures,
+        "passes": passes,
+    }
+
+
+def write_report(path: str, report: dict) -> None:
+    """Write the JSON report to `path`. Path is created if missing."""
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
-def main() -> int:
+def parse_args(argv: list) -> tuple:
+    """Returns (mode, emit_report_path, error_message_or_None)."""
     mode = "sweep"
-    for arg in sys.argv[1:]:
+    emit_report = None
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
         if arg == "--pre-commit":
             mode = "pre-commit"
         elif arg == "--sweep":
             mode = "sweep"
+        elif arg == "--emit-report":
+            i += 1
+            if i >= len(argv):
+                return mode, emit_report, "--emit-report requires a path argument"
+            emit_report = argv[i]
+        elif arg.startswith("--emit-report="):
+            emit_report = arg.split("=", 1)[1]
         elif arg in ("-h", "--help"):
-            print(__doc__)
-            return 0
+            return "help", None, None
         else:
-            print(f"scan_phantom_invariants: unknown argument {arg!r}", file=sys.stderr)
-            return 2
+            return mode, emit_report, f"unknown argument {arg!r}"
+        i += 1
+    return mode, emit_report, None
+
+
+def main() -> int:
+    mode, emit_report_path, err = parse_args(sys.argv[1:])
+    if err:
+        print(f"scan_phantom_invariants: {err}", file=sys.stderr)
+        return 2
+    if mode == "help":
+        print(__doc__)
+        return 0
 
     repo_root = find_repo_root()
     legal_ids = load_registry_ids(repo_root)
@@ -194,6 +276,21 @@ def main() -> int:
         findings = scan_file(abs_path, legal_ids)
         if findings:
             findings_by_file[rel] = findings
+
+    # Emit the JSON report (if requested) on every run — pass or fail. The
+    # helper open_drift_ticket.py reads failures[] and no-ops on empty.
+    # Uploaded as a CI artifact for both states so post-mortem queries work.
+    if emit_report_path:
+        report = build_report(findings_by_file, legal_ids, files_checked, mode)
+        try:
+            write_report(emit_report_path, report)
+        except OSError as e:
+            print(
+                f"scan_phantom_invariants: could not write report to "
+                f"{emit_report_path}: {e}",
+                file=sys.stderr,
+            )
+            return 2
 
     if not findings_by_file:
         if mode == "sweep":

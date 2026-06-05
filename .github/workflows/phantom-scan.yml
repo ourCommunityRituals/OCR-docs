@@ -59,6 +59,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 defaults:
   run:
@@ -85,10 +86,27 @@ jobs:
       # the job (so the comment step can run with the findings), then fail the job
       # at the end if scan exit was non-zero. PR-blocking behavior — not
       # informational. CCR-2026-06-02 H2 resolution.
+      #
+      # --emit-report writes the structured JSON report consumed by
+      # open_drift_ticket.py downstream. Written on every run (pass or fail)
+      # so the artifact upload always has something to publish.
       - name: Run phantom invariant scanner
         id: scan
         continue-on-error: ${{ github.event_name == 'pull_request' }}
-        run: python3 ocr-docs-brain/scripts/scan_phantom_invariants.py --sweep
+        run: |
+          python3 ocr-docs-brain/scripts/scan_phantom_invariants.py \
+            --sweep \
+            --emit-report phantom-scan-report.json
+
+      # Upload the JSON report as a workflow artifact. Both pass and fail
+      # cases publish — operators can inspect post-mortem regardless of outcome.
+      - name: Upload phantom-scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phantom-scan-report
+          path: phantom-scan-report.json
+          retention-days: 30
 
       # On PR with findings, post a structured comment naming the phantom(s).
       # Comment is helpful UX; the workflow still fails (see job-result step).
@@ -128,17 +146,37 @@ jobs:
               body,
             });
 
+      # OCR-77 resolution: open a Linear ticket on phantom found via push,
+      # schedule, or manual dispatch. PR events get inline UX (comment + PR
+      # block) and skip the auto-ticket — phantoms in PRs are caught at PR
+      # time; phantoms reaching main/schedule indicate a `--no-verify` bypass
+      # or external edit and need follow-up routing.
+      #
+      # Pattern mirrors brain-location-audit.yml's Linear-ticket step. The
+      # helper open_drift_ticket.py reads phantom-scan-report.json, dedupes
+      # by (product_id, commit-short-hash) idempotency tag, and creates or
+      # updates a ticket in the OCR-doc team (routed via product_id="brain"
+      # in the report). No-ops cleanly on missing LINEAR_API_KEY.
+      - name: Open Linear ticket on push/schedule/dispatch violation
+        if: steps.scan.outcome == 'failure' && github.event_name != 'pull_request'
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          python3 ocr-docs-brain/scripts/open_drift_ticket.py \
+            --report phantom-scan-report.json \
+            --repo "${{ github.repository }}" \
+            --pr-number "0" \
+            --pr-url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --pr-author "phantom-scan-${{ github.event_name }}" \
+            --commit "${{ github.sha }}" \
+            || echo "::warning::Linear ticket creation skipped (LINEAR_API_KEY missing or helper failed)"
+
       # H2 resolution: PR events are BLOCKING. continue-on-error above lets the
-      # comment step run; this final step then propagates the scan exit code
-      # to the workflow result. CCR Loop 1 #1.2 — phantoms in PRs are cheap
-      # to fix in-PR, expensive post-merge. Block.
+      # comment + auto-ticket steps run; this final step then propagates the
+      # scan exit code to the workflow result. CCR Loop 1 #1.2 — phantoms in
+      # PRs are cheap to fix in-PR, expensive post-merge. Block.
       - name: Fail job if phantoms were found
         if: steps.scan.outcome == 'failure'
         run: |
           echo "::error title=Phantom invariant references found::See the scan step output and PR comment for details. Local mirror: git config core.hooksPath ocr-docs-brain/hooks."
           exit 1
-
-      # Auto-ticket emission deliberately omitted from v1 — see header comment
-      # and the sibling Linear Story. open_drift_ticket.py's required args
-      # (--report JSON, --repo, --pr-number, --pr-author, etc.) demand the
-      # scanner emit a structured report, which is sibling-story work.
