@@ -825,8 +825,6 @@ invariants:
     devops:
       ci_gates:
         - "<product>/.github/workflows/mobile-workability-audit.yml"
-      workflow_paths:
-        - "<product>/tests/playwright/mobile-workability.spec.ts"
       secrets: []
       deploy_gates:
         - "staging — blocking on nightly schedule; informational on PR"

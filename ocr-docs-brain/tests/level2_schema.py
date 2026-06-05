@@ -279,6 +279,99 @@ if isinstance(ss, dict):
           if rl != ss.get('total') else f'{rl}')
 
 # ---------------------------------------------------------------------------
+# 1.5e — Invariant role sections (ADR-004 role-ready schema, added 2026-06-05)
+# ---------------------------------------------------------------------------
+# Per ADR-004, each rich-form invariant may declare up to six OPTIONAL role
+# sections: pm, devops, sre, frontend, playwright, postman. Validated only when
+# present. Two legal forms per section:
+#   (a) not-applicable:  {applicable: false, reason: <non-empty str>}
+#   (b) populated:        a map of canonical keys (closed set) for that role
+# A scalar `null` is REJECTED — it cannot carry the required reason (per the
+# ADR-004 2026-06-05 amendment). Unknown keys are REJECTED (closed key set);
+# this is what catches a Playwright spec path mis-filed under devops (ADR-004
+# finding C1). Design decision: a populated section is not required to carry
+# *every* canonical key (future invariants may legitimately fill a subset), but
+# every key it does carry must be canonical and correctly typed, and the
+# section must be non-empty — declare `applicable: false` to opt out cleanly.
+# Bundles into the schema v2.0.0 migration (OCR-49 / OCR-76); drafted here as
+# the ADR-004 acceptance proof.
+ROLE_SECTIONS = ['pm', 'devops', 'sre', 'frontend', 'playwright', 'postman']
+ROLE_SHAPES = {
+    'pm':       {'acceptance_criteria': list, 'user_impact': str,
+                 'sprint_decomposition': str},
+    'devops':   {'ci_gates': list, 'secrets': list, 'deploy_gates': list,
+                 'rollback': str},
+    'sre':      {'observability': list, 'slo': 'str_or_null', 'runbook': str,
+                 'on_call_action': str},
+    'frontend': {'governed_surfaces': 'list_or_str', 'component_constraints': list,
+                 'design_system_dependencies': list, 'browser_matrix': str},
+    'playwright': {'spec_files': 'spec_files', 'fixtures': str,
+                   'viewport_matrix': str},
+    'postman':  {'collections': list, 'endpoints': list, 'env_vars': list,
+                 'adversarial_cases': list},
+}
+
+def _role_type_ok(val, spec):
+    if spec is str:
+        return isinstance(val, str) and len(val.strip()) > 0
+    if spec is list:
+        return isinstance(val, list)
+    if spec == 'str_or_null':
+        return val is None or isinstance(val, str)
+    if spec == 'list_or_str':
+        return isinstance(val, list) or (isinstance(val, str) and len(val.strip()) > 0)
+    if spec == 'spec_files':
+        return (isinstance(val, list) and len(val) > 0
+                and all(isinstance(s, dict) and 'path' in s and 'asserts' in s
+                        for s in val))
+    return False
+
+for i in inv.get('invariants', []):
+    iid = i.get('id', '?')
+    for role in ROLE_SECTIONS:
+        if role not in i:
+            continue  # optional; absence = "not yet authored"
+        section = i[role]
+
+        # A role section must be a map. Scalar null / str / list is rejected:
+        # the not-applicable form must carry a reason, which only a map can hold.
+        if not isinstance(section, dict):
+            check(f'invariant_role_is_map:#{iid}.{role}', False,
+                  f'expected map (applicable:false+reason, or populated shape), '
+                  f'got {type(section).__name__}: {section!r}')
+            continue
+
+        # Not-applicable form: {applicable: false, reason: <non-empty str>}.
+        if section.get('applicable') is False:
+            reason = section.get('reason')
+            reason_ok = isinstance(reason, str) and len(reason.strip()) > 0
+            check(f'invariant_role_na_reason:#{iid}.{role}', reason_ok,
+                  'applicable:false requires a non-empty reason' if not reason_ok
+                  else 'not applicable + reason')
+            extra = [k for k in section if k not in ('applicable', 'reason')]
+            check(f'invariant_role_na_closed:#{iid}.{role}', not extra,
+                  f'applicable:false form permits only applicable+reason; extra {extra}'
+                  if extra else 'closed')
+            continue
+
+        # Populated form. An explicit `applicable: true` is permitted but optional.
+        shape = ROLE_SHAPES[role]
+        content_keys = [k for k in section if not (k == 'applicable' and section[k] is True)]
+        unknown = [k for k in content_keys if k not in shape]
+        check(f'invariant_role_closed:#{iid}.{role}', not unknown,
+              f'unknown key(s) {unknown} not in {role} schema {sorted(shape)}'
+              if unknown else f'{len(content_keys)} key(s), all canonical')
+        check(f'invariant_role_nonempty:#{iid}.{role}', len(content_keys) > 0,
+              'populated role section is empty — use applicable:false to opt out'
+              if len(content_keys) == 0 else 'ok')
+        for key, type_spec in shape.items():
+            if key in section:
+                ok = _role_type_ok(section[key], type_spec)
+                tname = type_spec if isinstance(type_spec, str) else type_spec.__name__
+                check(f'invariant_role_type:#{iid}.{role}.{key}', ok,
+                      f'{key}: failed type check ({tname})' if not ok else 'ok')
+
+# ---------------------------------------------------------------------------
 # 1.6 — Corridor definitions: required fields per founding corridor
 # ---------------------------------------------------------------------------
 CORR_REQUIRED = ['corridor_id', 'role']

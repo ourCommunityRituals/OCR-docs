@@ -2,6 +2,7 @@
 
 **Status:** Proposed
 **Date:** 2026-06-01
+**Amended:** 2026-06-05 (pre-acceptance — CCR of the #14 `mobile_workability` proof point surfaced a self-contradictory null convention; see Changelog)
 **Deciders:** Matt (Co-Architect convener)
 **Supersedes:** None
 **Cross-refs:** ADR-002 (Identity-Profile-Keyed Invariants — Phase 1 bundle target), ADR-003 (Self-Checking Infrastructure — the operational doctrine this ADR specifies for execution)
@@ -118,15 +119,33 @@ postman:
 
 ### Required vs optional
 
-**All six sections are optional.** An invariant may legitimately have:
+**All six sections are optional.** When a section does not apply, declare it
+explicitly with a machine-readable reason:
 
-- `frontend: null  # reason: registry-side invariant, no UI surface`
-- `postman: null  # reason: UI invariant, not API`
-- `sre: null  # reason: pre-deploy gate, no runtime presence`
+```yaml
+frontend:
+  applicable: false
+  reason: "registry-side invariant, no UI surface"
+postman:
+  applicable: false
+  reason: "UI invariant, not API"
+sre:
+  applicable: false
+  reason: "pre-deploy gate, no runtime presence"
+```
 
-Explicit `null` with a reason is preferred over omission. Conformance validates
-shape if present, allows absence, requires a reason when null. Omitted = "not
-yet authored"; null with reason = "deliberately not applicable."
+The not-applicable form is a two-key map (`applicable: false` + `reason:`), NOT
+a YAML scalar `null`. This is deliberate: a scalar `null` cannot carry a
+`reason:` field, so "deliberately not applicable + why" is only expressible as a
+map. (An earlier draft of this ADR showed both `section: null  # reason: ...`
+*and* "requires a `reason:` field when null" — a contradiction, since a scalar
+null has no fields. The map form resolves it.)
+
+Explicit `applicable: false` with a reason is preferred over omission.
+Conformance validates the populated shape when `applicable:` is absent or true,
+requires a `reason:` when `applicable: false`, and allows omission entirely.
+Omitted = "not yet authored"; `applicable: false` with a reason = "deliberately
+not applicable."
 
 ### Examples — applied to current invariants
 
@@ -136,24 +155,24 @@ yet authored"; null with reason = "deliberately not applicable."
 - `sre` (the ose_anon cookie audit trail; FORMS_DB access patterns)
 - `frontend` (anonymity affordance on every public page — brand-voice §4.1)
 - `playwright` (the existing structural specs)
-- `postman: null` (correlation gate is server-side, not endpoint-shape)
+- `postman: {applicable: false}` (correlation gate is server-side, not endpoint-shape)
 
 **#14 mobile_workability** would populate:
 - `pm` (the five-contract acceptance criteria per surface)
 - `devops` (audit workflow path + CI gate)
-- `sre: null` (pre-deploy gate, no runtime SLO)
+- `sre: {applicable: false}` (pre-deploy gate, no runtime SLO)
 - `frontend` (component-level requirements: Button v2 tap target floor, input
   font-size, etc.)
 - `playwright` (the per-product audit spec at canonical path + viewport matrix)
-- `postman: null` (UI invariant)
+- `postman: {applicable: false}` (UI invariant)
 
 **#10 deprecation_lock** would populate:
 - `pm` (acceptance criteria around the four enforcement layers)
 - `devops` (the guard scripts + self-tests + CI step ordering)
-- `sre: null` (pre-deploy gate)
-- `frontend: null` (code-level gate, no UI surface)
+- `sre: {applicable: false}` (pre-deploy gate)
+- `frontend: {applicable: false}` (code-level gate, no UI surface)
 - `playwright` (the structural invariant spec)
-- `postman: null` (code-level gate, no API surface)
+- `postman: {applicable: false}` (code-level gate, no API surface)
 
 The pattern: each invariant honestly declares which roles it touches. A
 single-role invariant declares one section; a cross-cutting one (like #1)
@@ -223,9 +242,15 @@ OCR-55 / OCR-56 / OCR-57.
 
 ### Validation
 
-- `level2_schema.py` validates each role section's shape if present.
-- `level2_schema.py` requires a `reason:` field when a section is explicitly
-  null.
+- `level2_schema.py` validates each role section's shape when it is populated
+  (i.e., `applicable:` is absent or true).
+- `level2_schema.py` requires a `reason:` field when a section declares
+  `applicable: false`, and rejects scalar `null` (it cannot carry a reason).
+- `level2_schema.py` enforces a closed key set per section. The `devops:` keys
+  are exactly `ci_gates`, `secrets`, `deploy_gates`, `rollback` — there is no
+  `workflow_paths` key. A test-spec path belongs under `playwright.spec_files`,
+  not `devops:`. (The #14 proof point's stray `devops.workflow_paths` is a
+  reconcile item for the OCR-71 backfill, not a schema addition.)
 - `check_brain_contract.py` (per OCR-53 hardening) validates cross-section
   coherence: workflow paths in `devops:` must resolve; spec paths in
   `playwright:` must exist on disk; etc.
@@ -288,3 +313,30 @@ SCRUM team without losing its self-checking property.
 - Quarterly review (L5 Continuous-Improvement Epic) reads the six per-role
   completion KPIs and decides whether the role definitions are pulling
   their weight.
+
+---
+
+## Changelog
+
+### 2026-06-05 — pre-acceptance amendment (CCR of #14 proof point)
+
+Source: CCR review of the `mobile_workability` (#14) role-section backfill —
+ADR-004's first and only worked example — performed before acceptance.
+
+- **C2 (material) — null convention was self-contradictory.** The "Required vs
+  optional" section showed the not-applicable form as `section: null  # reason:
+  ...` while the Validation section required "a `reason:` field when explicitly
+  null." A YAML scalar `null` has no fields, so the two statements could not
+  both be satisfied. The #14 author had silently resolved this by using
+  `{applicable: false, reason: ...}` — the only form that attaches a
+  machine-readable reason. **Resolution:** canonicalized the two-key map
+  (`applicable: false` + `reason:`) as the not-applicable form; scalar `null` is
+  now rejected. The example was correct; the prose was wrong.
+- **C1 (minor) — `devops.workflow_paths` is not a schema key.** The #14 example
+  introduced a `devops.workflow_paths` key holding a Playwright spec path. The
+  `devops:` schema is a closed set (`ci_gates`, `secrets`, `deploy_gates`,
+  `rollback`); a spec path belongs under `playwright.spec_files`. Recorded as a
+  reconcile item for the OCR-71 backfill, not a schema addition.
+
+Status remains **Proposed**. This amendment clears the blocker CCR found; the
+ADR is now internally consistent and ready for the acceptance review.
