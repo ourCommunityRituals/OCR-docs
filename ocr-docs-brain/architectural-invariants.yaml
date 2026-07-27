@@ -2740,9 +2740,9 @@ enrichment_history:
 # on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 16   # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability
-  partial: 4 # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending)
-  planned: 1 # #20 standards_propagation_completeness (deferred: no target standards docs yet)
+  live: 15    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity
+  partial: 6  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #21 shared_report_schema_stability (partial — spec deferred to campaigns PR)
+  planned: 0
   total: 21
-  rich_form: 20 # #1-#21 except #20 (lean planned — no protective_statement depth yet)
-  lean_form: 1  # #20 standards_propagation_completeness (planned, lean)
+  rich_form: 20 # #1-#19, #21 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
+  lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)

@@ -116,8 +116,9 @@ check('invariant_ids_unique', not dupe_inv,
       f'duplicates: {dupe_inv}' if dupe_inv else f'{len(inv_ids)} invariants, all unique')
 
 expected_seq = list(range(1, len(inv_ids) + 1))
-check('invariant_ids_sequential', inv_ids == expected_seq,
-      f'expected {expected_seq[:5]}... got {inv_ids[:5]}...' if inv_ids != expected_seq else 'sequential')
+# Invariants may be ordered by invariant_group (for readability); check complete set, not YAML order
+check('invariant_ids_sequential', sorted(inv_ids) == expected_seq,
+      f'expected sorted={expected_seq[:5]}... got sorted={sorted(inv_ids)[:5]}...' if sorted(inv_ids) != expected_seq else f'complete sequential set 1–{len(inv_ids)} (group-ordered YAML)')
 
 # ---------------------------------------------------------------------------
 # 2.8 — Invariant status summary matches actual counts

@@ -111,10 +111,11 @@ for pid, p in products.items():
 check('named_not_method_full', not named_with_full,
       f'contradiction: {named_with_full}' if named_with_full else 'no contradictions')
 
-# Valid targets include products AND top-level entities like oureventring
+# Valid targets include products AND top-level entities like oureventring and ocr (org-level)
 valid_entities = set(products.keys())
 if pr.get('oureventring'):
     valid_entities.add('oureventring')
+valid_entities.add('ocr')  # OCR org-level entity — used by brain/governance invariants (e.g. #13, #20)
 
 # ---------------------------------------------------------------------------
 # 4.8 — funnels_to must reference real product IDs or known entities

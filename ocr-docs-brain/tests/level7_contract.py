@@ -90,10 +90,11 @@ for i in inv.get('invariants', []):
 # CONTRACT 5: Every invariant that applies_to a product uses valid product IDs
 # (consumers use applies_to to determine which invariants they must enforce)
 # ---------------------------------------------------------------------------
-# Valid entities include products AND top-level entities like oureventring
+# Valid entities include products AND top-level entities like oureventring and ocr (org-level)
 valid_entities = set(products.keys())
 if pr.get('oureventring'):
     valid_entities.add('oureventring')
+valid_entities.add('ocr')  # OCR org-level entity — used by brain/governance invariants (e.g. #13, #20)
 
 for i in inv.get('invariants', []):
     for pid in (i.get('applies_to') or []):

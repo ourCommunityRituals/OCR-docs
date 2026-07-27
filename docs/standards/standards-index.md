@@ -77,7 +77,7 @@
 | # | Name | Status | Test file |
 |---|------|--------|-----------|
 | 13 | Brain Enforcement Co-location | live | `ocr-docs-brain/tests/level2_schema.py` (inv13_* checks) |
-| 20 | Standards Propagation Completeness | planned | *(this file is the target; spec pending in level2_schema.py)* |
+| 20 | Standards Propagation Completeness | partial | `ocr-docs-brain/tests/level2_schema.py` (inv20_* checks) |
 
 ---
 
