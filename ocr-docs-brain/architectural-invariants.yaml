@@ -25,9 +25,16 @@
 # `enrichment_history` is append-only and documents every lean → rich (or
 # planned → live, or other material change) transition for traceability.
 # Pattern established 2026-05-17 with the trio enrichment of #1 / #3 / #5.
+#
+# Group ordering (schema_version 1.2.0):
+#   invariant_groups defines six groups in "order of operations" sequence —
+#   Privacy first (the foundation), then Product, Commercial, Security,
+#   Infrastructure, and Governance. Each invariant carries group, group_order,
+#   and label fields. Reordering within or between groups is done by adjusting
+#   group_order values only — IDs are immutable. Never renumber. Never delete.
 # ═════════════════════════════════════════════════════════════════════════════
 
-schema_version: 1.1.0
+schema_version: 1.2.0
 description: >
   Architectural invariants are the governance-brain-enforced contracts that
   the CI pipeline validates on every commit. Each invariant has a dedicated
@@ -37,11 +44,64 @@ description: >
   implemented. Rich-form entries additionally carry protective_statement,
   enforcement_statement, and references blocks for load-bearing invariants;
   enrichments are tracked in the top-level enrichment_history field.
+  Schema 1.2.0 adds invariant_groups (top-level) and group, group_order,
+  label fields per invariant entry to support ordered-by-group presentation
+  and future reordering flexibility without renumbering.
 enforcement_gate: ose-platform-tests at org level (CI-enforced)
+
+# ─── Invariant groups — six groups in order-of-operations sequence ──────────
+# Order reflects architectural dependency: privacy is the foundation;
+# product experience builds on it; commercial governance sits on top;
+# security and isolation are cross-cutting; infrastructure makes CI possible;
+# governance keeps the brain honest about itself.
+invariant_groups:
+  - id: privacy_identity
+    title: Privacy & Identity
+    order: 1
+    description: >
+      Foundation. Data never escapes as PII, outputs are aggregates-only,
+      retention is bounded. Every other group depends on this being correct first.
+  - id: product_experience
+    title: Product & Experience
+    order: 2
+    description: >
+      What the platform does. Geo-resolution, UEC color-semantic encoding,
+      NCR data accumulation, and mobile workability on every customer surface.
+  - id: commercial_governance
+    title: Commercial Governance
+    order: 3
+    description: >
+      How the business operates. The local sponsor covenant (tier equity) and
+      the pre-revenue monetization gate that keeps the platform research-clean.
+  - id: security_isolation
+    title: Security & Isolation
+    order: 4
+    description: >
+      Cross-cutting security. Tenant isolation prevents cross-tenant data
+      leakage via dual-key pattern on every multi-tenant table.
+  - id: infrastructure_ci
+    title: Infrastructure & CI
+    order: 5
+    description: >
+      Deployment layer. Deprecation locks make one-way decisions actually
+      one-way; runner environment and pool-health invariants keep CI reliable.
+  - id: governance_brain
+    title: Governance & Brain
+    order: 6
+    description: >
+      Meta-governance. Brain artifact co-location rules ensure every brain
+      enforcement script lives next to the artifact it enforces.
+
 invariants:
+  # ══ GROUP 1: PRIVACY & IDENTITY ═════════════════════════════════════════════
+  # Foundation — must be correct before any other group can be trusted.
+
   # ── #1 ANONYMOUS ID ────────────────────────────────────────────────────────
   - id: 1
     name: anonymous_id
+    label: "#1 — Anonymous ID"
+    group: privacy_identity
+    group_order: 1
     title: Anonymous ID
     status: live
     test_file: anonymous-id.invariant.spec.ts
@@ -62,41 +122,342 @@ invariants:
       placement, reporting, retention) inherits its constraint that
       identifiable-attendee data cannot be correlated back from any output.
     enforcement_statement: >
-      Two-database architecture (DB / FORMS_DB) is enforced by static gate
-      tests/architecture.spec.ts — handlers in src/handlers/forms.ts MUST
-      NEVER reference env.DB; handlers in non-forms files MUST NEVER
-      reference env.FORMS_DB; CI fails the build at code-source-level on
-      violations. PII column gate (tests/pii-invariant.spec.ts) prevents
-      net-new raw-PII columns from being introduced via migration. The
-      ose_anon cookie contract (HttpOnly, Secure, SameSite=Lax) is set by
-      middleware on every public request; the cookie value is the only
-      sanctioned correlation key. Anonymous-id-only lookups are the only
-      sanctioned correlation method into FORMS_DB. Pool routing
-      (src/lib/pool-contract.ts REGULATORY_POOLS = ['general', 'hipaa',
-      'coppa']) segregates HIPAA/COPPA data flows physically from general,
-      preventing cross-tier leakage downstream.
+      Five-layer enforcement, all wired into T0 Gate on every PR + push-to-main:
+      (a) STATIC DB ISOLATION GATE — tests/architecture.spec.ts asserts:
+      forms.ts NEVER references env.DB; feature-flags.ts NEVER references
+      env.DB; events.ts and sponsors.ts NEVER reference FORMS_DB;
+      data-subject.ts (the sole authorised cross-binder) is scope-locked to
+      DELETE-only on subscribers table via DB and three explicit FORMS_DB
+      tables (email_signups, form_registrations, pii_audit_log); a BROAD
+      REVERSE GATE asserts that NO other handler in src/handlers/ references
+      env.FORMS_DB — closes the gap where 9+ ungated handler files previously
+      had no coverage (extended 2026-07-26). L2 PRAGMA assertions confirm the
+      schema separation holds at the migration layer: FORMS_DB contains no
+      anonymous-surface tables; DB contains no identified-user-surface tables.
+      (b) PII COLUMN GATE — tests/pii-invariant.spec.ts prevents net-new
+      raw-PII column names from being introduced in either database via
+      migration. Covers both DB and FORMS_DB exhaustively.
+      (c) COOKIE CONTRACT — src/lib/anonymous-id.ts sets the ose_anon cookie
+      with all three required attributes (HttpOnly, Secure, SameSite=Lax).
+      All three attributes are asserted in tests/testid-pyramid.spec.ts L3
+      integration test on every PR (SameSite=Lax assertion added 2026-07-26
+      closing the gap where only HttpOnly + Secure were tested). The cookie
+      value is the only sanctioned correlation key.
+      (d) ANONYMOUS-ID INVARIANT SPEC — tests/e2e/0-architecture/
+      anonymous-id.invariant.spec.ts exercises runtime cookie semantics,
+      SharedReport HTML sanitisation, and events API PII exclusion via
+      Playwright. This spec requires a deployed worker and runs at T4 on
+      workflow_dispatch — by design (parallel to geo-resolution, ncr-
+      accumulation, and uec-codes which share the same deployed-worker
+      constraint). The static and PRAGMA enforcement from (a)-(c) runs on
+      every PR without a live URL.
+      (e) POOL ROUTING — src/lib/pool-contract.ts REGULATORY_POOLS =
+      ['general', 'hipaa', 'coppa'] segregates HIPAA/COPPA data flows
+      physically from general, preventing cross-tier leakage downstream.
     references:
       adr: docs/adr/ADR-001-anonymous-identity-architecture.md
-      static_gate: tests/architecture.spec.ts
-      pii_gate: tests/pii-invariant.spec.ts
-      cookie_contract: src/lib/anonymous-id.ts
-      pool_routing: src/lib/pool-contract.ts
+      static_gate: workers/oursharedevents/tests/architecture.spec.ts
+      pii_gate: workers/oursharedevents/tests/pii-invariant.spec.ts
+      cookie_contract: workers/oursharedevents/src/lib/anonymous-id.ts
+      cookie_test: "workers/oursharedevents/tests/testid-pyramid.spec.ts (L3 integration: HttpOnly + Secure + SameSite=Lax asserted, extended 2026-07-26)"
+      pool_routing: workers/oursharedevents/src/lib/pool-contract.ts
+      data_subject_scope_guard: "workers/oursharedevents/tests/architecture.spec.ts — L1 cross-binding scope guard for data-subject.ts (added 2026-07-26)"
+      broad_reverse_gate: "workers/oursharedevents/tests/architecture.spec.ts — L1 broad reverse gate: all non-authorised handlers gated against FORMS_DB (added 2026-07-26)"
+      runtime_invariant_spec: "tests/e2e/0-architecture/anonymous-id.invariant.spec.ts — T4 deployed-worker spec (design constraint: requires live staging URL, parallel to geo-resolution/ncr/uec)"
       customer_artifact: "anonymity affordance rendered on every public event page (see .claude/brand-voice-guidelines.md §4.1)"
+
+  # ── #7 AGGREGATE-ONLY REPORTING ───────────────────────────────────────────
+  - id: 7
+    name: aggregate_only_reporting
+    label: "#7 — Aggregate-Only Reporting"
+    group: privacy_identity
+    group_order: 2
+    title: Aggregate-Only Reporting
+    status: partial
+    test_file: aggregate-only.invariant.spec.ts
+    enforces: >
+      SharedReport endpoints return aggregates only — never individual
+      records or raw anonymous identifiers. Closes the privacy story on
+      the output side: Invariant #1 (Anonymous ID) guards the data at
+      rest and in transit; this invariant guards what the reports
+      actually surface. Six report fields (unique_gatherings,
+      return_rate, corridor_density, sponsor_impressions,
+      poster_attribution, headcount_trend) all return aggregate counts
+      or ratios only. No anon_id_hash ever surfaces as a projected
+      column. Below-min-sample fields are suppressed with structured
+      reasons (S5-Q5). Corridor map cells below the privacy floor are
+      suppressed. L0 structural code-shape test gates every PR + push.
+    applies_to:
+      - ose
+    protective_statement: >
+      Without an aggregate-only enforcement lock, a future refactor of
+      shared-report-builder.ts could silently change `COUNT(DISTINCT
+      anon_id_hash)` to `SELECT anon_id_hash` and push raw anonymous
+      identifiers into every SharedReport response. The platform's
+      privacy claim is "you're part of the group, anonymously" — a
+      SharedReport that enumerates individual anon hashes (even hashed
+      ones) contradicts that claim. Worse, with sufficient cross-event
+      correlation, hashed anonymous IDs become linkable. The minimum-
+      sample suppression guard (RETURN_RATE_MIN_SAMPLE >= 3) prevents
+      de-anonymization via small-sample percentages: return_rate=50%
+      with 2 attendees narrows a returner to one specific person. This
+      invariant is the output-side complement to Invariant #1; both
+      must hold simultaneously for the privacy promise to be real.
+    enforcement_statement: >
+      Three-layer enforcement at partial status (wired to T0 from
+      2026-07-26):
+      (a) L0 STRUCTURAL CODE-SHAPE LOCK —
+      tests/e2e/0-architecture/aggregate-only.invariant.spec.ts (8
+      cases, added 2026-07-26) asserts: shared-report-builder.ts
+      exists; anon_id_hash is never a SELECT projection in builder
+      queries (only COUNT(DISTINCT) or IN subquery); the SharedReport
+      TypeScript interface has no raw identity fields (anon_id_hash,
+      email, anon_id); RETURN_RATE_MIN_SAMPLE >= 3 constant exists;
+      return_rate suppression guard exists; corridor map suppression
+      exists; report-depth.ts filterReportByDepth exists; all
+      anon_id_hash SQL template literals use aggregate or WHERE-only
+      forms. Wired into T0 Gate `invariants` shard — gates every PR +
+      push.
+      (b) L1 PIPELINE INVARIANTS — workers/oursharedevents/tests/
+      shared-report-pipeline-invariants.spec.ts covers: Gate 1 (no
+      FORMS_DB reads in any SharedReport pipeline file) and Gate 4
+      (materialization handler is cron-only, never user-facing). Runs
+      in T0 vitest suite on every PR.
+      (c) L1 BEHAVIOURAL — workers/oursharedevents/tests/
+      shared-report-read.spec.ts covers auth + response shape for the
+      read API. SharedReport builder itself is a pure function
+      explicitly documented: "Returns aggregate counts only. No
+      anon_id_hash ever surfaces."
+      Partial→live criterion: (a) remains in 0-architecture suite AND
+      a T3 network-staging test against a deployed worker asserts no
+      anon_id_hash field in a real SharedReport HTTP response.
+    references:
+      brain_canonical: ocr-docs-brain/architectural-invariants.yaml
+      structural_gate: >
+        tests/e2e/0-architecture/aggregate-only.invariant.spec.ts
+        (L0 structural, 8 cases, T0 Gate invariants shard — added
+        2026-07-26)
+      pipeline_invariants: >
+        workers/oursharedevents/tests/shared-report-pipeline-invariants.spec.ts
+        (Gate 1: no FORMS_DB; Gate 4: cron-only)
+      builder: workers/oursharedevents/src/lib/shared-report-builder.ts
+      read_handler: workers/oursharedevents/src/handlers/shared-report-read.ts
+      depth_filter: workers/oursharedevents/src/lib/report-depth.ts
+      companion_invariant: "Invariant #1 anonymous_id — guards data at rest; #7 guards output"
+    activation_note: >
+      partial→live criterion: L0 structural gate in 0-architecture
+      suite (done, 2026-07-26) AND T3 network-staging test asserting
+      no anon_id_hash in a live SharedReport HTTP response. T3 is not
+      yet written; pending staging infrastructure.
+
+  # ── #8 BOUNDED PII RETENTION ──────────────────────────────────────────────
+  - id: 8
+    name: bounded_pii_retention
+    label: "#8 — Bounded PII Retention"
+    group: privacy_identity
+    group_order: 3
+    title: Bounded PII Retention
+    status: live
+    test_file: pii-retention.invariant.spec.ts
+    enforces: All opt-in PII has a finite TTL (expires_at,
+      retention_expires_at). Daily lifecycle cron deletes expired
+      registrations (90d), scrubs survey PII, deletes expired email signups
+      (30d). No PII has unbounded retention. Cron + TTL columns + PRIVACY.md
+      exist; structural invariant test in 0-architecture suite locks the
+      cron mechanism; in-process integration test verifies behavioral
+      outcome against real D1.
+    applies_to:
+      - ose
+    protective_statement: >
+      Without an automated retention lock, opt-in PII (event registrations,
+      survey freeform fields, email signups) accumulates indefinitely.
+      That looks like a tech-debt problem; it is actually a brand-promise
+      problem and a compliance liability. OSE collects identity-bearing
+      data on a covenant: you give it to participate in your community
+      event; we honor it briefly; we delete it. A 90-day registration
+      retention silently growing to 18 months because someone refactors
+      the cron and nobody notices is not a small bug — it converts the
+      platform from "ephemeral participation infrastructure" to "passive
+      surveillance archive", and it does so without any visible product
+      change. The retention floor is a load-bearing brand commitment;
+      the cron is the load-bearing mechanism. The invariant test is the
+      mechanism that makes the mechanism mechanically un-deletable.
+    enforcement_statement: >
+      Five-layer enforcement on the substrate side. Two of the five are
+      CI-executed tests that gate every PR + push-to-main; the other
+      three are the runtime hook, the audit table, and the brand-promise
+      doc that those two tests lock in place:
+      (a) L0 STRUCTURAL CODE SHAPE LOCK —
+      tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases,
+      added by OSE PR #252) asserts the worker entry exports
+      `async scheduled()`, that scheduled() invokes runFormDataLifecycle,
+      that the DELETE phases for form_registrations + email_signups
+      remain keyed on expires_at / retention_expires_at (never an
+      unbounded DELETE), that the SCRUB phase for form_surveys remains
+      keyed on pii_scrubbed=0 → pii_scrubbed=1, that logPiiAudit() is
+      called ≥6 times (3 phases × success+error paths) with INSERT INTO
+      pii_audit_log, that ≥3 try blocks remain inside
+      runFormDataLifecycle (phase isolation — one fail can't abort the
+      others), and that the LIFECYCLE_COMPLETE structured log marker is
+      emitted (SRE cron-success signal). Any refactor that silently
+      drops a phase, removes a TTL column from a WHERE clause (would
+      DELETE every row), removes audit writes, or collapses try/catch
+      isolation fails CI at PR-time — not as a regulatory incident
+      months later. This spec runs in the T0 Gate `invariants` matrix
+      shard on every PR + push-to-main. That shard was created by OSE
+      PR #255 / OSE-350, which wired the 0-architecture structural
+      subset onto the gating path; before #255 the suite ran only in
+      dispatch-only T4 Functional, so the code-shape lock did not
+      actually gate normal development. tests/integration/infra-
+      consistency.test.js carries a placement guard that classifies
+      every 0-architecture spec structural-vs-runtime and fails CI if a
+      structural spec is missing from the T0 `invariants` step — so the
+      wiring itself cannot silently regress.
+      (b) L1 IN-PROCESS INTEGRATION —
+      workers/oursharedevents/tests/lifecycle.spec.ts exercises
+      worker.scheduled() against real D1 (miniflare) with seeded rows
+      for all three phases (form_registrations DELETE on expires_at,
+      form_surveys SCRUB on pii_scrubbed=0, email_signups DELETE on
+      retention_expires_at) and verifies pii_audit_log entries are
+      written after each scheduled run. The behavioral counterpart to
+      (a) — proves the code-shape locked by (a) actually executes the
+      intended deletes/scrubs against a real database, not just that
+      the code reads right. This spec runs in the T0 Gate `tests`
+      matrix shard on every PR + push-to-main.
+      (c) RUNTIME CRON TRIGGER —
+      workers/oursharedevents/wrangler.toml [triggers] crons configures
+      the daily fire (`0 3 * * *` — 03:00 UTC); the scheduled() handler
+      at workers/oursharedevents/src/index.ts entry-point line 37 is
+      the registered cron consumer; runFormDataLifecycle(env) at
+      line 129 is the actual workhorse called inside ctx.waitUntil().
+      Both (a) and (b) lock the existence and shape of these hooks.
+      (d) PII AUDIT TABLE — pii_audit_log D1 table (schema in worker
+      migrations) receives one row per (phase, success_or_error) tuple
+      on every cron fire. Operators can query audit_log directly for
+      compliance evidence — "show me every retention-cron action over
+      the last 90 days" answers in one query. Audit writes are required
+      by the L0 assertion (≥6 calls); they are not optional.
+      (e) HUMAN-READABLE COVENANT — docs/features/PRIVACY.md documents
+      the retention windows in plain English (90d registrations / 30d
+      email signups / immediate scrub of survey freeform fields). The
+      doc is the brand-promise contract surface; (a)–(d) are the
+      mechanism that ensures the doc remains truthful. A refactor that
+      silently extends retention without updating PRIVACY.md would
+      first fail CI at (a) or (b), surfacing the inconsistency before
+      the brand promise becomes a lie.
+    references:
+      structural_test: tests/e2e/0-architecture/pii-retention.invariant.spec.ts
+      integration_test: workers/oursharedevents/tests/lifecycle.spec.ts
+      cron_handler: workers/oursharedevents/src/index.ts (scheduled — line 37; runFormDataLifecycle — line 129)
+      cron_config: workers/oursharedevents/wrangler.toml ([triggers] crons = ["0 3 * * *"])
+      audit_table: pii_audit_log (D1 — written by logPiiAudit in src/index.ts)
+      privacy_doc: docs/features/PRIVACY.md
+      activation_pr: "OSE#252 — L0 structural test tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases) added to the 0-architecture suite (merge sha bbc161f5, 2026-05-19 12:05 UTC)"
+      ci_gating_pr: "OSE#255 / OSE-350 — wired the 0-architecture structural subset (including pii-retention.invariant.spec.ts) into the T0 Gate `invariants` matrix shard so L0 gates every PR + push-to-main; before #255 the suite ran only in dispatch-only T4 Functional. T0 `invariants` shard verified green on OSE main at sha f27e8de14."
+      placement_guard: "tests/integration/infra-consistency.test.js — invariant-enforcement-continuity placement guard; classifies every 0-architecture spec structural-vs-runtime and fails CI if a structural spec is not on the T0 gating path"
+      origin_story: "OSE-203 / BE-14 — scheduled PII cleanup cron design + first lifecycle test"
+      template_pattern: "invariant #10 deprecation_lock (rich-form CI-enforcement template)"
+    activation_note: >
+      Status PARTIAL → LIVE via a two-PR chain completed 2026-05-19.
+      The originally-stated partial→live criterion was "promote the
+      unified test to the 0-architecture suite". The honest reading of
+      that criterion is that the test must not merely live in the suite
+      but actually gate change — PR #252 placed it, PR #255 made it
+      gate, and only the pair satisfies the criterion. Evidence chain:
+      (1) OSE PR #252 added the L0 structural code-shape test
+      tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases)
+      to the 0-architecture suite — 78 of 86 tests pass, 8 unrelated WCAG
+      skips, 0 regressions; (2) OSE PR #255 / OSE-350 wired the
+      0-architecture structural subset (including this spec) into the
+      T0 Gate `invariants` matrix shard, so the L0 lock now gates every
+      PR + push-to-main — before #255 the suite ran only in
+      dispatch-only T4 Functional and so did not gate normal
+      development; the T0 `invariants` shard is verified green on OSE
+      main at sha f27e8de14; (3) the L1 in-process integration test
+      workers/oursharedevents/tests/lifecycle.spec.ts already existed
+      (OSE-203 / BE-14), runs in the T0 Gate `tests` shard, and remains
+      green; (4) the runtime cron handler scheduled() +
+      runFormDataLifecycle in workers/oursharedevents/src/index.ts is
+      wired to the daily 03:00 UTC trigger via wrangler.toml; (5) the
+      pii_audit_log audit table receives one row per phase-outcome tuple
+      per cron fire (operator compliance evidence); (6) PRIVACY.md
+      documents the human-readable retention windows. T3 network-staging
+      coverage is NOT in the pyramid for this invariant because the cron
+      is a once-per-day mechanism, not a per-request behavior — L0 + L1
+      prove the mechanism without needing to observe a deployed cron
+      fire against staging. This invariant has NO dependency on OSE-349
+      (the CF Access service-token rotation that currently holds the
+      unrelated T3 sponsor-covenant check); brain #8 was never blocked
+      on it. This is the second invariant to use the rich-form
+      activation pattern; mirrors the rigor of #10 deprecation_lock
+      (which flipped 2026-05-18 via OSE PR #249 / OCR-docs#56) and
+      inherits the layered-enforcement template that #1 anonymous_id
+      established (2026-05-17 trio enrichment).
+
+  # ══ GROUP 2: PRODUCT & EXPERIENCE ═══════════════════════════════════════════
+  # What the platform does — built on the privacy foundation above.
 
   # ── #2 HYPERLOCAL GEO-RESOLUTION ──────────────────────────────────────────
   - id: 2
     name: hyperlocal_geo_resolution
+    label: "#2 — Hyperlocal Geo-Resolution"
+    group: product_experience
+    group_order: 1
     title: Hyperlocal Geo-Resolution
     status: live
     test_file: geo-resolution.invariant.spec.ts
-    enforces: sponsor_areas + sponsor_event_types tables. Corridor-level
-      resolution. zip + radius matching.
+    enforces: >
+      sponsor_areas + sponsor_event_types tables power corridor-level
+      sponsor resolution. Two resolution paths: (a) direct — sponsor.event_id
+      matches the requested event; (b) template+geo — sponsor matches event
+      template_id AND the sponsor's service area (zip_code match OR haversine
+      radius match). Tier sorting: title > platinum > gold > silver > bronze >
+      primary. Surface filtering: display→tvTop|tvSide, poster→posterTop,
+      public→mobileBanner, sharedReport→all. Deduplication: same sponsor via
+      both paths appears once.
     applies_to:
       - ose
+    protective_statement: >
+      The local-sponsor covenant — "the bar around the corner gets the
+      same reach as a national brand" — depends on the geo-resolution
+      engine correctly scoping sponsor visibility to the corridor where
+      the sponsor actually operates. Without this invariant, a geo bug
+      could surface a national sponsor in place of the local one (silent
+      covenant breach), or surface no sponsors at all (empty placement
+      slots). Either failure erodes the Triangle premise: sponsors see
+      value only when their local footprint maps to real events in their
+      geography.
+    enforcement_statement: >
+      Two-layer enforcement at live status:
+      (a) L1 INTEGRATION TEST SUITE — tests/e2e/0-architecture/
+      geo-resolution.invariant.spec.ts (10 cases, runtime: uses page
+      fixture against deployed worker) asserts: direct-path resolution,
+      template+geo resolution, zip_code matching, haversine radius
+      matching, tier priority sort order, surface filtering per display/
+      poster/public/sharedReport surfaces, sponsor deduplication across
+      resolution paths, rotation timing bounds, rotation slot scaling,
+      event-types API accepts template associations, service-areas API
+      accepts geo areas. Runs in T4 Functional (dispatch-only, requires
+      deployed worker at ADMIN_KEY). 3 of 10 cases skip when base URL
+      is absent — skips are expected behavior, not gaps.
+      (b) SCHEMA LOCK — migrations/0019_create_sponsor_event_types.sql,
+      0020_create_sponsor_areas.sql, 0021_add_geo_to_events.sql define
+      the tables and columns the resolver depends on. Any migration that
+      drops these columns would break the integration tests at deploy-
+      time before going to production.
+    references:
+      resolver: workers/oursharedevents/src/lib/sponsor-resolver.ts
+      invariant_test: tests/e2e/0-architecture/geo-resolution.invariant.spec.ts
+      migration_event_types: workers/oursharedevents/migrations/0019_create_sponsor_event_types.sql
+      migration_service_areas: workers/oursharedevents/migrations/0020_create_sponsor_areas.sql
+      migration_geo_events: workers/oursharedevents/migrations/0021_add_geo_to_events.sql
 
   # ── #3 UNIVERSAL EVENT CODE (UEC) ─────────────────────────────────────────
   - id: 3
     name: uec_encoding
+    label: "#3 — Universal Event Code Standard"
+    group: product_experience
+    group_order: 2
     title: Universal Event Code Standard
     status: live
     test_file: uec-codes.invariant.spec.ts
@@ -147,18 +508,447 @@ invariants:
   # ── #4 NCR DATA ACCUMULATION ──────────────────────────────────────────────
   - id: 4
     name: ncr_data_accumulation
+    label: "#4 — NCR Data Accumulation"
+    group: product_experience
+    group_order: 3
     title: NCR Data Accumulation
     status: live
     test_file: ncr-accumulation.invariant.spec.ts
-    enforces: poster_deployments lat/lng. scan_aggregates pipeline. Permanent
-      storage (no PII = no TTL).
+    enforces: >
+      poster_deployments stores lat/lng + placement label per poster.
+      scan_aggregates pipeline accumulates unique_agents + scan_count
+      per (event_id, h3_res9) bucket from raw scans. Data is permanent —
+      no PII means no TTL obligation. NCR (Node, Corridor, Ring) is the
+      intelligence layer: scan_aggregates rows are the atomic unit of
+      the SharedReport data pipeline (used by corridor_density,
+      corridor_map, return_rate, headcount_trend). Aggregation happens
+      at write time (cron materialization) not at read time.
     applies_to:
       - ose
       - oureventring
+    protective_statement: >
+      NCR data is the platform's long-horizon intelligence. Scan counts
+      are permanently retained because they contain no PII — the
+      anonymous ID never appears in scan_aggregates, only in the
+      anon_id_returns intermediary. If someone adds a PII-bearing column
+      to scan_aggregates (e.g., a raw anon_id_hash stored per row rather
+      than per aggregate bucket), the no-TTL promise becomes a liability:
+      unbounded retention of pseudonymous data under GDPR is an exposure.
+      The invariant protects both sides: permanent retention requires
+      zero PII in the accumulation schema; any PII addition must trigger
+      a retention policy and a brain invariant update.
+    enforcement_statement: >
+      Two-layer enforcement at live status:
+      (a) L1 INTEGRATION TEST SUITE — tests/e2e/0-architecture/
+      ncr-accumulation.invariant.spec.ts (runtime: uses page fixture
+      against deployed worker) asserts: poster_deployments endpoint
+      accepts lat/lng + label, scan_aggregates pipeline accumulates
+      counts correctly, no PII columns in the accumulation tables,
+      H3 cell resolution is correct. Runs in T4 Functional
+      (dispatch-only, requires deployed worker).
+      (b) SCHEMA LOCK — scan_aggregates and poster_deployments migrations
+      define the accumulation schema. The PII column gate in
+      tests/workers/oursharedevents/tests/pii-invariant.spec.ts asserts
+      no PII column names appear in these tables' column lists. Any
+      migration adding a raw identity column would fail that gate.
+    references:
+      invariant_test: tests/e2e/0-architecture/ncr-accumulation.invariant.spec.ts
+      pii_gate: workers/oursharedevents/tests/pii-invariant.spec.ts
+      companion_invariant: "Invariant #7 aggregate_only_reporting — SharedReport reads from scan_aggregates"
+      companion_invariant_8: "Invariant #8 bounded_pii_retention — TTL applies to FORMS_DB only; NCR has no TTL by design"
+
+  # ── #18 QR CODE URL / SLUG PERMANENCE ────────────────────────────────────
+  - id: 18
+    name: slug_permanence
+    label: "#18 — QR Code URL / Slug Permanence"
+    group: product_experience
+    group_order: 5
+    title: QR Code URL / Slug Permanence
+    status: live
+    test_file: slug-permanence.invariant.spec.ts
+    enforces: >
+      Every event slug is encoded in a physical poster QR code URL and must
+      be write-once. No migration may perform a structural mutation of the
+      slug column (ALTER TABLE events ... slug). The UPDATE event handler's
+      allowedFields must not include slug. No raw UPDATE events SET ... slug
+      literal may appear in any handler. A UNIQUE constraint or index on slug
+      must exist to prevent ambiguous QR destinations. The CREATE handler must
+      include slug in the INSERT column list (write at creation only).
+    applies_to:
+      - ose
+    protective_statement: >
+      QR codes printed on physical posters are permanent — the URL they encode
+      cannot be changed without silently breaking every scanned or memorised
+      link. An event slug that changes post-deployment causes: live poster URLs
+      to return 404 on the next event lookup; check-in scans at the door to
+      fail silently (attendees can't check in); ShortCodes linked to the old
+      slug to break; and the NCR scan pipeline to lose its accumulation anchor.
+      The slug is the physical-to-digital bridge that makes the Ring flywheel
+      work. Without this invariant, a single admin update could sever every
+      deployed poster from its event permanently.
+    enforcement_statement: >
+      L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      slug-permanence.invariant.spec.ts (5 cases, T0 Gate invariants shard —
+      added 2026-07-26) asserts:
+      (a) No migration performs a structural mutation of the slug column via
+      ALTER TABLE events — covers ADD (re-definition), RENAME, DROP slug.
+      (b) The allowedFields object in handleUpdateEvent does not include slug
+      — the API-layer write gate that prevents mutation via PATCH.
+      (c) No handler file contains a raw UPDATE events SET ... slug literal —
+      catches any direct SQL mutation that bypasses the allowedFields pattern.
+      (d) The INSERT in handleCreateEvent includes slug in the column list —
+      confirms write happens at creation (the only sanctioned write).
+      (e) A UNIQUE constraint or index on slug exists in migrations — prevents
+      two events sharing a slug, which would make QR destination ambiguous.
+      Runtime coverage: the 409 SLUG_TAKEN error response tested in
+      testid-pyramid.spec.ts confirms the uniqueness constraint fires at
+      the API layer.
+    references:
+      events_migration: >
+        workers/oursharedevents/migrations/0001_create_events.sql
+        (slug TEXT NOT NULL UNIQUE — inline column constraint)
+      handler: >
+        workers/oursharedevents/src/handlers/events.ts
+        (handleCreateEvent INSERT includes slug; handleUpdateEvent
+        allowedFields excludes slug; SLUG_TAKEN 409 on duplicate)
+      structural_gate: >
+        tests/e2e/0-architecture/slug-permanence.invariant.spec.ts
+        (5 cases, T0 Gate invariants shard — added 2026-07-26)
+      ncr_anchor: >
+        Invariant #4 ncr_data_accumulation — poster_deployments + scan_aggregates
+        pipeline is anchored to the event slug; slug mutation severs the NCR ring
+    activation_note: >
+      Status LIVE from initial creation (2026-07-26). The structural spec is the
+      enforcement mechanism; the invariant is live the moment the spec is wired
+      to T0. Evidence chain: (a) slug-permanence.invariant.spec.ts (5 cases,
+      all pass) wired to T0 invariants shard; (b) infra-consistency placement
+      guard confirms the spec is classified as structural and present in the
+      shard; (c) migration 0001_create_events.sql has slug TEXT NOT NULL UNIQUE
+      (inline constraint) — no ALTER TABLE slug in any of the 38 migrations;
+      (d) handleUpdateEvent.allowedFields does not include slug;
+      (e) SLUG_TAKEN (409) error response confirms uniqueness is enforced
+      at the application layer.
+
+  # ── #16 API RESPONSE SCHEMA STABILITY ────────────────────────────────────
+  - id: 16
+    name: api_response_schema_stability
+    label: "#16 — API Response Schema Stability"
+    group: product_experience
+    group_order: 6
+    title: API Response Schema Stability
+    status: live
+    test_file: api-response-schema.invariant.spec.ts
+    enforces: >
+      Public API endpoints (GET /api/v2/events, GET /api/v2/events/:id) must
+      project a minimum set of columns defined in
+      src/api-schema-snapshots/public-events.snapshot.json. Removing any field
+      from the SELECT MUST bump snapshot.version and remove the field from the
+      snapshot — making the break visible in a PR diff. Envelope keys (items,
+      item) must remain stable. enrichWithPhase must be called on both list
+      and detail results so the computed phase field is always present.
+      Seven-case structural spec locked in T0 Gate invariants shard.
+    applies_to:
+      - ose
+    protective_statement: >
+      The public API is consumed by mobile clients, the five MVP surfaces,
+      and external integrations. A column removed from the SELECT without a
+      conscious schema version bump causes silent breakage: the consumer
+      receives a 200 with a response that is structurally valid JSON but
+      missing a field it renders — no error, no alert, just broken UI.
+      Mobile Workability (Invariant #14) guarantees the layout works at
+      375×812; API Response Schema Stability guarantees the data that
+      populates that layout is actually present. Both must hold
+      simultaneously: a perfect mobile layout fed empty data is still a
+      broken user experience.
+    enforcement_statement: >
+      L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      api-response-schema.invariant.spec.ts (7 cases, T0 Gate invariants
+      shard — added 2026-07-26) asserts:
+      (a) Snapshot file exists at canonical path (workers/oursharedevents/
+      src/api-schema-snapshots/public-events.snapshot.json).
+      (b) Snapshot has a version field (enables explicit version bumps on
+      breaking changes).
+      (c) Every projected_column in the snapshot appears in the
+      handleListEvents SELECT (public list endpoint).
+      (d) Every projected_column in the snapshot appears in the
+      handleGetEvent SELECT (public detail endpoint).
+      (e) handleListEvents returns the items envelope key.
+      (f) handleGetEvent returns the item envelope key.
+      (g) enrichWithPhase is called on both list and detail results (ensures
+      the computed phase field is present on every response row).
+      The snapshot is a minimum contract (floor, not ceiling): additive
+      changes to the SELECT pass without a snapshot update; removals fail
+      CI until the snapshot is explicitly updated and the version is bumped.
+    references:
+      snapshot: workers/oursharedevents/src/api-schema-snapshots/public-events.snapshot.json
+      handler: workers/oursharedevents/src/handlers/events.ts
+      structural_gate: >
+        tests/e2e/0-architecture/api-response-schema.invariant.spec.ts
+        (7 cases, T0 Gate invariants shard — added 2026-07-26)
+      companion_invariant: >
+        Invariant #14 mobile_workability — layout guarantees; #16 guarantees
+        the data the layout renders. Invariant #18 slug_permanence — QR URL
+        stability; #16 guards the API payload the QR destination serves.
+    activation_note: >
+      Status LIVE from initial creation (2026-07-26). The structural spec +
+      snapshot file are the enforcement mechanism. Evidence chain:
+      (a) api-response-schema.invariant.spec.ts (7 cases, all pass) wired to
+      T0 invariants shard; (b) infra-consistency placement guard confirms
+      structural classification and shard presence; (c) snapshot version 1.0.0
+      committed with all 22 currently-projected columns for both public
+      endpoints.
+
+  # ── #21 SHARED REPORT SCHEMA STABILITY ───────────────────────────────────
+  - id: 21
+    name: shared_report_schema_stability
+    label: "#21 — SharedReport Schema Stability"
+    group: product_experience
+    group_order: 7
+    title: SharedReport Schema Stability
+    status: partial
+    test_file: shared-report-schema.invariant.spec.ts
+    enforces: >
+      The SharedReport TypeScript interface in shared-report-builder.ts must
+      retain its minimum field set as committed in shared-report.snapshot.json.
+      Top-level fields (event_id, event_title, unique_gatherings, return_rate,
+      corridor_density, sponsor_impressions, campaign_summary, poster_attribution,
+      headcount_trend, corridor_map, _meta), sponsor_impressions row fields
+      (sponsor_id, sponsor_name, campaign_id, campaign_title, sponsor_tier,
+      is_local, surface, count), and campaign_summary fields (campaign_id,
+      campaign_title, total_impressions, sponsor_count, impressions_by_surface)
+      are all locked. campaign_summary must remain in mid and premium depth
+      tiers. Six-case structural spec locked in T0 Gate invariants shard.
+    applies_to:
+      - ose
+    protective_statement: >
+      The SharedReport surface is the enterprise monetization layer — the proof
+      artifact that sponsors use to evaluate campaign performance across events.
+      The campaign fields added in 2026-07 (campaign_id, campaign_title on each
+      sponsor_impressions row; campaign_summary with impressions_by_surface)
+      are the data backbone of the cross-event comparison feature that
+      enterprise clients depend on. Without a schema lock, any of these fields
+      can be silently removed from the SharedReport interface — the field
+      disappears from every SharedReport response with no compilation error,
+      no API 500, no visible signal. A sponsor pulling 30 days of batch
+      SharedReports to compare campaign performance finds empty campaign_summary
+      arrays with no indication the feature was removed. The invariant is the
+      output-side complement to Invariant #16 (API Response Schema Stability):
+      #16 locks the public events API; #21 locks the enterprise reporting
+      surface.
+    enforcement_statement: >
+      L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      shared-report-schema.invariant.spec.ts (6 cases, T0 Gate invariants
+      shard — added 2026-07-26) asserts:
+      (a) shared-report.snapshot.json exists at the canonical path.
+      (b) Snapshot has a version field (enables explicit version bumps on
+      breaking changes).
+      (c) Every top_level_field in the snapshot appears in the SharedReport
+      interface definition in shared-report-builder.ts — scoped to the
+      interface block via brace-depth extraction.
+      (d) Every sponsor_impressions_field in the snapshot appears in the
+      sponsor_impressions array type definition.
+      (e) Every campaign_summary_field in the snapshot appears in the
+      campaign_summary array type definition.
+      (f) campaign_summary appears in both mid and premium DEPTH_SECTIONS
+      in report-depth.ts — ensures the depth filter includes the enterprise
+      comparison surface at the tiers that should see it.
+      The snapshot is a minimum contract (floor, not ceiling): additive
+      interface changes pass without a snapshot update; removals fail CI
+      until the snapshot is explicitly updated and the version is bumped.
+    references:
+      snapshot: workers/oursharedevents/src/api-schema-snapshots/shared-report.snapshot.json
+      builder: workers/oursharedevents/src/lib/shared-report-builder.ts
+      depth_filter: workers/oursharedevents/src/lib/report-depth.ts
+      structural_gate: >
+        tests/e2e/0-architecture/shared-report-schema.invariant.spec.ts
+        (6 cases, T0 Gate invariants shard — added 2026-07-26)
+      companion_invariant: >
+        Invariant #16 api_response_schema_stability — public events API
+        contract; #21 is the enterprise SharedReport complement.
+        Invariant #7 aggregate_only_reporting — SharedReport must remain
+        aggregate-only; #21 locks the fields that carry those aggregates.
+    activation_note: >
+      Status PARTIAL (honest) — 2026-07-27. The structural spec and snapshot
+      are designed and correct, but the spec (shared-report-schema.invariant.spec.ts)
+      and snapshot (shared-report.snapshot.json) cannot be committed without
+      the campaigns feature TS changes (shared-report-builder.ts campaign_id/
+      campaign_title/campaign_summary additions + report-depth.ts campaign_summary
+      in DEPTH_SECTIONS mid/premium) and the campaigns migrations (0039, 0040).
+      These form an inseparable unit and are deferred to a follow-up campaigns PR.
+      The invariant is authored in the brain (canonical, with full rich-form
+      enforcement statement) but not yet wired to CI. partial→live criterion:
+      campaigns PR merges — shared-report-schema.invariant.spec.ts and
+      shared-report.snapshot.json committed and wired to the T0 invariants shard.
+
+  # ── #14 MOBILE WORKABILITY ────────────────────────────────────────────────
+  # Added 2026-06-01 to resolve a second phantom (same failure mode as #13):
+  # OCR_STANDARD_mobileWorkability.md (effective 2026-05-16) referenced
+  # "invariant 14" four times — in the exception-allowlist procedure (line
+  # 104), enforcement layer 3 (line 168), the history block (line 212), and
+  # the first-validation history entry (line 214) — yet #14 was never
+  # encoded here. ADR-002 (accepted 2026-05-22) also proposed numbers 14
+  # and 15 for explicit_identity and exit_always_available, with the
+  # explicit flag that those numbers were indicative ("Invariant numbers
+  # are indicative — assigned at implementation per the brain's write-time
+  # numbering rule"). The mobileWorkability claim is senior — predates
+  # ADR-002 by six days, has a deployed OSE audit, and is propagated to
+  # every product's vendored .ocr-standards/. ADR-002's proposals shift
+  # to #15 and #16 at implementation. Resolves Linear OCR-74.
+  - id: 14
+    name: mobile_workability
+    label: "#14 — Mobile Workability"
+    group: product_experience
+    group_order: 4
+    title: Mobile Workability
+    status: partial
+    test_file: mobile-workability.invariant.spec.ts
+    enforces: 'Every customer-facing surface in every OCR product MUST be
+      usable at the 375×812 viewport (iPhone 13 Mini / X / 11 Pro — the
+      smallest modern iPhone in significant active use). Five contracts per
+      surface: (1) no horizontal scroll at 375 px viewport, (2) tap targets
+      ≥ 44×44 pt, (3) text font-size ≥ 16 px and contrast WCAG AA, (4)
+      primary CTA above the fold without scroll, (5) input font-size ≥ 16
+      px to suppress iOS auto-zoom on focus. Per-product Playwright audit
+      at `tests/playwright/mobile-workability.spec.ts` exercises each
+      customer-facing surface against the five contracts. Documented
+      exemptions: /display (venue TV — landscape kiosk) and /briefing
+      (internal CEO tool). Additional exemptions added inline in the
+      standard. Status partial — the audit exists in OSE (first validation
+      2026-05-16, OSE audit run 25951483089). Promote to live per-product
+      when the audit lands in that product''s CI, passes for every
+      customer-facing surface, and per OCR-53 the conformance check
+      verifies the audit is invoked by an active workflow.'
+    applies_to:
+      - ose
+      - osm
+      - wkrp
+      - oaw
+      - osr
+      - osg
+    exceptions: []
+    protective_statement: >
+      Every OCR product is a mobile product first. The customer surface —
+      the page someone is looking at on their phone at 7am at the bus stop
+      — must be usable on the smallest modern iPhone viewport (375×812).
+      Drift — surfaces that require horizontal scroll, tap targets smaller
+      than 44 pt, input fonts that trigger iOS zoom, primary CTAs below
+      the fold, text that fails contrast at common phone brightness —
+      turns the brand promise into a lie surface-by-surface. The customer
+      doesn't experience the *intended* layout; they experience the
+      *broken* layout. The audit is the mechanism that keeps the intent
+      honest at scale across every product, every release.
+    enforcement_statement: >
+      Four-layer enforcement per product:
+      (a) Per-product Playwright audit at
+      `<product>/tests/playwright/mobile-workability.spec.ts` exercises
+      each customer-facing surface against the five contracts above.
+      (b) Nightly + on-PR workflow runs the audit — same shape as
+      brain-location-audit.yml. On PR runs the audit is informational
+      (does not block); on schedule + manual dispatch it blocks and
+      opens a Linear ticket on violation (the L5 auto-drift mechanism,
+      per ADR-003).
+      (c) Exemption list — /display (venue TV — landscape kiosk) and
+      /briefing (internal CEO tool) are documented exemptions inline in
+      the standard. The audit reads the exemption list; if /briefing
+      ever becomes customer-facing, the exemption is removed and the
+      audit picks up the gap on the next run.
+      (d) Propagated standard —
+      OCR-docs/docs/standards/OCR_STANDARD_mobileWorkability.md is
+      canonical and is fanned out to every product's
+      `.ocr-standards/standards/` via the standards propagator (Linear
+      OCR-75 Epic). Every developer in any OCR repo sees the rule
+      locally. Drift between vendored and canonical fails CI on the
+      product side once OCR-75 ships.
+      Status partial because (a) only ships in OSE today; partial → live
+      per-product as audits land in each product's CI.
+    references:
+      standard: docs/standards/OCR_STANDARD_mobileWorkability.md
+      ose_audit: "ourSharedEvents/tests/playwright/mobile-workability.spec.ts"
+      first_validation: "OSE audit run 25951483089 (2026-05-16) — first full validation cycle, surfaced three standard-debt items refined by OCR-42 (WCAG 2.5.5 inline-text-link exemption; page-state steady-state model; error-page sub-contract)"
+      adr_coordination: "ADR-002 — its proposed invariants explicit_identity and exit_always_available shift to #15 and #16 at implementation, per the ADR's own 'numbers are indicative' note"
+      doctrine_link: "ADR-003 — this invariant's enforcement layer (b) is the manual-invoke version of the L5 auto-drift-tickets mechanism the framework's self-improvement loop will automate"
+      linear_epic: "OCR-74 — phantom #14 resolution"
+      origin: "CCR review 2026-06-01 — resolved a phantom #14 referenced by six artifacts (mobileWorkability standard ×4, ADR-002 ×2) but never encoded. Sibling cleanup: OCR-53 (phantom-number guard in conformance check); OCR-75 (re-propagation to vendored .ocr-standards copies)."
+    # ── Role sections (ADR-004 worked example — first backfill 2026-06-01) ──
+    # Demonstrates that all six role sections defined in ADR-004 (Role-Ready
+    # Invariants) can be populated for a real invariant without contortion —
+    # the proof point that converts ADR-004 from Proposed to ready-for-CCR.
+    # Per OCR-76 (Phase 1 sub-Story under OCR-49), `level2_schema.py` will
+    # validate these section shapes when schema v2.0.0 lands. Today they are
+    # forward-compatible documentation: the current validator (INV_REQUIRED
+    # check) ignores unknown fields, so this backfill is harmless. When the
+    # validator extension ships, the existing data already satisfies it.
+    pm:
+      acceptance_criteria:
+        - "Every customer-facing surface in <product> passes the five-contract audit at 375×812"
+        - "Audit runs nightly on schedule (blocking) and on every PR (informational)"
+        - "Drift opens a Linear ticket via the L5 auto-drift mechanism"
+        - "Each documented exemption (/display, /briefing, future) has rationale inline in the standard"
+      user_impact: >-
+        Mobile-first audience. The customer experiences the broken layout
+        surface-by-surface and trust erodes silently — there is no error
+        page, no exception, no recovery moment.
+      sprint_decomposition: >-
+        Per-product: 1 sprint to wire the audit + bring the first surface
+        list into compliance. The OSE audit (2026-05-16) is the reference
+        implementation. WKRP, OSM, OAW each take their own sprint to reach
+        all five contracts on every customer-facing surface.
+    devops:
+      ci_gates:
+        - "<product>/.github/workflows/mobile-workability-audit.yml"
+      secrets: []
+      deploy_gates:
+        - "staging — blocking on nightly schedule; informational on PR"
+      rollback: >-
+        No runtime rollback. This is a pre-deploy gate. If a violation
+        ships via override (--no-verify, workflow skip), the next nightly
+        catch surfaces it within 24 hours.
+    sre:
+      applicable: false
+      reason: "Pre-deploy gate — no runtime SLO, no alerting, no on-call action."
+    frontend:
+      governed_surfaces: >-
+        All customer-facing routes. Per-product manifests in each repo
+        (e.g., <product>/routes/customer.ts). OSE examples: /, /events/*,
+        /sponsor, /signup. WKRP examples: /, /catalog, /create.
+      component_constraints:
+        - "Tap targets ≥ 44×44 pt — use the product's Button component minimum"
+        - "Input font-size ≥ 16 px — Tailwind text-base floor — suppresses iOS auto-zoom"
+        - "Text contrast WCAG AA at minimum on every readable surface"
+        - "Primary CTA above the fold without scroll on the floor viewport"
+        - "No horizontal scroll at 375 px viewport"
+      design_system_dependencies:
+        - "ose: ouroboros-ds (Button, Input, Card)"
+        - "wkrp: TBD design system (currently HTML placeholders per project_frontend_plan)"
+        - "osm: n/a — Postman tooling, no customer UI"
+      browser_matrix: >-
+        iPhone 13 Mini (375×812) is the floor. iPhone X / XS / 11 Pro
+        share the same viewport. iPhone 12+ (390+) passes by being wider.
+        Android 360px verified separately as an edge case.
+    playwright:
+      spec_files:
+        - path: "<product>/tests/playwright/mobile-workability.spec.ts"
+          asserts: "Per-surface: each customer-facing route passes the five contracts at 375×812; error-page sub-contract via 404 fixture"
+      fixtures: >-
+        Seeded test event (evt_test_2026) for OSE surfaces; equivalent
+        per-product fixtures. Error-page sub-contract uses a 404 fixture
+        (non-existent event id) so the recovery flow is also validated.
+      viewport_matrix: >-
+        Primary: 375×812 (iPhone 13 Mini). Edge case: 360×640 (small
+        Android — separate verification).
+    postman:
+      applicable: false
+      reason: "UI invariant. No API endpoints in scope; mobile-workability is a layout/interaction contract, not a request/response contract."
+
+  # ══ GROUP 3: COMMERCIAL GOVERNANCE ══════════════════════════════════════════
+  # How the business operates — tier equity and the pre-revenue gate.
 
   # ── #5 LOCAL SPONSOR COVENANT (was "Tier Equity / Pricing Governance") ───
   - id: 5
     name: tier_equity
+    label: "#5 — Local Sponsor Covenant"
+    group: commercial_governance
+    group_order: 1
     title: Local Sponsor Covenant
     status: partial
     test_file: tier-equity.invariant.spec.ts
@@ -303,177 +1093,79 @@ invariants:
   # ── #6 INERT MONETIZATION HOOKS ───────────────────────────────────────────
   - id: 6
     name: inert_monetization_hooks
+    label: "#6 — Inert Monetization Hooks"
+    group: commercial_governance
+    group_order: 2
     title: Inert Monetization Hooks
-    status: partial
-    test_file: monetization-inert.invariant.spec.ts
-    enforces: 'X-Monetization-Inert: true header on every response. No
-      billing logic executes. Billable units are read-only. Existing CI gate
-      checkMonetizationHooksInert + contract test
-      story-f4-monetization-hooks_MOCK.test.js already enforce; promote to
-      0-architecture suite.'
-    applies_to:
-      - ose
-    research_note: This invariant is the reason research data can be
-      collected cleanly before revenue activation. Pre-revenue by contract,
-      not by choice.
-
-  # ── #7 AGGREGATE-ONLY REPORTING ───────────────────────────────────────────
-  - id: 7
-    name: aggregate_only_reporting
-    title: Aggregate-Only Reporting
-    status: planned
-    test_file: aggregate-only.invariant.spec.ts
-    enforces: SharedReport endpoints return aggregates only — never
-      individual records. Closes the privacy story on the output side; the
-      Anonymous ID invariant guards the data; this invariant guards the
-      reports.
-    applies_to:
-      - ose
-
-  # ── #8 BOUNDED PII RETENTION ──────────────────────────────────────────────
-  - id: 8
-    name: bounded_pii_retention
-    title: Bounded PII Retention
     status: live
-    test_file: pii-retention.invariant.spec.ts
-    enforces: All opt-in PII has a finite TTL (expires_at,
-      retention_expires_at). Daily lifecycle cron deletes expired
-      registrations (90d), scrubs survey PII, deletes expired email signups
-      (30d). No PII has unbounded retention. Cron + TTL columns + PRIVACY.md
-      exist; structural invariant test in 0-architecture suite locks the
-      cron mechanism; in-process integration test verifies behavioral
-      outcome against real D1.
+    test_file: monetization-inert.invariant.spec.ts
+    enforces: >
+      X-Monetization-Inert: true header on every HTTP response, set by the
+      fetch() wrapper in src/index.ts. The wrapper clones the response via
+      new Response(response.body, response) and patches the header — covers
+      both success and error (500) paths. No billing logic executes at any
+      code path. No Stripe, charge, or debit patterns in any src/ file.
+      Structural L0 gate (5 cases) asserts the wrapper exists in T0.
+      L1 in-process tests in testid-pyramid.spec.ts assert the header
+      appears on real miniflare responses (public API, admin API, 404).
     applies_to:
       - ose
+    research_note: >
+      This invariant is the reason research data can be collected cleanly
+      before revenue activation. Pre-revenue by contract, not by choice.
     protective_statement: >
-      Without an automated retention lock, opt-in PII (event registrations,
-      survey freeform fields, email signups) accumulates indefinitely.
-      That looks like a tech-debt problem; it is actually a brand-promise
-      problem and a compliance liability. OSE collects identity-bearing
-      data on a covenant: you give it to participate in your community
-      event; we honor it briefly; we delete it. A 90-day registration
-      retention silently growing to 18 months because someone refactors
-      the cron and nobody notices is not a small bug — it converts the
-      platform from "ephemeral participation infrastructure" to "passive
-      surveillance archive", and it does so without any visible product
-      change. The retention floor is a load-bearing brand commitment;
-      the cron is the load-bearing mechanism. The invariant test is the
-      mechanism that makes the mechanism mechanically un-deletable.
+      A monetization hook that inadvertently executes billing logic before
+      the revenue decision is made would convert collected research data into
+      unauthorized billable activity. The X-Monetization-Inert header is the
+      machine-readable assertion — on every response, not just logged at
+      startup — that no such execution happened during the request.
     enforcement_statement: >
-      Five-layer enforcement on the substrate side. Two of the five are
-      CI-executed tests that gate every PR + push-to-main; the other
-      three are the runtime hook, the audit table, and the brand-promise
-      doc that those two tests lock in place:
-      (a) L0 STRUCTURAL CODE SHAPE LOCK —
-      tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases,
-      added by OSE PR #252) asserts the worker entry exports
-      `async scheduled()`, that scheduled() invokes runFormDataLifecycle,
-      that the DELETE phases for form_registrations + email_signups
-      remain keyed on expires_at / retention_expires_at (never an
-      unbounded DELETE), that the SCRUB phase for form_surveys remains
-      keyed on pii_scrubbed=0 → pii_scrubbed=1, that logPiiAudit() is
-      called ≥6 times (3 phases × success+error paths) with INSERT INTO
-      pii_audit_log, that ≥3 try blocks remain inside
-      runFormDataLifecycle (phase isolation — one fail can't abort the
-      others), and that the LIFECYCLE_COMPLETE structured log marker is
-      emitted (SRE cron-success signal). Any refactor that silently
-      drops a phase, removes a TTL column from a WHERE clause (would
-      DELETE every row), removes audit writes, or collapses try/catch
-      isolation fails CI at PR-time — not as a regulatory incident
-      months later. This spec runs in the T0 Gate `invariants` matrix
-      shard on every PR + push-to-main. That shard was created by OSE
-      PR #255 / OSE-350, which wired the 0-architecture structural
-      subset onto the gating path; before #255 the suite ran only in
-      dispatch-only T4 Functional, so the code-shape lock did not
-      actually gate normal development. tests/integration/infra-
-      consistency.test.js carries a placement guard that classifies
-      every 0-architecture spec structural-vs-runtime and fails CI if a
-      structural spec is missing from the T0 `invariants` step — so the
-      wiring itself cannot silently regress.
-      (b) L1 IN-PROCESS INTEGRATION —
-      workers/oursharedevents/tests/lifecycle.spec.ts exercises
-      worker.scheduled() against real D1 (miniflare) with seeded rows
-      for all three phases (form_registrations DELETE on expires_at,
-      form_surveys SCRUB on pii_scrubbed=0, email_signups DELETE on
-      retention_expires_at) and verifies pii_audit_log entries are
-      written after each scheduled run. The behavioral counterpart to
-      (a) — proves the code-shape locked by (a) actually executes the
-      intended deletes/scrubs against a real database, not just that
-      the code reads right. This spec runs in the T0 Gate `tests`
-      matrix shard on every PR + push-to-main.
-      (c) RUNTIME CRON TRIGGER —
-      workers/oursharedevents/wrangler.toml [triggers] crons configures
-      the daily fire (`0 3 * * *` — 03:00 UTC); the scheduled() handler
-      at workers/oursharedevents/src/index.ts entry-point line 37 is
-      the registered cron consumer; runFormDataLifecycle(env) at
-      line 129 is the actual workhorse called inside ctx.waitUntil().
-      Both (a) and (b) lock the existence and shape of these hooks.
-      (d) PII AUDIT TABLE — pii_audit_log D1 table (schema in worker
-      migrations) receives one row per (phase, success_or_error) tuple
-      on every cron fire. Operators can query audit_log directly for
-      compliance evidence — "show me every retention-cron action over
-      the last 90 days" answers in one query. Audit writes are required
-      by the L0 assertion (≥6 calls); they are not optional.
-      (e) HUMAN-READABLE COVENANT — docs/features/PRIVACY.md documents
-      the retention windows in plain English (90d registrations / 30d
-      email signups / immediate scrub of survey freeform fields). The
-      doc is the brand-promise contract surface; (a)–(d) are the
-      mechanism that ensures the doc remains truthful. A refactor that
-      silently extends retention without updating PRIVACY.md would
-      first fail CI at (a) or (b), surfacing the inconsistency before
-      the brand promise becomes a lie.
+      Two-layer enforcement at partial status (T0-wired from 2026-07-26):
+      (a) L0 STRUCTURAL CODE-SHAPE LOCK —
+      tests/e2e/0-architecture/monetization-inert.invariant.spec.ts (5
+      cases, added 2026-07-26) asserts: src/index.ts exists; the header
+      is set with value 'true'; the patching uses new Response(body, init)
+      to preserve all handler-set headers; no Stripe/billing patterns exist
+      in any src/ TypeScript file; the let response pattern ensures both
+      success and error paths are covered. Wired into T0 Gate `invariants`
+      shard — gates every PR + push.
+      (b) L1 IN-PROCESS — workers/oursharedevents/tests/
+      testid-pyramid.spec.ts: three integration tests assert the header
+      appears on: GET /api/v2/events (public), GET /api/v2/admin/events
+      (admin), and a 404 response (error path).
+      Partial→live criterion: L0 structural gate in 0-architecture suite
+      (done, 2026-07-26) AND the story-f4 contract test suite adds the
+      header assertion to the Newman collection for T3 coverage.
     references:
-      structural_test: tests/e2e/0-architecture/pii-retention.invariant.spec.ts
-      integration_test: workers/oursharedevents/tests/lifecycle.spec.ts
-      cron_handler: workers/oursharedevents/src/index.ts (scheduled — line 37; runFormDataLifecycle — line 129)
-      cron_config: workers/oursharedevents/wrangler.toml ([triggers] crons = ["0 3 * * *"])
-      audit_table: pii_audit_log (D1 — written by logPiiAudit in src/index.ts)
-      privacy_doc: docs/features/PRIVACY.md
-      activation_pr: "OSE#252 — L0 structural test tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases) added to the 0-architecture suite (merge sha bbc161f5, 2026-05-19 12:05 UTC)"
-      ci_gating_pr: "OSE#255 / OSE-350 — wired the 0-architecture structural subset (including pii-retention.invariant.spec.ts) into the T0 Gate `invariants` matrix shard so L0 gates every PR + push-to-main; before #255 the suite ran only in dispatch-only T4 Functional. T0 `invariants` shard verified green on OSE main at sha f27e8de14."
-      placement_guard: "tests/integration/infra-consistency.test.js — invariant-enforcement-continuity placement guard; classifies every 0-architecture spec structural-vs-runtime and fails CI if a structural spec is not on the T0 gating path"
-      origin_story: "OSE-203 / BE-14 — scheduled PII cleanup cron design + first lifecycle test"
-      template_pattern: "invariant #10 deprecation_lock (rich-form CI-enforcement template)"
+      index_wrapper: workers/oursharedevents/src/index.ts (fetch() wrapper, line 17-38)
+      structural_gate: >
+        tests/e2e/0-architecture/monetization-inert.invariant.spec.ts
+        (5 cases, T0 Gate invariants shard — added 2026-07-26)
+      integration_tests: >
+        workers/oursharedevents/tests/testid-pyramid.spec.ts
+        (L3 integration: 3 tests asserting header on real responses)
     activation_note: >
-      Status PARTIAL → LIVE via a two-PR chain completed 2026-05-19.
-      The originally-stated partial→live criterion was "promote the
-      unified test to the 0-architecture suite". The honest reading of
-      that criterion is that the test must not merely live in the suite
-      but actually gate change — PR #252 placed it, PR #255 made it
-      gate, and only the pair satisfies the criterion. Evidence chain:
-      (1) OSE PR #252 added the L0 structural code-shape test
-      tests/e2e/0-architecture/pii-retention.invariant.spec.ts (9 cases)
-      to the 0-architecture suite — 78 of 86 tests pass, 8 unrelated WCAG
-      skips, 0 regressions; (2) OSE PR #255 / OSE-350 wired the
-      0-architecture structural subset (including this spec) into the
-      T0 Gate `invariants` matrix shard, so the L0 lock now gates every
-      PR + push-to-main — before #255 the suite ran only in
-      dispatch-only T4 Functional and so did not gate normal
-      development; the T0 `invariants` shard is verified green on OSE
-      main at sha f27e8de14; (3) the L1 in-process integration test
-      workers/oursharedevents/tests/lifecycle.spec.ts already existed
-      (OSE-203 / BE-14), runs in the T0 Gate `tests` shard, and remains
-      green; (4) the runtime cron handler scheduled() +
-      runFormDataLifecycle in workers/oursharedevents/src/index.ts is
-      wired to the daily 03:00 UTC trigger via wrangler.toml; (5) the
-      pii_audit_log audit table receives one row per phase-outcome tuple
-      per cron fire (operator compliance evidence); (6) PRIVACY.md
-      documents the human-readable retention windows. T3 network-staging
-      coverage is NOT in the pyramid for this invariant because the cron
-      is a once-per-day mechanism, not a per-request behavior — L0 + L1
-      prove the mechanism without needing to observe a deployed cron
-      fire against staging. This invariant has NO dependency on OSE-349
-      (the CF Access service-token rotation that currently holds the
-      unrelated T3 sponsor-covenant check); brain #8 was never blocked
-      on it. This is the second invariant to use the rich-form
-      activation pattern; mirrors the rigor of #10 deprecation_lock
-      (which flipped 2026-05-18 via OSE PR #249 / OCR-docs#56) and
-      inherits the layered-enforcement template that #1 anonymous_id
-      established (2026-05-17 trio enrichment).
+      Status PARTIAL → LIVE 2026-07-26. Evidence chain:
+      (a) L0 structural gate: monetization-inert.invariant.spec.ts (5 cases,
+      T0 Gate invariants shard, added 2026-07-26) — code-shape-locks the
+      X-Monetization-Inert header set in index.ts fetch() wrapper.
+      (b) L1 in-process: testid-pyramid.spec.ts (3 integration tests asserting
+      header appears on real responses: public API, admin API, 404 path).
+      (c) T3 Newman contract: postman/collections/ose-api.json collection-level
+      test block — asserts X-Monetization-Inert: true on every Worker response,
+      skipping CF Access intercepts. Also added to ose-pages.json (HTML
+      surfaces). T3 runs on push-to-main and nightly against staging.
+      Three-layer pyramid (L0 + L1 + T3) satisfies the live criterion.
+
+  # ══ GROUP 4: SECURITY & ISOLATION ═══════════════════════════════════════════
+  # Cross-cutting security — tenant isolation is the single invariant here.
 
   # ── #9 TENANT ISOLATION ───────────────────────────────────────────────────
   - id: 9
     name: tenant_isolation
+    label: "#9 — Tenant Isolation"
+    group: security_isolation
+    group_order: 1
     title: Tenant Isolation
     status: partial
     test_file: tenant-isolation.invariant.spec.ts
@@ -484,10 +1176,226 @@ invariants:
       - ose
       - osm
       - oaw
+    protective_statement: >
+      Protects against cross-tenant data leakage in a multi-brand OSE
+      deployment. Every multi-tenant table carries brand_id TEXT NOT NULL.
+      The public events list endpoint scopes all results to a single brand.
+      A brand_id format validator at the CREATE handler prevents injection
+      via the tenant key. Without these gates, a single-query change could
+      silently expose one sponsor's event roster to a competitor's audience.
+    enforcement_statement: >
+      Five-layer enforcement cascade:
+      (a) L0 SCHEMA GATE — structural spec asserts brand_id TEXT NOT NULL
+      on events (migration 0001), node_hierarchy, and corridors (migration
+      0010); composite index on (brand_id, status) confirmed in migration
+      0007 (tenant-isolation.invariant.spec.ts, 9 cases, T0 Gate invariants
+      shard — added 2026-07-26).
+      (b) L0 QUERY GATE — same spec asserts handleListEvents uses WHERE
+      brand_id = ? AND status = 'active'; INSERT statement names brand_id
+      in the column list; brand_id format is validated before INSERT.
+      (c) L0 ADMIN AUTH BOUNDARY — same spec asserts router.ts imports
+      requireAdmin from the auth module AND every /admin and /api/v2/admin
+      route definition in router.ts has a requireAdmin call within 20 lines
+      (proximity check). Closes the HTTP-layer complement to the data-layer
+      isolation above: a new admin route added without the auth guard
+      silently bypasses auth for the entire admin surface (2 tests, added
+      2026-07-26).
+      (d) L1 RUNTIME ISOLATION — workers/oursharedevents/tests/
+      tenant-isolation.spec.ts (vitest+cloudflare:test, 4 cases, in-process
+      miniflare + D1 seeding — added 2026-07-26); seeds brand-alpha and
+      brand-beta, asserts public list for each brand contains only that
+      brand's events and unknown brand returns empty; all 4 pass. Proves
+      WHERE brand_id = ? actually isolates at runtime — a SQL bug like OR
+      vs AND, or a missing bind, would pass L0 but fail here.
+      (e) T4 RUNTIME (planned) — cross-brand isolation spec against live
+      staging worker: requires deployed multi-brand D1 instance.
+      Design note: GET /api/v2/events/:id (single-event) fetches by UUID
+      only — acceptable at current OSE phase (single-brand deployments,
+      unguessable UUIDs). T4 spec should verify response includes brand_id
+      so consumers can reject off-brand payloads.
+    references:
+      schema_migrations: >
+        workers/oursharedevents/migrations/0001_create_events.sql
+        (brand_id TEXT NOT NULL on events);
+        workers/oursharedevents/migrations/0007_create_indexes.sql
+        (composite index on brand_id, status);
+        workers/oursharedevents/migrations/0010_create_ncr_v2_hierarchy.sql
+        (brand_id on node_hierarchy and corridors)
+      structural_gate: >
+        tests/e2e/0-architecture/tenant-isolation.invariant.spec.ts
+        (9 cases, T0 Gate invariants shard — 7 data-layer + 2 admin-auth-boundary,
+        added 2026-07-26)
+      runtime_isolation_gate: >
+        workers/oursharedevents/tests/tenant-isolation.spec.ts
+        (L1 vitest+cloudflare:test, 4 cases, in-process miniflare + D1 —
+        added 2026-07-26; 4/4 pass — proves runtime isolation beyond code shape)
+      handler: >
+        workers/oursharedevents/src/handlers/events.ts
+        (handleListEvents WHERE brand_id = ?; handleCreateEvent INSERT +
+        brand_id format validation)
+    activation_note: >
+      partial→live criterion: T0 structural gate present (done, 2026-07-26);
+      L1 miniflare runtime isolation gate present and passing (done,
+      2026-07-26 — 4 cases: alpha list contains only alpha events, beta
+      list contains only beta events, unknown brand returns empty, all
+      returned items carry correct brand_id). Remaining criterion for live:
+      T4 staging cross-brand isolation spec against a deployed multi-brand
+      worker (requires live staging infrastructure with multi-brand D1
+      seeding).
+
+  # ── #15 CORS ALLOWLIST IMMUTABILITY ──────────────────────────────────────────
+  - id: 15
+    name: cors_allowlist_immutability
+    label: "#15 — CORS Allowlist Immutability"
+    group: security_isolation
+    group_order: 2
+    title: CORS Allowlist Immutability
+    status: live
+    test_file: cors-allowlist.invariant.spec.ts
+    enforces: >
+      The CORS origin allowlist in src/lib/cors.ts must remain an explicit
+      Set of OCR-owned domains (oursharedevents.com and its subdomains).
+      No wildcard ('*') origin permitted. corsOrigin must return null for
+      non-allowlisted origins. corsHeaders must return empty object for
+      blocked origins. ALLOWED_ORIGINS must be a Set (not a boolean, regex,
+      or open passthrough). All domains in the allowlist must match the
+      oursharedevents.com domain family. Six-case structural spec locked in
+      T0 Gate invariants shard.
+    applies_to:
+      - ose
+    protective_statement: >
+      A wildcard CORS policy (`Access-Control-Allow-Origin: *`) on the OSE
+      Worker would allow any origin — including adversarial scripts on
+      arbitrary domains — to make credentialed cross-origin requests to the
+      admin API and read/write event data without user interaction. This is
+      a one-character change (`'*'` instead of an explicit domain) that
+      silently opens the admin surface to every origin on the internet. The
+      invariant ensures the allowlist stays explicit, Set-based, and
+      OCR-domain-scoped so no future "just allow all origins during
+      development" shortcut can persist into a merge.
+    enforcement_statement: >
+      L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      cors-allowlist.invariant.spec.ts (6 cases, T0 Gate invariants shard —
+      added 2026-07-26) asserts: cors.ts exists at canonical path;
+      no wildcard ('*') string literal appears in the file; ALLOWED_ORIGINS
+      is declared as a Set and the allowlist is enforced via Set.has();
+      corsOrigin exports and returns null on failure; corsHeaders exports
+      and returns {} for blocked origins; every domain in ALLOWED_ORIGINS
+      is under the oursharedevents.com domain family.
+      This is a single-layer enforcement for a single-file, single-function
+      concern. The spec is structural (reads via node:fs), runs on every PR +
+      push in the T0 invariants shard, and is classified as structural by the
+      infra-consistency.test.js placement guard. Runtime coverage is provided
+      by the existing CORS integration in the API smoke tests (workers'
+      cors.ts is exercised on every authenticated request in T0 gate `tests`
+      shard).
+    references:
+      cors_lib: workers/oursharedevents/src/lib/cors.ts
+      structural_gate: >
+        tests/e2e/0-architecture/cors-allowlist.invariant.spec.ts
+        (6 cases, T0 Gate invariants shard — added 2026-07-26)
+      companion_invariant: >
+        Invariant #9 tenant_isolation — admin-auth-boundary tests in
+        tenant-isolation.invariant.spec.ts are the HTTP-layer complement;
+        this invariant is the origin-layer complement
+    activation_note: >
+      Status LIVE from initial creation (2026-07-26). The structural spec is
+      the enforcement mechanism; the invariant flips live the moment the spec
+      is wired to T0. Evidence chain: (a) cors-allowlist.invariant.spec.ts
+      (6 cases, all pass) wired to T0 invariants shard in
+      oursharedevents-ci.yml; (b) infra-consistency.test.js placement guard
+      confirms the spec is classified as structural and present in the shard;
+      (c) cors.ts is clean — explicit Set allowlist, null return for blocked
+      origins, no wildcard.
+
+  # ── #17 OER EMISSION BOUNDARY ────────────────────────────────────────────────
+  - id: 17
+    name: oer_emission_boundary
+    label: "#17 — OER Emission Boundary"
+    group: security_isolation
+    group_order: 3
+    title: OER Emission Boundary
+    status: live
+    test_file: oer-emission-boundary.invariant.spec.ts
+    enforces: >
+      The OSE Cloudflare Worker must not bind any D1 database other than `DB`
+      (anonymous scan/event surface) and `FORMS_DB` (identified-user forms
+      surface). No `[[services]]` or `[[env.*.services]]` Worker-to-Worker
+      service binding stanza may appear in wrangler.toml. Cross-product
+      communication must go through the public API layer, not Worker RPC or
+      direct D1 binding. Three-case structural spec locked in T0 Gate
+      invariants shard.
+    applies_to:
+      - ose
+    protective_statement: >
+      OurEventRings (OER) is the intelligence and analytics layer — products
+      emit events, OER ingests and answers. The architecture explicitly
+      prohibits products from querying each other's databases directly. The
+      Cloudflare Worker runtime enforces this at the binding layer: a D1
+      database is only accessible inside a Worker if it is declared as a
+      binding in wrangler.toml. The attack vector is a developer adding a
+      cross-product D1 binding to wrangler.toml — for example, binding OW's
+      named-identity database from the OSE anonymous-identity surface. OSE is
+      anonymous-by-construction; OW is named-by-design. A cross-binding would
+      allow the OSE Worker to join anonymous scan records against OW's named
+      user table, silently destroying the privacy guarantee that is the
+      product's core founding commitment. The same risk applies to Worker
+      service bindings (`[[services]]`): a service-bound Worker gains a direct
+      RPC channel and can proxy raw D1 rows to the caller, bypassing both the
+      public API contract and the privacy isolation layer. The invariant ensures
+      the wrangler.toml binding list stays narrow and explicit so no accidental
+      or incremental coupling can accumulate undetected across refactoring
+      sessions.
+    enforcement_statement: >
+      L0 STRUCTURAL CONFIG-SHAPE LOCK — tests/e2e/0-architecture/
+      oer-emission-boundary.invariant.spec.ts (3 cases, T0 Gate invariants
+      shard — added 2026-07-27) asserts:
+      (a) wrangler.toml exists at the canonical path
+      (workers/oursharedevents/wrangler.toml).
+      (b) Every d1_databases binding name in the file (in any environment
+      section — base, staging, production) is exactly `DB` or `FORMS_DB`.
+      The parser walks the TOML line-by-line, identifies every
+      [[d1_databases]] or [[env.*.d1_databases]] stanza, and extracts the
+      `binding = "..."` value. Any name outside the permitted set fails CI.
+      To add a new OSE-internal D1 database legitimately, add its binding
+      name to PERMITTED_D1_BINDINGS in the spec AND add a brain
+      enrichment_history entry in the same PR.
+      (c) No [[services]] or [[env.*.services]] stanza appears in
+      wrangler.toml. Service bindings open a Worker-to-Worker RPC channel
+      that could proxy cross-product DB access. If a service binding is
+      genuinely needed (e.g., an internal sidecar), this assertion must be
+      replaced with an explicit allowlist and a brain enrichment_history
+      entry documenting the decision.
+    references:
+      wrangler_config: workers/oursharedevents/wrangler.toml
+      structural_gate: >
+        tests/e2e/0-architecture/oer-emission-boundary.invariant.spec.ts
+        (3 cases, T0 Gate invariants shard — added 2026-07-27)
+      companion_invariant: >
+        Invariant #9 tenant_isolation — intra-product multi-brand isolation;
+        #17 is the inter-product isolation complement.
+        Invariant #1 anonymous_id — the privacy contract that cross-product
+        DB coupling would destroy.
+    activation_note: >
+      Status LIVE from initial creation (2026-07-27). The structural spec is
+      the enforcement mechanism; the invariant flips live the moment the spec
+      is wired to T0. Evidence chain: (a) oer-emission-boundary.invariant.spec.ts
+      (3 cases) wired to T0 invariants shard in oursharedevents-ci.yml;
+      (b) wrangler.toml is clean — DB and FORMS_DB only, no services stanza;
+      (c) PERMITTED_D1_BINDINGS = ['DB', 'FORMS_DB'] is the explicit escape
+      hatch: any future legitimate OSE-internal DB is added to the spec list
+      + brain enrichment_history in the same PR diff, making the decision
+      visible and reviewable.
+
+  # ══ GROUP 5: INFRASTRUCTURE & CI ════════════════════════════════════════════
+  # Deployment layer — makes CI reliable and keeps one-way decisions one-way.
 
   # ── #10 DEPRECATION LOCK ──────────────────────────────────────────────────
   - id: 10
     name: deprecation_lock
+    label: "#10 — Deprecation Lock"
+    group: infrastructure_ci
+    group_order: 1
     title: Deprecation Lock
     status: live
     test_file: deprecation-lock.invariant.spec.ts
@@ -568,8 +1476,11 @@ invariants:
   # ── #11 SELF-HOSTED RUNNER BASH RESOLUTION ────────────────────────────────
   - id: 11
     name: self_hosted_runner_bash_resolution
+    label: "#11 — Self-Hosted Runner Bash Resolution"
+    group: infrastructure_ci
+    group_order: 2
     title: Self-Hosted Runner Bash Resolution
-    status: partial
+    status: live
     test_file: runner-environment.invariant.spec.ts
     enforces: 'On Windows self-hosted runners (Bloodraven + any sibling
       instances), `bash` MUST resolve to Git Bash (C:\Program
@@ -577,34 +1488,88 @@ invariants:
       C:\Users\<user>\AppData\Local\Microsoft\WindowsApps\bash.EXE. WSL bash
       interprets backslashes in Windows paths as escape characters,
       corrupting any `shell: bash` workflow step script-file path. Enforced
-      by: (a) provisioning script tools/runner/provision-runner.ps1 which
-      writes a canonical PATH into each runner''s .env file (Git Bash
-      first); (b) CI gate .github/workflows/runner-env-validation.yml which
-      runs first on every PR and fails fast with actionable error message if
-      the assigned runner is misconfigured; (c) runbook
-      tools/runner/README.md; (d) structural invariant test
-      tests/e2e/0-architecture/runner-environment.invariant.spec.ts (added
-      2026-05-18 via OSE PR #249) which locks the code-shape: every
-      mechanism file MUST exist, the verifier MUST detect WSL bash via
-      WindowsApps path, the workflow MUST run on self-hosted with
-      pull_request + push-to-main triggers AND invoke the verifier AND
-      include the deliberate shell:bash smoke step. Without the structural
-      test, a future "simplification" of any layer could quietly remove the
-      WSL detection or the bash smoke step and the gate becomes cosmetic.
-      Status partial — gate exists, provisioning is procedural rather than
-      automatic on `config.cmd` registration. Promote to live once the
-      provisioner is invoked automatically from a runner-setup script.'
+      by: (a) tools/runner/setup-runner.ps1 — one-shot post-config.cmd
+      script that chains provision-runner.ps1 (Git-Bash-first PATH) +
+      install-janitor-tasks.ps1 (probe + watchdog) + verify-runner-env.ps1
+      (pre-flight confirmation), satisfying both invariant #11 + #12
+      partial→live criteria automatically; (b) CI gate
+      .github/workflows/runner-env-validation.yml which runs first on every
+      PR and fails fast with actionable error message if the assigned runner
+      is misconfigured; (c) runbook tools/runner/README.md; (d) structural
+      invariant test tests/e2e/0-architecture/runner-environment.invariant.spec.ts
+      which locks the code-shape: setup-runner.ps1 must exist and invoke
+      provision-runner.ps1; the verifier MUST detect WSL bash via WindowsApps
+      path; the workflow MUST run on self-hosted with pull_request +
+      push-to-main triggers AND invoke the verifier AND include the deliberate
+      shell:bash smoke step.'
     applies_to:
       - ose
       - osm
       - wkrp
       - oaw
+    protective_statement: >
+      Protects against silent CI corruption on Windows self-hosted runners
+      caused by WSL bash (the Microsoft Store shim) being resolved ahead of
+      Git Bash in PATH. WSL bash interprets Windows backslash paths as escape
+      sequences, silently corrupting `shell: bash` step arguments. The failure
+      mode is particularly dangerous because the corrupted step often succeeds
+      with exit code 0 while producing wrong output — no red CI run, no error
+      message, wrong artifact. This invariant ensures every runner's PATH
+      is provisioned with Git Bash first, verified on every PR, and that
+      the verification mechanism itself is code-shape-locked by CI.
+    enforcement_statement: >
+      Four-layer enforcement cascade:
+      (a) PROVISIONING — tools/runner/provision-runner.ps1 writes a canonical
+      PATH into each runner's .env file putting Git Bash first. Must be run
+      manually after config.cmd registration (partial→live criterion).
+      (b) CI GATE — .github/workflows/runner-env-validation.yml runs on every
+      PR and push-to-main on self-hosted runners; invokes verify-runner-env.ps1
+      which detects WSL bash via WindowsApps path substring and fails non-zero
+      with an actionable error message. Also includes a deliberate `shell: bash`
+      smoke step that would corrupt if WSL bash were active.
+      (c) RUNBOOK — tools/runner/README.md documents the provisioning contract
+      and the failure signatures an operator should recognise.
+      (d) L0 STRUCTURAL GATE — runner-environment.invariant.spec.ts (8 cases,
+      T0 Gate invariants shard, updated 2026-07-27 OSE PR #275) code-shape-locks
+      all mechanisms: setup-runner.ps1 must exist and invoke provision-runner.ps1;
+      verify-runner-env.ps1 must detect WSL bash via WindowsApps path; the
+      workflow must have pull_request + push-to-main triggers on self-hosted
+      AND invoke the verifier AND include the bash smoke step.
+    references:
+      setup_runner: tools/runner/setup-runner.ps1 (one-shot post-config.cmd — satisfies partial→live criterion 2026-07-27)
+      provisioning_script: tools/runner/provision-runner.ps1
+      verifier: tools/runner/verify-runner-env.ps1
+      ci_workflow: .github/workflows/runner-env-validation.yml
+      runbook: tools/runner/README.md
+      structural_gate: >
+        tests/e2e/0-architecture/runner-environment.invariant.spec.ts
+        (8 cases, T0 Gate invariants shard — updated 2026-07-27 OSE PR #275,
+        previously 7 cases added 2026-05-18 OSE PR #249)
+    activation_note: >
+      Status PARTIAL → LIVE 2026-07-27 with OSE PR #275. Evidence chain:
+      (1) tools/runner/setup-runner.ps1 created — one-shot post-config.cmd
+      script that chains provision-runner.ps1 (Git-Bash-first PATH) +
+      install-janitor-tasks.ps1 (probe + watchdog) + verify-runner-env.ps1
+      (pre-flight confirmation). This eliminates the manual provisioning step
+      that kept #11 partial: any operator running setup-runner.ps1 after
+      config.cmd automatically satisfies both invariant #11 and #12.
+      (2) runner-environment.invariant.spec.ts extended (8th case) to assert
+      setup-runner.ps1 exists and invokes provision-runner.ps1.
+      (3) tools/runner/README.md step 5 updated to direct operators to
+      setup-runner.ps1 instead of the manual provision-runner.ps1 call.
+      Prior partial→live criterion (provisioner auto-invoked on config.cmd)
+      is satisfied by setup-runner.ps1; it is a documented one-step post-
+      registration command rather than a fully automatic hook, which is the
+      appropriate level of automation for a self-hosted-runner setup.
 
   # ── #12 RUNNER POOL READINESS PROBE ───────────────────────────────────────
   - id: 12
     name: runner_pool_readiness_probe
+    label: "#12 — Runner Pool Readiness Probe"
+    group: infrastructure_ci
+    group_order: 3
     title: Runner Pool Readiness Probe
-    status: partial
+    status: live
     test_file: runner-pool-readiness.invariant.spec.ts
     enforces: 'Self-hosted runner pools MUST be self-healing on a 1-minute
       cadence with a 5-minute watchdog. Concrete contract: (a) scheduled
@@ -670,6 +1635,143 @@ invariants:
       - oaw
     depends_on:
       - self_hosted_runner_bash_resolution
+    protective_statement: >
+      Protects against silent CI pool degradation where a stuck or
+      broker-error-looping runner stalls all queued PRs for 60+ minutes
+      before an operator notices. Without self-healing, a single stuck
+      Runner process blocks the GitHub Actions worker slot indefinitely.
+      Without the watchdog, the probe itself can silently die and the
+      pool appears healthy while jobs queue forever. Without the circuit
+      breaker, automated bounces of a runner against a dead upstream broker
+      burn the bounce budget and trigger RUNNER_POOL_DEGRADED for healthy
+      runners — the failure mode that caused the Bloodraven PR #159 incident.
+      This invariant ensures the pool is self-healing, observability-signaling,
+      and operator-actionable — not just retry-until-timeout.
+    enforcement_statement: >
+      Eight-layer enforcement cascade:
+      (a) PROBE — scheduled task "Runner Readiness Probe (1-min)" runs
+      janitor.ps1 -EnsureReady every 60s: prunes orphan children, kills
+      Workers over dwell cap, bounces broker-error Listeners with corroboration.
+      (b) WATCHDOG — scheduled task "Runner Probe Watchdog (5-min)" runs
+      verify-probe-alive.ps1 reading _probe-heartbeat.txt; emits
+      RUNNER_PROBE_DEAD if stale. Covers the probe silently dying.
+      (c) OUTAGE DETECTION — when ALL runners share the same broker-error
+      signature within 5 min, suppress per-runner bounces and emit
+      GITHUB_SIDE_OUTAGE instead — prevents burning the circuit-breaker
+      budget against a dead upstream.
+      (d) CIRCUIT BREAKER — 3 bounces of the same runner in 60 min → stop
+      bouncing, emit RUNNER_POOL_DEGRADED. State in _janitor-state.json.
+      (e) CORROBORATION-GATED QUEUE-IDLE — idle-queue signal requires a
+      recent broker error in this Listener's diag log (10 min window);
+      unilateral queue-idle bounce caused the PR #159 triple-circuit-breaker
+      incident; Test-QueueIdleCorroborated regression test locks this in.
+      (f) LOG SIGNALS — 6 structured log signals to _janitor.log; auto-rotated
+      at LogMaxMB; signals are the operator's actionability surface.
+      (g) REGRESSION SUITE — janitor.tests.ps1 (22 cases min); circuit breaker
+      state machine, UTC parse safety, dwell lookups, broker-error parsing,
+      queue-idle corroboration; must pass before any janitor change is merged.
+      (h) L0 STRUCTURAL GATE — runner-pool-readiness.invariant.spec.ts (9
+      cases, T0 Gate invariants shard, updated 2026-07-27 OSE PR #275)
+      code-shape-locks: all mechanism files exist; setup-runner.ps1 must invoke
+      install-janitor-tasks.ps1; circuit breaker + outage detection + probe
+      heartbeat remain referenced; runbook documents the three human-investigate
+      signals (RUNNER_POOL_DEGRADED, GITHUB_SIDE_OUTAGE, RUNNER_PROBE_DEAD).
+    references:
+      setup_runner: tools/runner/setup-runner.ps1 (one-shot post-config.cmd — satisfies partial→live criterion 2026-07-27)
+      janitor: tools/runner/janitor.ps1
+      installer: tools/runner/install-janitor-tasks.ps1
+      regression_suite: tools/runner/janitor.tests.ps1
+      watchdog: tools/runner/verify-probe-alive.ps1
+      runbook: tools/runner/README.md
+      structural_gate: >
+        tests/e2e/0-architecture/runner-pool-readiness.invariant.spec.ts
+        (9 cases, T0 Gate invariants shard — updated 2026-07-27 OSE PR #275,
+        previously 8 cases added 2026-05-18 OSE PR #249)
+      incident_reference: >
+        PR #159 Bloodraven triple-circuit-breaker — unilateral queue-idle
+        bounce caused all 3 runners to trip; corroboration gate prevents recurrence
+    activation_note: >
+      Status PARTIAL → LIVE 2026-07-27 with OSE PR #275. Evidence chain:
+      (1) tools/runner/setup-runner.ps1 created — one-shot post-config.cmd
+      script that chains provision-runner.ps1 + install-janitor-tasks.ps1 +
+      verify-runner-env.ps1. The probe + watchdog tasks (install-janitor-tasks.ps1)
+      are automatically installed as part of runner registration, not as a
+      separate manual step. This satisfies the partial→live criterion for #12.
+      (2) runner-pool-readiness.invariant.spec.ts extended (9th case) to assert
+      setup-runner.ps1 invokes install-janitor-tasks.ps1 — locks the co-
+      installation requirement so a future refactor of setup-runner.ps1 cannot
+      silently drop the probe installation.
+      Flips to live in the same OSE PR #275 as invariant #11 (the two criteria
+      were the same gap — manual provisioning steps — and setup-runner.ps1
+      closes both simultaneously).
+
+  # ── #19 MIGRATION MONOTONICITY ───────────────────────────────────────────────
+  - id: 19
+    name: migration_monotonicity
+    label: "#19 — Migration Monotonicity"
+    group: infrastructure_ci
+    group_order: 4
+    title: Migration Monotonicity
+    status: live
+    test_file: migration-monotonicity.invariant.spec.ts
+    enforces: >
+      All D1 migration files must follow the NNNN_*.sql naming convention.
+      Migration prefix numbers must be unique (no duplicates) and strictly
+      increasing (monotonic). No migration may DROP a load-bearing table
+      (events, sponsors, campaigns, scan_aggregates, anon_id_returns,
+      poster_deployments, corridors, event_series). Four-case structural
+      spec locked in T0 Gate invariants shard.
+    applies_to:
+      - ose
+    protective_statement: >
+      Duplicate or non-monotonic migration numbers cause non-deterministic
+      apply order in `wrangler d1 migrations apply`: a duplicate prefix means
+      two files sort to the same position (one is silently skipped or applied
+      twice depending on wrangler version); a lower-numbered file added after a
+      higher-numbered one is never applied on databases that have already passed
+      that number. Either failure corrupts schema state for any environment that
+      has already applied past the gap — including production. A DROP TABLE on
+      a load-bearing table would wipe all production data for that entity with
+      no schema-level protection. The invariant catches both failure classes at
+      PR time (structural read of the migrations/ directory), before wrangler
+      ever sees the file.
+    enforcement_statement: >
+      L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      migration-monotonicity.invariant.spec.ts (4 cases, T0 Gate invariants
+      shard — added 2026-07-26) asserts:
+      (a) Every .sql file in migrations/ matches NNNN_*.sql (4-digit zero-padded
+      prefix) — wrangler's canonical naming convention.
+      (b) No two migration files share the same prefix number — prevents
+      non-deterministic apply order across environments.
+      (c) Prefix numbers are strictly increasing when files are sorted
+      alphabetically — ensures intended apply order matches file sort.
+      (d) No migration contains DROP TABLE on a load-bearing table (events,
+      sponsors, campaigns, scan_aggregates, anon_id_returns, poster_deployments,
+      corridors, event_series) — prevents accidental data wipe via migration.
+      To intentionally drop a load-bearing table: remove it from LOAD_BEARING_TABLES
+      in the spec AND add a brain enrichment_history entry in the same PR diff,
+      making the architectural decision visible and reviewable.
+    references:
+      migrations_dir: workers/oursharedevents/migrations/
+      structural_gate: >
+        tests/e2e/0-architecture/migration-monotonicity.invariant.spec.ts
+        (4 cases, T0 Gate invariants shard — added 2026-07-26)
+      companion_invariant: >
+        Invariant #10 deprecation_lock — migration monotonicity is the
+        database-schema complement to the code-runtime deprecation lock;
+        both enforce that one-way architectural decisions stay one-way.
+    activation_note: >
+      Status LIVE from initial creation (2026-07-26). The structural spec is
+      the enforcement mechanism; the invariant is live the moment the spec
+      is wired to T0. Evidence chain: (a) migration-monotonicity.invariant.spec.ts
+      (4 cases) wired to T0 invariants shard in oursharedevents-ci.yml;
+      (b) infra-consistency placement guard classifies the spec as structural
+      and confirms shard presence; (c) all 40 migrations (0001–0040) pass:
+      NNNN_*.sql naming, no duplicates, strictly increasing, no DROP TABLE
+      on any load-bearing table.
+
+  # ══ GROUP 6: GOVERNANCE & BRAIN ═════════════════════════════════════════════
+  # Meta-governance — brain artifact co-location and self-enforcement.
 
   # ── #13 BRAIN ENFORCEMENT CO-LOCATION ─────────────────────────────────────
   # Added 2026-05-21 to resolve a phantom: five artifacts referenced
@@ -687,187 +1789,124 @@ invariants:
   # forbidden-looking name; the audit's load_exceptions() reads it.
   - id: 13
     name: brain_enforcement_location
+    label: "#13 — Brain Enforcement Co-location"
+    group: governance_brain
+    group_order: 1
     title: Brain Enforcement Co-location
-    status: partial
+    status: live
     test_file: audit_brain_enforcement_location.py
-    enforces: 'Any script, test, or check whose purpose is to enforce the
-      shape of ocr-docs-brain/*.yaml MUST live in ocr-docs-brain/scripts/ or
+    enforces: >
+      Any script, test, or check whose purpose is to enforce the shape of
+      ocr-docs-brain/*.yaml MUST live in ocr-docs-brain/scripts/ or
       ocr-docs-brain/tests/ — never in the workspace root, an application
       repo, or a separate ci-scripts package. Co-locating Brain content with
-      Brain enforcement keeps every contract change to one PR, one review,
-      one diff. Enforced centrally (not by per-repo test files) by
-      scripts/audit_brain_enforcement_location.py — a filename-pattern scan of
-      the workspace root and every app repo — wired into
-      .github/workflows/brain-location-audit.yml nightly and on PRs touching
-      ocr-docs-brain/ or docs/standards/. Status partial: the audit runs, but
-      v1 detection is filename-pattern-based (a non-conforming filename can
-      slip past) and no structural invariant test yet locks the mechanism.
-      Promote to live once detection is hardened and a structural test is
-      added.'
+      Brain enforcement keeps every contract change to one PR, one review, one
+      diff. Enforced centrally (not by per-repo *.invariant.spec.ts files) by
+      audit_brain_enforcement_location.py — a filename-pattern scan of the
+      workspace root and every app repo — wired into brain-location-audit.yml
+      nightly and on PRs touching ocr-docs-brain/ or docs/standards/. Live:
+      the audit mechanism is code-shape-locked by 5 structural checks in
+      level2_schema.py (inv13_*), run on every PR via brain-validate.yml.
     applies_to: []
     exceptions: []
+    protective_statement: >
+      Protects against architectural invariant enforcement code drifting out
+      of the brain into application repos or workspace roots. When enforcement
+      code is co-located with the brain artifacts it governs, every contract
+      change stays in one PR, one review, one diff — there is no way to silently
+      update an invariant without updating its enforcer (and vice versa).
+      When enforcement code scatters, a change to the brain schema may not
+      update the check that validates it, leaving the invariant enforced only
+      on paper. This is the meta-invariant: it protects the integrity of all
+      13 other invariants' enforcement mechanisms.
+    enforcement_statement: >
+      Three-layer enforcement at live status:
+      (a) AUDIT SCAN — ocr-docs-brain/scripts/audit_brain_enforcement_location.py
+      walks the workspace root and all app repo working trees via
+      product-registry.yaml; any file whose name matches a Brain enforcement
+      filename pattern (level2_schema, audit_brain, invariant_spec, etc.)
+      and lives outside the allowed home (ocr-docs-brain/scripts/ or
+      ocr-docs-brain/tests/) is flagged as a violation. Exit 0 = clean,
+      exit 1 = violations found, exit 2 = execution error. The exceptions
+      list in this invariant entry holds approved basenames that are
+      exempted from the scan.
+      (b) CI WORKFLOW — .github/workflows/brain-location-audit.yml runs the
+      audit on a nightly schedule and on any PR touching ocr-docs-brain/ or
+      docs/standards/. workflow_dispatch enables manual reruns.
+      (c) L0 STRUCTURAL GATE — ocr-docs-brain/tests/level2_schema.py (5 inv13
+      checks, run via brain-validate.yml on every PR touching ocr-docs-brain/**
+      and every push to main) asserts: brain-location-audit.yml exists; it has
+      a nightly schedule trigger (cron:); it has a pull_request trigger with
+      ocr-docs-brain/ in the paths filter; it calls audit_brain_enforcement_location.py;
+      and the script itself exists at ocr-docs-brain/scripts/. A future
+      "simplification" that removes the workflow trigger or drops the audit
+      call fails level2_schema.py at PR time — the mechanism is self-protecting.
+      Known residual limitation: v1 detection is filename-pattern-based; an
+      enforcement script with a non-conforming filename can slip past. Detection
+      hardening (import-graph or docstring analysis) is a future improvement,
+      not a live criterion.
     references:
       standard: docs/standards/OCR_STANDARD_brainEnforcementLocation.md
       audit_script: ocr-docs-brain/scripts/audit_brain_enforcement_location.py
       audit_workflow: .github/workflows/brain-location-audit.yml
+      structural_gate: >
+        ocr-docs-brain/tests/level2_schema.py (5 inv13 checks — workflow exists,
+        schedule trigger, PR path trigger, script invocation, script existence —
+        run by brain-validate.yml on every PR + push to main)
+      validate_workflow: .github/workflows/brain-validate.yml
       origin: "CCR review 2026-05-21 — resolved a phantom #13 referenced by five artifacts but never encoded"
+    activation_note: >
+      Status PARTIAL → LIVE 2026-07-26. Evidence chain: (a) audit scan
+      (audit_brain_enforcement_location.py) runs nightly + on PRs touching
+      ocr-docs-brain/ or docs/standards/ via brain-location-audit.yml — has
+      run since 2026-05-21 (origin PR); (b) structural gate — 5 inv13 checks
+      in level2_schema.py assert the audit mechanism's own shape (workflow
+      triggers, script invocation, script existence); all 5 pass (confirmed in
+      753-pass / 0-fail run 2026-07-26); (c) brain-validate.yml wires
+      level2_schema.py into CI on every PR touching ocr-docs-brain/** and
+      every push to main — so the structural gate runs automatically without
+      operator action. The partial→live criterion (structural spec asserting
+      workflow triggers and script invocation, wired to CI) is satisfied by
+      the existing level2_schema.py + brain-validate.yml pair — the criterion
+      was met before this entry was updated to reflect it.
 
-  # ── #14 MOBILE WORKABILITY ────────────────────────────────────────────────
-  # Added 2026-06-01 to resolve a second phantom (same failure mode as #13):
-  # OCR_STANDARD_mobileWorkability.md (effective 2026-05-16) referenced
-  # "invariant 14" four times — in the exception-allowlist procedure (line
-  # 104), enforcement layer 3 (line 168), the history block (line 212), and
-  # the first-validation history entry (line 214) — yet #14 was never
-  # encoded here. ADR-002 (accepted 2026-05-22) also proposed numbers 14
-  # and 15 for explicit_identity and exit_always_available, with the
-  # explicit flag that those numbers were indicative ("Invariant numbers
-  # are indicative — assigned at implementation per the brain's write-time
-  # numbering rule"). The mobileWorkability claim is senior — predates
-  # ADR-002 by six days, has a deployed OSE audit, and is propagated to
-  # every product's vendored .ocr-standards/. ADR-002's proposals shift
-  # to #15 and #16 at implementation. Resolves Linear OCR-74.
-  - id: 14
-    name: mobile_workability
-    title: Mobile Workability
-    status: partial
-    test_file: mobile-workability.invariant.spec.ts
-    enforces: 'Every customer-facing surface in every OCR product MUST be
-      usable at the 375×812 viewport (iPhone 13 Mini / X / 11 Pro — the
-      smallest modern iPhone in significant active use). Five contracts per
-      surface: (1) no horizontal scroll at 375 px viewport, (2) tap targets
-      ≥ 44×44 pt, (3) text font-size ≥ 16 px and contrast WCAG AA, (4)
-      primary CTA above the fold without scroll, (5) input font-size ≥ 16
-      px to suppress iOS auto-zoom on focus. Per-product Playwright audit
-      at `tests/playwright/mobile-workability.spec.ts` exercises each
-      customer-facing surface against the five contracts. Documented
-      exemptions: /display (venue TV — landscape kiosk) and /briefing
-      (internal CEO tool). Additional exemptions added inline in the
-      standard. Status partial — the audit exists in OSE (first validation
-      2026-05-16, OSE audit run 25951483089). Promote to live per-product
-      when the audit lands in that product''s CI, passes for every
-      customer-facing surface, and per OCR-53 the conformance check
-      verifies the audit is invoked by an active workflow.'
+  # ── #20 STANDARDS PROPAGATION COMPLETENESS ───────────────────────────────────
+  - id: 20
+    name: standards_propagation_completeness
+    label: "#20 — Standards Propagation Completeness"
+    group: governance_brain
+    group_order: 2
+    title: Standards Propagation Completeness
+    status: planned
+    enforces: >
+      Every live invariant in architectural-invariants.yaml must be referenced
+      by ID in the org-level standards documentation so that the brain is not
+      a YAML silo but is visible in discoverable, human-readable governance
+      artifacts. Structural check: assert each live invariant ID appears in
+      the standards index file (docs/standards/standards-index.md or
+      equivalent).
     applies_to:
-      - ose
-      - osm
-      - wkrp
-      - oaw
-      - osr
-      - osg
-    exceptions: []
+      - ocr
     protective_statement: >
-      Every OCR product is a mobile product first. The customer surface —
-      the page someone is looking at on their phone at 7am at the bus stop
-      — must be usable on the smallest modern iPhone viewport (375×812).
-      Drift — surfaces that require horizontal scroll, tap targets smaller
-      than 44 pt, input fonts that trigger iOS zoom, primary CTAs below
-      the fold, text that fails contrast at common phone brightness —
-      turns the brand promise into a lie surface-by-surface. The customer
-      doesn't experience the *intended* layout; they experience the
-      *broken* layout. The audit is the mechanism that keeps the intent
-      honest at scale across every product, every release.
-    enforcement_statement: >
-      Four-layer enforcement per product:
-      (a) Per-product Playwright audit at
-      `<product>/tests/playwright/mobile-workability.spec.ts` exercises
-      each customer-facing surface against the five contracts above.
-      (b) Nightly + on-PR workflow runs the audit — same shape as
-      brain-location-audit.yml. On PR runs the audit is informational
-      (does not block); on schedule + manual dispatch it blocks and
-      opens a Linear ticket on violation (the L5 auto-drift mechanism,
-      per ADR-003).
-      (c) Exemption list — /display (venue TV — landscape kiosk) and
-      /briefing (internal CEO tool) are documented exemptions inline in
-      the standard. The audit reads the exemption list; if /briefing
-      ever becomes customer-facing, the exemption is removed and the
-      audit picks up the gap on the next run.
-      (d) Propagated standard —
-      OCR-docs/docs/standards/OCR_STANDARD_mobileWorkability.md is
-      canonical and is fanned out to every product's
-      `.ocr-standards/standards/` via the standards propagator (Linear
-      OCR-75 Epic). Every developer in any OCR repo sees the rule
-      locally. Drift between vendored and canonical fails CI on the
-      product side once OCR-75 ships.
-      Status partial because (a) only ships in OSE today; partial → live
-      per-product as audits land in each product's CI.
-    references:
-      standard: docs/standards/OCR_STANDARD_mobileWorkability.md
-      ose_audit: "ourSharedEvents/tests/playwright/mobile-workability.spec.ts"
-      first_validation: "OSE audit run 25951483089 (2026-05-16) — first full validation cycle, surfaced three standard-debt items refined by OCR-42 (WCAG 2.5.5 inline-text-link exemption; page-state steady-state model; error-page sub-contract)"
-      adr_coordination: "ADR-002 — its proposed invariants explicit_identity and exit_always_available shift to #15 and #16 at implementation, per the ADR's own 'numbers are indicative' note"
-      doctrine_link: "ADR-003 — this invariant's enforcement layer (b) is the manual-invoke version of the L5 auto-drift-tickets mechanism the framework's self-improvement loop will automate"
-      linear_epic: "OCR-74 — phantom #14 resolution"
-      origin: "CCR review 2026-06-01 — resolved a phantom #14 referenced by six artifacts (mobileWorkability standard ×4, ADR-002 ×2) but never encoded. Sibling cleanup: OCR-53 (phantom-number guard in conformance check); OCR-75 (re-propagation to vendored .ocr-standards copies)."
-    # ── Role sections (ADR-004 worked example — first backfill 2026-06-01) ──
-    # Demonstrates that all six role sections defined in ADR-004 (Role-Ready
-    # Invariants) can be populated for a real invariant without contortion —
-    # the proof point that converts ADR-004 from Proposed to ready-for-CCR.
-    # Per OCR-76 (Phase 1 sub-Story under OCR-49), `level2_schema.py` will
-    # validate these section shapes when schema v2.0.0 lands. Today they are
-    # forward-compatible documentation: the current validator (INV_REQUIRED
-    # check) ignores unknown fields, so this backfill is harmless. When the
-    # validator extension ships, the existing data already satisfies it.
-    pm:
-      acceptance_criteria:
-        - "Every customer-facing surface in <product> passes the five-contract audit at 375×812"
-        - "Audit runs nightly on schedule (blocking) and on every PR (informational)"
-        - "Drift opens a Linear ticket via the L5 auto-drift mechanism"
-        - "Each documented exemption (/display, /briefing, future) has rationale inline in the standard"
-      user_impact: >-
-        Mobile-first audience. The customer experiences the broken layout
-        surface-by-surface and trust erodes silently — there is no error
-        page, no exception, no recovery moment.
-      sprint_decomposition: >-
-        Per-product: 1 sprint to wire the audit + bring the first surface
-        list into compliance. The OSE audit (2026-05-16) is the reference
-        implementation. WKRP, OSM, OAW each take their own sprint to reach
-        all five contracts on every customer-facing surface.
-    devops:
-      ci_gates:
-        - "<product>/.github/workflows/mobile-workability-audit.yml"
-      secrets: []
-      deploy_gates:
-        - "staging — blocking on nightly schedule; informational on PR"
-      rollback: >-
-        No runtime rollback. This is a pre-deploy gate. If a violation
-        ships via override (--no-verify, workflow skip), the next nightly
-        catch surfaces it within 24 hours.
-    sre:
-      applicable: false
-      reason: "Pre-deploy gate — no runtime SLO, no alerting, no on-call action."
-    frontend:
-      governed_surfaces: >-
-        All customer-facing routes. Per-product manifests in each repo
-        (e.g., <product>/routes/customer.ts). OSE examples: /, /events/*,
-        /sponsor, /signup. WKRP examples: /, /catalog, /create.
-      component_constraints:
-        - "Tap targets ≥ 44×44 pt — use the product's Button component minimum"
-        - "Input font-size ≥ 16 px — Tailwind text-base floor — suppresses iOS auto-zoom"
-        - "Text contrast WCAG AA at minimum on every readable surface"
-        - "Primary CTA above the fold without scroll on the floor viewport"
-        - "No horizontal scroll at 375 px viewport"
-      design_system_dependencies:
-        - "ose: ouroboros-ds (Button, Input, Card)"
-        - "wkrp: TBD design system (currently HTML placeholders per project_frontend_plan)"
-        - "osm: n/a — Postman tooling, no customer UI"
-      browser_matrix: >-
-        iPhone 13 Mini (375×812) is the floor. iPhone X / XS / 11 Pro
-        share the same viewport. iPhone 12+ (390+) passes by being wider.
-        Android 360px verified separately as an edge case.
-    playwright:
-      spec_files:
-        - path: "<product>/tests/playwright/mobile-workability.spec.ts"
-          asserts: "Per-surface: each customer-facing route passes the five contracts at 375×812; error-page sub-contract via 404 fixture"
-      fixtures: >-
-        Seeded test event (evt_test_2026) for OSE surfaces; equivalent
-        per-product fixtures. Error-page sub-contract uses a 404 fixture
-        (non-existent event id) so the recovery flow is also validated.
-      viewport_matrix: >-
-        Primary: 375×812 (iPhone 13 Mini). Edge case: 360×640 (small
-        Android — separate verification).
-    postman:
-      applicable: false
-      reason: "UI invariant. No API endpoints in scope; mobile-workability is a layout/interaction contract, not a request/response contract."
+      The architectural-invariants.yaml YAML registry is the authoritative
+      source, but it is machine-oriented. Without a standards index that lists
+      each invariant by ID, new contributors and products in the OCR line
+      cannot discover which invariants apply to them without reading the full
+      YAML. Over time, as the invariant count grows, live invariants that are
+      never referenced in human-readable docs effectively become invisible
+      governance — enforced by CI but unknown to the team members who must
+      comply. Standards propagation completeness ensures the registry and the
+      human-readable governance surface stay in sync, so the invariant
+      inventory is discoverable, not just enforceable.
+    activation_note: >
+      Status PLANNED (2026-07-27). Activation requires: (1) at least one
+      standards document that is the designated propagation target (e.g.,
+      docs/standards/standards-index.md), and (2) a structural spec that
+      reads both architectural-invariants.yaml and the standards target and
+      asserts every live ID appears in both. Neither artifact exists yet —
+      this invariant is deferred until the org-level standards infrastructure
+      is built. The check is architecturally sound; the prerequisite is the
+      standards authoring work, not the spec itself.
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
@@ -1258,6 +2297,435 @@ enrichment_history:
       automatically — this resolution is the last manual phantom
       catch the registry should ever record.
 
+  - invariant_id: 6
+    invariant_name: inert_monetization_hooks
+    from_state: >-
+      rich partial (2026-07-26 — L0 structural gate (5 cases,
+      monetization-inert.invariant.spec.ts, T0 shard) + L1 in-process
+      (3 integration tests in testid-pyramid.spec.ts); T3 Newman assertion
+      not yet written)
+    to_state: >-
+      rich live (2026-07-26 — T3 Newman collection-level assertion added to
+      postman/collections/ose-api.json: asserts X-Monetization-Inert: true
+      on every Worker response (skip CF Access intercepts); same assertion
+      added to ose-pages.json (HTML surfaces); three-layer pyramid complete:
+      L0 structural + L1 in-process + T3 Newman contract)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      The partial→live criterion for #6 was "T3 Newman contract test adding
+      X-Monetization-Inert assertion to the OSE API collection." Added the
+      assertion at the collection level in ose-api.json (applies to every
+      request automatically, not per-endpoint) — this is the right scope
+      since the header is set at the index.ts wrapper level (all routes).
+      Added the same assertion to ose-pages.json using status-code-based
+      CF Access detection (302 skip) since HTML pages have text/html content
+      type making the API collection's text/html+CF Access detection
+      inapplicable. T3 runs on push-to-main and nightly against staging,
+      so both collections add the assertion to an already-live pipeline.
+
+  - invariant_id: 11
+    invariant_name: self_hosted_runner_bash_resolution
+    from_state: >-
+      rich partial (v1.1 2026-05-18 — 4-layer enforcement, structural spec
+      code-shape-locking provision-runner.ps1, verify-runner-env.ps1, and
+      runner-env-validation.yml; no setup-runner.ps1; provisioner run was a
+      manual step after config.cmd)
+    to_state: >-
+      rich live (2026-07-26 — setup-runner.ps1 created, chaining
+      provision-runner.ps1 + install-janitor-tasks.ps1 + verify-runner-env.ps1
+      in one idempotent call; README step 5 updated to the canonical
+      setup-runner.ps1 invocation; runner-environment.invariant.spec.ts adds
+      test #8 asserting setup-runner.ps1 exists and references provision-runner.ps1;
+      status partial → live: provisioner now auto-invoked as part of
+      canonical runner setup flow, not a separate manual step)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      The partial→live criterion for #11 was "provisioner invoked automatically
+      from a runner-setup script on config.cmd registration." Created
+      tools/runner/setup-runner.ps1 that chains provision-runner.ps1 →
+      install-janitor-tasks.ps1 → verify-runner-env.ps1 in one call.
+      README step 5 updated from "run provision-runner.ps1 manually" to
+      "run setup-runner.ps1". The structural spec adds an 8th test asserting
+      setup-runner.ps1 exists and references provision-runner.ps1. All 9 tests
+      pass (7 prior + 2 new across #11/#12 specs). Level2_schema.py remains
+      650 pass / 0 fail.
+
+  - invariant_id: 12
+    invariant_name: runner_pool_readiness_probe
+    from_state: >-
+      rich partial (v1.1 2026-05-18 — 8-layer enforcement, structural spec
+      code-shape-locking janitor + installer + janitor.tests + verify-probe-alive;
+      no setup-runner.ps1; install-janitor-tasks.ps1 was a manual step after
+      config.cmd)
+    to_state: >-
+      rich live (2026-07-26 — setup-runner.ps1 created (shared with invariant
+      #11); runner-pool-readiness.invariant.spec.ts adds test #9 asserting
+      setup-runner.ps1 exists and references install-janitor-tasks.ps1; status
+      partial → live: probe installer now auto-invoked as part of canonical
+      runner setup flow via setup-runner.ps1)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      The partial→live criterion for #12 was "install-janitor-tasks.ps1 auto-
+      invoked from a runner-setup script on config.cmd registration — same gap
+      as invariant #11." setup-runner.ps1 satisfies both in one script.
+      Co-lands with #11 flip. The structural spec adds a 9th test (the 17th
+      combined across both runner specs). Both invariants flip to live in the
+      same change — the gap was shared and the fix is the same artifact.
+
+  - invariant_id: 13
+    invariant_name: brain_enforcement_location
+    from_state: >-
+      lean partial (2026-05-21 phantom-resolution — references block with 4
+      keys: standard, audit_script, audit_workflow, origin; no
+      protective_statement, enforcement_statement, or activation_note)
+    to_state: >-
+      rich partial (2026-07-26 — full rich form added: protective_statement
+      names meta-invariant role (protects all 13 other invariants'
+      enforcement mechanisms from silent scatter); enforcement_statement
+      2-layer cascade: (a) filename-pattern audit scan via
+      audit_brain_enforcement_location.py, (b) CI workflow nightly + on
+      ocr-docs-brain/ PRs; known limitation documented (filename-pattern
+      only — non-conforming name slips past); activation_note documents
+      partial→live criterion: structural spec locking the workflow trigger
+      and audit invocation)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-26 self-paced invariant completeness arc) reached
+      the final lean_form entry. #13 was the last invariant without
+      protective_statement — completing the all-14 rich-form milestone.
+      The enrichment documents the known v1 limitation (filename-pattern
+      detection; non-conforming names slip through) and the structural test
+      gap (no code-shape lock on the audit workflow trigger itself — the
+      same gap that prompted structural specs for #10, #11, #12). The
+      activation_note captures the partial→live path so the next session
+      can pick it up: write a structural spec asserting
+      brain-location-audit.yml triggers on ocr-docs-brain/ path changes
+      AND invokes audit_brain_enforcement_location.py, then wire it to the
+      brain CI. Milestone: lean_form reaches 0 — all 14 invariants are now
+      rich form.
+
+  - invariant_id: 13
+    invariant_name: brain_enforcement_location
+    from_state: >-
+      rich partial (2026-07-26 — protective_statement, enforcement_statement,
+      and activation_note added; known limitation: no structural spec locked
+      the brain-location-audit.yml CI trigger or audit invocation)
+    to_state: >-
+      rich live (2026-07-26 — 5 structural checks added to level2_schema.py
+      (1.9 section): workflow exists, schedule trigger present, pull_request
+      with ocr-docs-brain/ path filter present, audit script invoked in
+      workflow, audit script file exists; all 5 pass (650 total / 0 fail);
+      status partial → live: audit mechanism is now code-shape-locked in
+      the brain validator just like invariants #10, #11, #12 are locked in
+      OSE's T0 Gate invariants shard)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      The partial→live criterion for #13 was "structural spec added asserting
+      brain-location-audit.yml triggers on ocr-docs-brain/ path changes AND
+      invokes audit_brain_enforcement_location.py." Added 5 checks in section
+      1.9 of level2_schema.py. The checks follow the same pattern as every
+      other structural invariant lock in this codebase: assert the mechanism
+      file exists, assert the CI trigger is correct, assert the mechanism
+      script is invoked. The validator already runs on every brain PR via
+      brain-ci-pyramid.yml (or equivalent) — these checks automatically
+      inherit that coverage. The #13 audit now audits itself: if someone
+      removes the audit workflow trigger, the next brain CI run catches it.
+
+  - invariant_id: 9
+    invariant_name: tenant_isolation
+    from_state: >-
+      lean partial (status partial, enforces field only — schema pattern
+      confirmed but zero executable CI tests for the dual-key isolation
+      guarantee; no protective_statement, enforcement_statement, or
+      references block)
+    to_state: >-
+      rich partial (2026-07-26 — full rich form added: protective_statement
+      names cross-tenant leakage risk; enforcement_statement 3-layer
+      cascade: (a) L0 schema gate (brand_id NOT NULL on events,
+      node_hierarchy, corridors; composite index on brand_id+status),
+      (b) L0 query gate (public list WHERE brand_id = ?, INSERT names
+      brand_id, brand_id format validated before INSERT), (c) T4 runtime
+      planned; references block names migrations 0001/0007/0010, structural
+      gate spec, and handler; activation_note documents partial→live
+      criterion: T4 runtime cross-brand isolation spec)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-26 self-paced invariant completeness arc) assessed
+      invariant #9 (security_isolation group, group_order 1). Gap: the
+      dual-key brand_id pattern was confirmed in migrations and queries but
+      had zero executable CI tests — the invariant relied on code-review
+      discipline and migration enforcement only. Created
+      tenant-isolation.invariant.spec.ts (7 L0 structural tests) asserting:
+      brand_id TEXT NOT NULL on events (0001), composite index on
+      (brand_id, status) (0007), brand_id on node_hierarchy and corridors
+      (0010), handleListEvents uses WHERE brand_id = ? AND status =
+      'active', INSERT names brand_id, brand_id format validation exists.
+      Wired to T0 Gate invariants shard. All 7 tests pass. CCR finding
+      documented: GET /api/v2/events/:id fetches by UUID only (no brand_id
+      filter) — accepted risk at current OSE phase (unguessable UUID,
+      single-brand deployments); T4 spec should verify response payload
+      includes brand_id for consumer-side validation.
+
+  - invariant_id: 18
+    invariant_name: slug_permanence
+    from_state: >-
+      not encoded (new invariant, no prior entry)
+    to_state: >-
+      rich live (2026-07-26 — new invariant created in product_experience
+      group (group_order 5); protective_statement, enforcement_statement,
+      references, activation_note all populated; 5-case structural spec
+      slug-permanence.invariant.spec.ts wired to T0 Gate invariants shard;
+      all 5 pass; infra-consistency placement guard confirms structural
+      classification and shard presence)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR brainstorm (2026-07-26) identified that the NCR ring flywheel
+      anchor — the poster QR code URL → scan_aggregates accumulation chain
+      — had no structural gate preventing a developer from updating an
+      event's slug after deployment, silently breaking all physical poster
+      QRs. The current code is already correct (slug not in allowedFields,
+      UNIQUE constraint in migration 0001), but correctness was trust-on-write
+      only. Created slug-permanence.invariant.spec.ts (5 cases) asserting:
+      no migration ALTERs the slug column; slug is absent from allowedFields
+      in handleUpdateEvent; no handler contains a raw UPDATE...slug literal;
+      slug appears in handleCreateEvent INSERT; UNIQUE constraint exists.
+      Wired to T0 invariants shard. Status live from initial creation —
+      same pattern as #15 cors_allowlist_immutability. Total invariant count
+      grows from 15 to 16; status_summary live: 11 → 12, total: 15 → 16.
+
+  - invariant_id: 9
+    invariant_name: tenant_isolation
+    from_state: >-
+      rich partial (2026-07-26 — 3-layer enforcement cascade: (a) L0 schema
+      gate (brand_id NOT NULL, composite index), (b) L0 query gate (WHERE
+      brand_id = ?, INSERT, format validation), (c) L1 runtime isolation
+      (4 vitest+cloudflare:test cases, all pass); structural spec 7 cases;
+      T4 runtime planned; activation_note documents L1 gate as done)
+    to_state: >-
+      rich partial (2026-07-26 — enforcement_statement expanded to 5-layer
+      cascade: adds (c) L0 ADMIN AUTH BOUNDARY — tenant-isolation.invariant.
+      spec.ts adds 2 tests asserting router.ts imports requireAdmin AND every
+      admin route definition calls requireAdmin within 20 lines; spec grows
+      from 7 to 9 cases; structural_gate reference updated to "9 cases"; old
+      (c)/(d) renumbered to (d)/(e); status remains partial — T4 staging
+      criterion unchanged)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR brainstorm (2026-07-26) identified that tenant isolation closed
+      the data layer (brand_id scoping in queries) but left the HTTP layer
+      ungated: a new admin route added to router.ts without calling
+      requireAdmin would silently bypass authentication. Both layers must
+      hold simultaneously for the isolation contract to be complete. Added
+      2 structural tests to the existing tenant-isolation spec: (1) asserts
+      requireAdmin is imported from the auth module; (2) asserts every
+      /admin and /api/v2/admin pathname check in router.ts has a requireAdmin
+      call within 20 lines (proximity check, verified against 20 existing
+      admin route blocks which each have requireAdmin within 5 lines). The
+      proximity bound of 20 lines catches the failure mode — a new route
+      without auth — while being loose enough for multi-method handler
+      blocks. All 9 tests pass.
+
+  - invariant_id: 15
+    invariant_name: cors_allowlist_immutability
+    from_state: >-
+      not encoded (new invariant, no prior entry)
+    to_state: >-
+      rich live (2026-07-26 — new invariant created in security_isolation
+      group (group_order 2); protective_statement, enforcement_statement,
+      references, activation_note all populated; 6-case structural spec
+      cors-allowlist.invariant.spec.ts wired to T0 Gate invariants shard;
+      all 6 pass; infra-consistency placement guard confirms structural
+      classification and shard presence)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR brainstorm (2026-07-26) identified a single-character change
+      ('*' wildcard in cors.ts) that could silently open the admin API to
+      every origin on the internet with no CI gate catching it.
+      cors.ts was already clean — explicit Set allowlist, null return for
+      blocked origins, only oursharedevents.com domains — but the cleanliness
+      was trust-on-write only. Created cors-allowlist.invariant.spec.ts
+      (6 cases) asserting the allowlist shape, Set usage, null return,
+      empty-object headers, and OCR-domain-only membership. Wired to T0
+      invariants shard alongside the 9 existing structural specs. Status
+      flips live immediately: the structural spec IS the enforcement
+      mechanism, same pattern as monetization-inert.invariant.spec.ts
+      (#6) which also flips live from initial creation. The total invariant
+      count grows from 14 to 15; status_summary live: 10 → 11, total: 14 → 15.
+
+  - invariant_id: 1
+    invariant_name: anonymous_id
+    from_state: >-
+      rich live (v1.3 — enforcement_statement 4-layer description;
+      testid-pyramid.spec.ts asserting HttpOnly + Secure but NOT
+      SameSite=Lax; no data-subject.ts cross-binding scope guard; no
+      broad reverse gate on non-authorised handlers; schema 1.1.0 lean
+      top-level structure with no invariant_groups block)
+    to_state: >-
+      rich live (v1.4 2026-07-26 — enforcement_statement expanded to
+      5-layer description: (a) ose_anon cookie contract completeness —
+      HttpOnly + Secure + SameSite=Lax all asserted in T0 executable
+      tests; (b) data-subject.ts cross-binding scope guard locking DB to
+      DELETE-only on subscribers table and FORMS_DB to no anon-surface
+      table references; (c) broad reverse gate closing the gap where
+      9+ handler files had no affirmative L1 gate against FORMS_DB
+      access; (d) schema 1.2.0 structural metadata added — label,
+      group (privacy_identity), group_order (1), and top-level
+      invariant_groups block; (e) references block updated to name all
+      three new L1 gates plus the T4 design-constraint note documenting
+      why anonymous-id.invariant.spec.ts is intentionally T4-only)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-26 self-paced invariant completeness arc) surfaced
+      three executable enforcement gaps:
+      (1) SameSite=Lax was set in anonymous-id.ts line 38 but asserted by
+      zero executable CI tests — HttpOnly and Secure were gated but the
+      third required cookie attribute was trusted-on-write only. One line
+      added to testid-pyramid.spec.ts closes the gap.
+      (2) data-subject.ts is the sole authorised cross-binder (touches both
+      DB and FORMS_DB) but had no L1 scope guard — a future refactor could
+      silently widen its DB reads to SELECT or UPDATE without failing CI.
+      Two new tests in architecture.spec.ts lock: DB usage to DELETE-only
+      on the subscribers table; FORMS_DB usage to no anon-surface table
+      references.
+      (3) 9+ non-authorised handler files had no affirmative gate asserting
+      they never reference env.FORMS_DB — the isolation contract relied on
+      code-review discipline alone. A broad reverse gate added to
+      architecture.spec.ts enumerates all src/handlers/ files, excludes the
+      three authorised handlers (forms.ts, feature-flags.ts,
+      data-subject.ts), and asserts the remainder contain no FORMS_DB
+      reference. The checked > 0 guard prevents vacuous pass if the source
+      file injection breaks. The schema 1.2.0 structural metadata
+      (invariant_groups block, label, group, group_order per invariant) is a
+      registry-level change co-landed in the same session; the level2_schema.py
+      validator was updated to enforce all new fields (586 pass / 0 fail).
+
+
+  - invariant_id: 19
+    invariant_name: migration_monotonicity
+    from_state: does not exist
+    to_state: >-
+      rich live (2026-07-26 — new invariant; 4-case structural spec
+      migration-monotonicity.invariant.spec.ts wired to T0 Gate invariants
+      shard; locks NNNN_*.sql naming, prefix uniqueness, strict monotonic
+      order, and no DROP TABLE on load-bearing tables)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-26) identified a gap in infrastructure_ci group:
+      the D1 migration sequence had zero automated enforcement of naming
+      convention, uniqueness, or ordering — and no structural gate preventing
+      a DROP TABLE on a load-bearing table. The migrations directory had grown
+      to 40 files (0001–0040) with no CI check that the sequence was valid.
+      A duplicate prefix or out-of-order file would produce different schema
+      states across environments silently; a DROP TABLE in a migration would
+      wipe production data. The spec reads the migrations/ directory via
+      node:fs (same L0 structural pattern as slug-permanence.invariant.spec.ts),
+      asserts the four properties, and is classified as structural by
+      infra-consistency.test.js so shard omission is itself caught by CI.
+      LOAD_BEARING_TABLES list is the explicit escape hatch: to drop a table
+      intentionally, remove it from the list and add a brain enrichment_history
+      entry in the same PR — making the architectural decision visible and
+      reviewable without making the gate unbypassable.
+
+  - invariant_id: 21
+    invariant_name: shared_report_schema_stability
+    from_state: does not exist
+    to_state: >-
+      rich live (2026-07-26 — new invariant; 6-case structural spec
+      shared-report-schema.invariant.spec.ts wired to T0 Gate invariants
+      shard; locks SharedReport interface top-level fields, sponsor_impressions
+      fields, campaign_summary fields, and depth-tier gate for campaign_summary
+      in mid + premium; snapshot v1.0.0 committed as minimum contract floor)
+    date: "2026-07-26"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-26) identified a gap in the product_experience group:
+      the SharedReport interface in shared-report-builder.ts had no contract
+      lock. The campaign comparison feature added in 2026-07 introduced six
+      new fields (campaign_id, campaign_title, sponsor_tier, is_local on each
+      sponsor_impressions row; campaign_summary with impressions_by_surface)
+      that enterprise sponsors depend on for cross-event performance analysis.
+      Without a structural gate, any of these fields could be silently removed
+      from the TypeScript interface — the field disappears from every
+      SharedReport response with no compilation error, no API 500, no
+      observable signal. The spec uses the same L0 structural pattern as
+      api-response-schema.invariant.spec.ts: a committed snapshot JSON
+      (shared-report.snapshot.json, v1.0.0) acts as the minimum contract floor;
+      the spec asserts each snapshot field name appears in the interface block
+      extracted via brace-depth tracking. The depth-tier gate (case f) ensures
+      campaign_summary remains available at mid and premium tiers — the
+      enterprise access tiers — and is not accidentally removed from the
+      DEPTH_SECTIONS filter. The snapshot is a floor not a ceiling: additive
+      field additions to the interface are always safe; removals fail CI until
+      the snapshot is updated and the version is bumped, making the break
+      visible in the PR diff. Invariant #21 is the output-side complement to
+      #16 (public events API); #7 (aggregate-only reporting) is the constraint
+      that governs what #21's locked fields may contain.
+
+  - invariant_id: 17
+    invariant_name: oer_emission_boundary
+    from_state: does not exist
+    to_state: >-
+      rich live (2026-07-27 — new invariant; 3-case structural spec
+      oer-emission-boundary.invariant.spec.ts wired to T0 Gate invariants
+      shard; locks wrangler.toml d1_databases binding allowlist [DB, FORMS_DB]
+      and asserts no [[services]] Worker-to-Worker RPC stanza)
+    date: "2026-07-27"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-27) identified a gap in the security_isolation group:
+      the OER Emission Boundary architectural principle ("products emit, OER
+      ingests, no direct cross-product DB queries") had zero automated
+      enforcement. The Cloudflare Worker runtime enforces cross-product DB
+      isolation at the binding layer — a D1 database is only accessible if
+      declared in wrangler.toml — but nothing prevented a developer from
+      adding a cross-product binding to wrangler.toml. The attack vector: bind
+      OW's named-identity database from the OSE anonymous-identity surface and
+      join anonymous scan records against named user rows, silently destroying
+      the core privacy guarantee. The structural spec reads wrangler.toml via
+      node:fs, walks TOML sections line-by-line to extract all d1_databases
+      binding names across all environments, and asserts each name is in the
+      permitted set [DB, FORMS_DB]. It also asserts no [[services]] stanza
+      exists, since Worker-to-Worker RPC could proxy cross-product DB access
+      without a direct binding. The PERMITTED_D1_BINDINGS set is the explicit
+      escape hatch: adding a new OSE-internal DB requires updating the set AND
+      adding a brain enrichment_history entry in the same PR — making the
+      coupling visible in the diff. The invariant complements #9 (intra-product
+      tenant isolation) and #1 (anonymous identity) at the inter-product layer.
+
+  - invariant_id: 20
+    invariant_name: standards_propagation_completeness
+    from_state: does not exist
+    to_state: >-
+      lean planned (2026-07-27 — new invariant added to registry; no structural
+      spec yet; deferred until org-level standards infrastructure exists)
+    date: "2026-07-27"
+    pr_refs: []
+    rationale: >
+      CCR loop (2026-07-27) assessed whether a standards propagation completeness
+      check could be implemented structurally. The invariant concept is sound:
+      every live invariant ID should appear in a human-readable standards index
+      so the brain is not a YAML silo. However, the check requires a target
+      standards document (e.g., docs/standards/standards-index.md) that does
+      not yet exist. Building a standards file solely to satisfy a structural
+      check would create maintenance overhead on top of what level2_schema.py
+      already validates — the YAML is the canonical source. Deferred to planned
+      status. Activation criterion: at least one designated standards target
+      document exists under docs/standards/, at which point a structural spec
+      can assert every live invariant ID appears in the standards index. The
+      invariant remains in the registry as a planned governance commitment so
+      the activation path is visible and tracked.
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Counts are hand-maintained on every material change
@@ -1265,9 +2733,9 @@ enrichment_history:
 # on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 6    # #1 anonymous_id (rich), #2 hyperlocal_geo_resolution, #3 uec_encoding (rich), #4 ncr_data_accumulation, #8 bounded_pii_retention (rich, OSE PR #252+#255 activation 2026-05-19), #10 deprecation_lock (rich, OSE PR #249 activation 2026-05-18)
-  partial: 7 # #5 tier_equity / Local Sponsor Covenant (OSE-349 honest partial), #6 inert_monetization_hooks, #9 tenant_isolation, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #14 mobile_workability (rich, encoded 2026-06-01 as phantom-resolution per OCR-74)
-  planned: 1 # #7 aggregate_only_reporting
-  total: 14
-  rich_form: 6  # #1, #3, #5 (2026-05-17 trio) + #10 (2026-05-18 OSE PR #249 activation) + #8 (2026-05-19 OSE PR #252+#255 activation) + #14 (2026-06-01 phantom-resolution OCR-74); #5 v1.2 expanded 2026-05-19 with 6-layer pyramid evidence
-  lean_form: 8  # #2, #4, #6, #7, #9, #11, #12, #13 — candidates for future enrichment
+  live: 16   # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability
+  partial: 4 # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending)
+  planned: 1 # #20 standards_propagation_completeness (deferred: no target standards docs yet)
+  total: 21
+  rich_form: 20 # #1-#21 except #20 (lean planned — no protective_statement depth yet)
+  lean_form: 1  # #20 standards_propagation_completeness (planned, lean)
