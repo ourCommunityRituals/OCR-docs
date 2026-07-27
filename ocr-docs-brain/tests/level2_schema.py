@@ -14,7 +14,7 @@ Validates these brain artifacts:
   - event-phase-contract.yaml (optional)
   - uec-codes.yaml (added 2026-05-17 with OSE-319 / OSE-318 brain artifact)
 """
-import sys, yaml
+import sys, re, yaml
 from pathlib import Path
 
 BRAIN = Path(__file__).parent.parent if (Path(__file__).parent.parent / 'product-registry.yaml').exists() \
@@ -46,7 +46,7 @@ TOP_KEYS = {
     'tier-gates.yaml':           ['schema_version', 'tiers', 'phase_gates'],
     'corridor-definitions.yaml': ['schema_version', 'hierarchy', 'founding_corridors'],
     'event-taxonomy.yaml':       ['schema_version', 'total_types_v1', 'categories'],
-    'architectural-invariants.yaml': ['schema_version', 'invariants'],
+    'architectural-invariants.yaml': ['schema_version', 'invariant_groups', 'invariants'],
 }
 for fname, keys in TOP_KEYS.items():
     data = load(fname)
@@ -118,11 +118,14 @@ for cat in et.get('categories', []):
 # ---------------------------------------------------------------------------
 # 1.5 — Invariant records: required fields and enum validation (LEAN form)
 # ---------------------------------------------------------------------------
-INV_REQUIRED = ['id', 'name', 'title', 'status', 'test_file', 'enforces', 'applies_to']
+INV_REQUIRED = ['id', 'name', 'label', 'group', 'group_order', 'title', 'status', 'test_file', 'enforces', 'applies_to']
+# planned invariants do not have a spec yet — test_file is deferred until activation
+INV_REQUIRED_PLANNED = [f for f in INV_REQUIRED if f != 'test_file']
 INV_STATUS_ENUM = ['live', 'partial', 'planned']
 for i in inv.get('invariants', []):
     iid = i.get('id', '?')
-    missing = [f for f in INV_REQUIRED if f not in i]
+    req = INV_REQUIRED_PLANNED if i.get('status') == 'planned' else INV_REQUIRED
+    missing = [f for f in req if f not in i]
     check(f'invariant_required:#{iid}', not missing,
           f'missing {missing}' if missing else 'complete')
     status = i.get('status')
@@ -370,6 +373,111 @@ for i in inv.get('invariants', []):
                 tname = type_spec if isinstance(type_spec, str) else type_spec.__name__
                 check(f'invariant_role_type:#{iid}.{role}.{key}', ok,
                       f'{key}: failed type check ({tname})' if not ok else 'ok')
+
+# ---------------------------------------------------------------------------
+# 1.5f — invariant_groups block validation (schema 1.2.0, added 2026-07-26)
+# ---------------------------------------------------------------------------
+# Top-level invariant_groups defines the six order-of-operations groups.
+# Required per entry: id (str), title (str), order (positive int),
+# description (non-empty str). Group IDs and order values must both be unique.
+# valid_group_ids is built here and consumed by 1.5g below.
+GROUP_REQUIRED = ['id', 'title', 'order', 'description']
+groups = inv.get('invariant_groups', [])
+check('invariant_groups_present',
+      isinstance(groups, list) and len(groups) > 0,
+      f'{len(groups)} group(s)' if isinstance(groups, list) and len(groups) > 0
+      else f'expected non-empty list, got {type(groups).__name__}')
+
+valid_group_ids = set()
+if isinstance(groups, list):
+    for g in groups:
+        gid = g.get('id', '?') if isinstance(g, dict) else '?'
+        if not isinstance(g, dict):
+            check(f'invariant_group_is_dict:{gid}', False,
+                  f'expected dict, got {type(g).__name__}')
+            continue
+        missing_g = [f for f in GROUP_REQUIRED if f not in g]
+        check(f'invariant_group_required:{gid}', not missing_g,
+              f'missing {missing_g}' if missing_g else 'complete')
+        gorder = g.get('order')
+        check(f'invariant_group_order_type:{gid}',
+              isinstance(gorder, int) and gorder > 0,
+              f'order = {gorder!r} (expected positive int)'
+              if not (isinstance(gorder, int) and gorder > 0) else f'{gorder}')
+        gdesc = g.get('description')
+        check(f'invariant_group_description_type:{gid}',
+              isinstance(gdesc, str) and len(gdesc.strip()) > 10,
+              'expected non-empty str (>10 chars)'
+              if not (isinstance(gdesc, str) and len(gdesc.strip()) > 10) else 'ok')
+        valid_group_ids.add(gid)
+
+    gids_all = [g.get('id') for g in groups if isinstance(g, dict)]
+    check('invariant_group_ids_unique',
+          len(gids_all) == len(set(gids_all)),
+          f'duplicate group IDs: {[x for x in gids_all if gids_all.count(x) > 1]}'
+          if len(gids_all) != len(set(gids_all)) else f'{len(gids_all)} unique')
+
+    gorders_all = [g.get('order') for g in groups
+                   if isinstance(g, dict) and isinstance(g.get('order'), int)]
+    check('invariant_group_orders_unique',
+          len(gorders_all) == len(set(gorders_all)),
+          f'duplicate group orders: {[x for x in gorders_all if gorders_all.count(x) > 1]}'
+          if len(gorders_all) != len(set(gorders_all)) else f'{len(gorders_all)} unique')
+
+# ---------------------------------------------------------------------------
+# 1.5g — per-invariant group fields validation (schema 1.2.0, added 2026-07-26)
+# ---------------------------------------------------------------------------
+# Every invariant must carry: label (str, "#N — Title"), group (str referencing
+# a known invariant_groups id), group_order (positive int unique within group).
+# label number must match the invariant's own id. group_order values must not
+# collide within the same group (two invariants in the same group cannot share
+# a position).
+LABEL_PATTERN = re.compile(r'^#\d+ — .+$')  # em dash U+2014
+group_order_seen: dict = {}  # group_id -> set of group_order values used
+
+for i in inv.get('invariants', []):
+    iid = i.get('id', '?')
+
+    # label format: "#N — Title"
+    label = i.get('label')
+    label_ok = isinstance(label, str) and bool(LABEL_PATTERN.match(label))
+    check(f'invariant_label_format:#{iid}', label_ok,
+          f'label = {label!r} (expected "#N — Title" format)'
+          if not label_ok else label)
+
+    # label number must match invariant id
+    if label_ok and isinstance(iid, int):
+        label_num_str = label[1:].split('—')[0].strip()
+        try:
+            label_num = int(label_num_str)
+            check(f'invariant_label_id_match:#{iid}', label_num == iid,
+                  f'label #{label_num} does not match invariant id {iid}'
+                  if label_num != iid else f'#{iid} matches')
+        except ValueError:
+            check(f'invariant_label_id_match:#{iid}', False,
+                  f'label number {label_num_str!r} is not an integer')
+
+    # group must reference a known group ID
+    group = i.get('group')
+    check(f'invariant_group_ref:#{iid}',
+          group in valid_group_ids,
+          f'group = {group!r} not in known groups {sorted(valid_group_ids)}'
+          if group not in valid_group_ids else group)
+
+    # group_order must be a positive int, unique within its group
+    group_order = i.get('group_order')
+    check(f'invariant_group_order_type:#{iid}',
+          isinstance(group_order, int) and group_order > 0,
+          f'group_order = {group_order!r} (expected positive int)'
+          if not (isinstance(group_order, int) and group_order > 0) else f'{group_order}')
+    if isinstance(group, str) and isinstance(group_order, int) and group_order > 0:
+        if group not in group_order_seen:
+            group_order_seen[group] = set()
+        dup = group_order in group_order_seen[group]
+        check(f'invariant_group_order_unique:#{iid}', not dup,
+              f'group_order {group_order} already used in group "{group}"'
+              if dup else f'group_order {group_order} in "{group}"')
+        group_order_seen[group].add(group_order)
 
 # ---------------------------------------------------------------------------
 # 1.6 — Corridor definitions: required fields per founding corridor
@@ -695,6 +803,47 @@ else:
     # OSE-330 Phase 2 makes the artifact load-bearing for the OSE-side resolver)
     check('sponsor_alloc_file_present', True,
           f'{SPONSOR_ALLOC_FILE} not yet present (soft-pass; becomes hard once OSE-330 Phase 2 ships)')
+
+# ---------------------------------------------------------------------------
+# 1.9 — Invariant #13 CI lock: brain-location-audit.yml structural gate
+# Asserts the workflow that enforces invariant #13 has the correct trigger
+# paths and invokes the audit script — so the enforcement mechanism is
+# code-shape-locked just like invariants #10, #11, #12.
+# ---------------------------------------------------------------------------
+AUDIT_WORKFLOW = BRAIN.parent / '.github' / 'workflows' / 'brain-location-audit.yml'
+
+check(
+    'inv13_audit_workflow_exists',
+    AUDIT_WORKFLOW.exists(),
+    f'brain-location-audit.yml must exist at {AUDIT_WORKFLOW}'
+)
+
+if AUDIT_WORKFLOW.exists():
+    _wf_text = AUDIT_WORKFLOW.read_text(encoding='utf-8')
+
+    check(
+        'inv13_audit_workflow_schedule_trigger',
+        'schedule:' in _wf_text and 'cron:' in _wf_text,
+        'brain-location-audit.yml must have a nightly schedule trigger (cron:)'
+    )
+
+    check(
+        'inv13_audit_workflow_pr_path_trigger',
+        'ocr-docs-brain/' in _wf_text and 'pull_request:' in _wf_text,
+        'brain-location-audit.yml must trigger on pull_request with ocr-docs-brain/ path filter'
+    )
+
+    check(
+        'inv13_audit_workflow_invokes_script',
+        'audit_brain_enforcement_location.py' in _wf_text,
+        'brain-location-audit.yml must invoke audit_brain_enforcement_location.py'
+    )
+
+    check(
+        'inv13_audit_script_exists',
+        (BRAIN / 'scripts' / 'audit_brain_enforcement_location.py').exists(),
+        'ocr-docs-brain/scripts/audit_brain_enforcement_location.py must exist'
+    )
 
 # ---------------------------------------------------------------------------
 # REPORT
