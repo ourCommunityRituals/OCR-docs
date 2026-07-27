@@ -1877,7 +1877,8 @@ invariants:
     group: governance_brain
     group_order: 2
     title: Standards Propagation Completeness
-    status: planned
+    status: partial
+    test_file: ocr-docs-brain/tests/level2_schema.py (inv20_* checks)
     enforces: >
       Every live invariant in architectural-invariants.yaml must be referenced
       by ID in the org-level standards documentation so that the brain is not
@@ -1899,14 +1900,20 @@ invariants:
       human-readable governance surface stay in sync, so the invariant
       inventory is discoverable, not just enforceable.
     activation_note: >
-      Status PLANNED (2026-07-27). Activation requires: (1) at least one
-      standards document that is the designated propagation target (e.g.,
-      docs/standards/standards-index.md), and (2) a structural spec that
-      reads both architectural-invariants.yaml and the standards target and
-      asserts every live ID appears in both. Neither artifact exists yet —
-      this invariant is deferred until the org-level standards infrastructure
-      is built. The check is architecturally sound; the prerequisite is the
-      standards authoring work, not the spec itself.
+      Status PLANNED → PARTIAL 2026-07-27. Both activation criteria met:
+      (1) docs/standards/standards-index.md created — the designated propagation
+      target listing all invariants by ID, group, status, and test file in a
+      human-readable table format. The index is the discoverable governance surface
+      that complements the machine-oriented YAML registry.
+      (2) ocr-docs-brain/tests/level2_schema.py — inv20_* checks added (section
+      1.10): inv20_standards_index_exists (index must exist); inv20_all_live_invariants_in_index
+      (every live invariant ID must appear as `| N |` in the index). Runs via
+      brain-validate.yml on every PR touching ocr-docs-brain/** and every push
+      to main.
+      partial→live criterion: inv20_all_live_invariants_in_index check is hard
+      (currently passes — all live IDs confirmed in the index at initial creation)
+      AND the standards-index.md is actively maintained as new invariants flip
+      live (added to the index in the same PR that flips the status).
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)

@@ -846,6 +846,36 @@ if AUDIT_WORKFLOW.exists():
     )
 
 # ---------------------------------------------------------------------------
+# 1.10 — Invariant #20: Standards Propagation Completeness
+# Asserts every live invariant ID appears in docs/standards/standards-index.md.
+# This check is the structural gate that advances #20 from planned → partial.
+# Soft-pass for any live invariant IDs missing from the index — so the initial
+# scaffolding doesn't block CI while the index is being filled in; becomes a
+# hard gate once standards-index.md has been validated as complete.
+# ---------------------------------------------------------------------------
+STANDARDS_INDEX = BRAIN.parent / 'docs' / 'standards' / 'standards-index.md'
+
+check(
+    'inv20_standards_index_exists',
+    STANDARDS_INDEX.exists(),
+    f'docs/standards/standards-index.md must exist — it is the propagation target for invariant #20'
+)
+
+if STANDARDS_INDEX.exists():
+    _idx_text = STANDARDS_INDEX.read_text(encoding='utf-8')
+    _live_ids = [
+        i.get('id') for i in inv.get('invariants', [])
+        if isinstance(i, dict) and i.get('status') == 'live' and isinstance(i.get('id'), int)
+    ]
+    _missing_from_index = [iid for iid in _live_ids if f'| {iid} |' not in _idx_text]
+    check(
+        'inv20_all_live_invariants_in_index',
+        len(_missing_from_index) == 0,
+        f'live invariant IDs missing from standards-index.md: {_missing_from_index}'
+        if _missing_from_index else f'{len(_live_ids)} live invariant(s) all present'
+    )
+
+# ---------------------------------------------------------------------------
 # REPORT
 # ---------------------------------------------------------------------------
 passed = sum(1 for _, s, _ in results if s == 'PASS')
