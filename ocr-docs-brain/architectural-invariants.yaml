@@ -1915,6 +1915,57 @@ invariants:
       AND the standards-index.md is actively maintained as new invariants flip
       live (added to the index in the same PR that flips the status).
 
+  # ── #22 CROSS-REPO IMPORT ISOLATION ───────────────────────────────────────
+  - id: 22
+    name: cross_repo_import_isolation
+    label: "#22 — Cross-Repo Import Isolation"
+    group: security_isolation
+    group_order: 6
+    title: Cross-Repo Import Isolation
+    status: live
+    test_file: scripts/check-cross-repo-imports.sh (OSE repo)
+    enforces: >
+      No module-level import (import/require/file:/workspace: dependency)
+      may cross the OSE / WKRP / OAW repo boundary. The only permitted
+      cross-repo data flow is the OER aggregation boundary: the HTTP API
+      seam at GET /api/events/:id/music (WKRP exposes, OSE calls via HTTP
+      fetch). Shared OCR packages (@ocr/flags, @ocr/ui under packages/)
+      are explicitly permitted — they are designed cross-product packages.
+    applies_to:
+      - ose
+      - wkrp
+      - oaw
+    protective_statement: >
+      OSE and WKRP carry opposite identity invariants — OSE is anonymous
+      by construction; WKRP is named with voluntary attribution. A
+      module-level import across this boundary would silently couple the
+      two identity models at the code level, making it trivially easy to
+      introduce an inadvertent identity leakage path that bypasses the HTTP
+      API boundary and its CORS controls. The HTTP API seam
+      (GET /api/events/:id/music) is the one documented boundary; it is
+      covered by Pact contract testing (OSE-423) and CORS origin controls
+      in WKRP's privacy.ts. Module imports would bypass both.
+    enforcement_statement: >
+      L0 SCRIPT GATE — scripts/check-cross-repo-imports.sh in the OSE repo
+      scans workers/**/*.ts, workers/**/*.js, and both package.json files
+      for prohibited import patterns on every PR via brain-contract-check.yml
+      (step: "Invariant #22 — cross-repo isolation gate (OCR-ENF-23)").
+      Prohibited patterns: import ... from '@ourwkrp/...', from
+      '@oursharedevents/...', from '@ourairwaves/...'; require('ourwkrp/...'),
+      require('oursharedevents/...'); file:../../ourWKRP or
+      workspace:../ourWKRP in package.json. URL strings
+      (https://ourwkrp.com) and CORS origin checks are not violations —
+      they are the expected HTTP API seam surface.
+      Audit 2026-08-02: zero violations in OSE + WKRP source.
+      OAW audit (OCR-ENF-22) deferred until OAW is active.
+    references:
+      enforcement_script: scripts/check-cross-repo-imports.sh (OSE repo)
+      ci_workflow: .github/workflows/brain-contract-check.yml (OSE repo)
+      audit_doc: docs/security/INVARIANT_22_CROSS_REPO_IMPORT_ISOLATION.md (OSE repo)
+      permitted_seam: "GET /api/events/:id/music — WKRP exposes, OSE calls via HTTP"
+      pact_coverage: "OSE-423 F2.3 — Pact at the frozen music seam"
+      activation_pr: "OSE PR #291 — feat(security): Invariant #22 cross-repo isolation audit + CI gate (OSE-388, OSE-389)"
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
 # invariant transitions. Documents the evolution of the registry over time so
@@ -2733,58 +2784,7 @@ enrichment_history:
       invariant remains in the registry as a planned governance commitment so
       the activation path is visible and tracked.
 
-  # ── #22 CROSS-REPO IMPORT ISOLATION ───────────────────────────────────────
-  - id: 22
-    name: cross_repo_import_isolation
-    label: "#22 — Cross-Repo Import Isolation"
-    group: security_isolation
-    group_order: 6
-    title: Cross-Repo Import Isolation
-    status: live
-    test_file: null
-    enforces: >
-      No module-level import (import/require/file:/workspace: dependency)
-      may cross the OSE / WKRP / OAW repo boundary. The only permitted
-      cross-repo data flow is the OER aggregation boundary: the HTTP API
-      seam at GET /api/events/:id/music (WKRP exposes, OSE calls via HTTP
-      fetch). Shared OCR packages (@ocr/flags, @ocr/ui under packages/)
-      are explicitly permitted — they are designed cross-product packages.
-    applies_to:
-      - ose
-      - wkrp
-      - oaw
-    protective_statement: >
-      OSE and WKRP carry opposite identity invariants — OSE is anonymous
-      by construction; WKRP is named with voluntary attribution. A
-      module-level import across this boundary would silently couple the
-      two identity models at the code level, making it trivially easy to
-      introduce an inadvertent identity leakage path that bypasses the HTTP
-      API boundary and its CORS controls. The HTTP API seam
-      (GET /api/events/:id/music) is the one documented boundary; it is
-      covered by Pact contract testing (OSE-423) and CORS origin controls
-      in WKRP's privacy.ts. Module imports would bypass both.
-    enforcement_statement: >
-      L0 SCRIPT GATE — scripts/check-cross-repo-imports.sh in the OSE repo
-      scans workers/**/*.ts, workers/**/*.js, and both package.json files
-      for prohibited import patterns on every PR via brain-contract-check.yml
-      (step: "Invariant #22 — cross-repo isolation gate (OCR-ENF-23)").
-      Prohibited patterns: import ... from '@ourwkrp/...', from
-      '@oursharedevents/...', from '@ourairwaves/...'; require('ourwkrp/...'),
-      require('oursharedevents/...'); file:../../ourWKRP or
-      workspace:../ourWKRP in package.json. URL strings
-      (https://ourwkrp.com) and CORS origin checks are not violations —
-      they are the expected HTTP API seam surface.
-      Audit 2026-08-02: zero violations in OSE + WKRP source.
-      OAW audit (OCR-ENF-22) deferred until OAW is active.
-    references:
-      enforcement_script: scripts/check-cross-repo-imports.sh (OSE repo)
-      ci_workflow: .github/workflows/brain-contract-check.yml (OSE repo)
-      audit_doc: docs/security/INVARIANT_22_CROSS_REPO_IMPORT_ISOLATION.md (OSE repo)
-      permitted_seam: "GET /api/events/:id/music — WKRP exposes, OSE calls via HTTP"
-      pact_coverage: "OSE-423 F2.3 — Pact at the frozen music seam"
-      activation_pr: "OSE PR #291 — feat(security): Invariant #22 cross-repo isolation audit + CI gate (OSE-388, OSE-389)"
 
-history:
   - invariant_id: 22
     invariant_name: cross_repo_import_isolation
     from_state: does not exist
