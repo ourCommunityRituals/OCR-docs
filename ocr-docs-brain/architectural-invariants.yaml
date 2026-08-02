@@ -1371,11 +1371,18 @@ invariants:
       structural_gate: >
         tests/e2e/0-architecture/oer-emission-boundary.invariant.spec.ts
         (3 cases, T0 Gate invariants shard — added 2026-07-27)
+      boundary_specification_doc: >
+        docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md
+        (OCR-ENF-24 — ratified 2026-08-02; defines full emission contract
+        per product, privacy classification gate, prohibition matrix,
+        governance protocol for new emission fields, and OER ingestion model)
       companion_invariant: >
         Invariant #9 tenant_isolation — intra-product multi-brand isolation;
         #17 is the inter-product isolation complement.
         Invariant #1 anonymous_id — the privacy contract that cross-product
         DB coupling would destroy.
+        Invariant #22 cross_repo_import_isolation — module-level boundary
+        complement to #17's binding-level boundary.
     activation_note: >
       Status LIVE from initial creation (2026-07-27). The structural spec is
       the enforcement mechanism; the invariant flips live the moment the spec
@@ -2760,6 +2767,36 @@ enrichment_history:
       adding a brain enrichment_history entry in the same PR — making the
       coupling visible in the diff. The invariant complements #9 (intra-product
       tenant isolation) and #1 (anonymous identity) at the inter-product layer.
+
+  - invariant_id: 17
+    invariant_name: oer_emission_boundary
+    from_state: >-
+      rich live (binding-level enforcement only — wrangler.toml gate)
+    to_state: >-
+      rich live + full boundary specification ratified (2026-08-02 — OCR-ENF-24
+      OER Aggregation Boundary Specification published; defines emission contract
+      per product, two privacy classes, Class X disqualification, prohibition
+      matrix, OER ingestion model, governance protocol for adding emission
+      fields, and pre-conditions for OER activation; references updated in
+      YAML to point to boundary_specification_doc)
+    date: "2026-08-02"
+    pr_refs:
+      - "OCR-docs PR #72 (feat/ose-390-oer-aggregation-boundary)"
+      - "Linear OSE-390 (F5c — OER Aggregation Boundary Specification)"
+    rationale: >
+      OSE-390 (F5c) identified the largest missing artifact in the brain:
+      Invariant #17 enforced the binding-level prohibition (no wrangler.toml
+      cross-product D1 or service binding) but had no companion document
+      specifying WHAT may cross the boundary, under what privacy conditions,
+      and how that boundary evolves over time. Without this spec, OW, OA, and
+      OSM would contribute to OER under unspecified rules — each product team
+      making local decisions with no org-level contract. OCR_ARCHITECTURE_
+      oerAggregationBoundary.md ratifies the full contract: Class A
+      (anonymous-by-construction) and Class B (named-with-attribution) qualify;
+      Class X never qualifies; Invariants #1, #9, #17, #22 are the enforcement
+      layer; every new emission field requires a brain PR. The boundary is
+      pre-implementation — OER is not yet active — which makes this the right
+      moment to lock the contract before any product builds toward it.
 
   - invariant_id: 20
     invariant_name: standards_propagation_completeness
