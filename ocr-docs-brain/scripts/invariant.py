@@ -29,14 +29,28 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+# This script prints Unicode status glyphs (✓, ⚠). Windows runners default stdout
+# to cp1252, which raises UnicodeEncodeError on those glyphs and crashes an
+# otherwise-passing run. Force utf-8 (replace on the rare undecodable char) so
+# output can never take the gate down.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 try:
     from ruamel.yaml import YAML
-    from ruamel.yaml.comments import CommentedMap, CommentToken
+    from ruamel.yaml.comments import CommentedMap
+    from ruamel.yaml.tokens import CommentToken
     from ruamel.yaml.error import CommentMark
     import ruamel.yaml.scalarstring as ss
-except ImportError:
-    print("ERROR: ruamel.yaml is required.")
-    print("  pip install ruamel.yaml")
+except ImportError as e:
+    # CommentToken lives in ruamel.yaml.tokens (not .comments) since ruamel 0.17;
+    # the old `from ruamel.yaml.comments import ..., CommentToken` failed on every
+    # modern ruamel and this handler masked it as "ruamel.yaml is required".
+    print(f"ERROR: ruamel.yaml import failed: {e}")
+    print("  pip install 'ruamel.yaml>=0.18'")
     sys.exit(1)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
