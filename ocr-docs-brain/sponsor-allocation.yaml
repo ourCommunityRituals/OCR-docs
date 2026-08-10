@@ -22,8 +22,8 @@
 #
 # ─────────────────────────────────────────────────────────────────────────────
 
-schema_version: 1.0.0
-version: "1.0"
+schema_version: 1.1.0
+version: "1.1"
 description: >
   Canonical sponsor-allocation rules for OSE substrate consumption.
   Governs display priority + (future) slot-cap floor enforcement so that
@@ -128,6 +128,63 @@ slot_floor:
         Mobile banner is a single-impression surface; tier sort already
         delivers locals-first via display_priority above. No additional
         floor needed when cap is set.
+
+# ─── Share-of-voice frequency allocation (OSE-663, Invariant #25) ─────────────
+# Governs HOW OFTEN each sponsor's ad rotates into an impression on a capped
+# public-URL surface (the three-state event page). DISTINCT from slot_floor
+# above (integer top-N slot counts) — this governs fractional rotation
+# FREQUENCY. Money tiers (mid, premium) buy frequency share only — never a
+# bigger logo, slot, or position (size/slot uniform). Demand-driven: shares are
+# computed PER EVENT from how many sponsors opt in. The three walls below hold
+# at every demand level, enforced by the pure allocateShares() function in the
+# OSE substrate and by Invariant #25 sponsor_share_covenant.
+share_of_voice:
+  status: active           # allocateShares() consumed by buildShareRotation; born-red suite green in CI (OSE-661/670)
+  unit: percent_of_rotation_impressions
+  ratified: "2026-08-07"
+  walls:
+    local_floor_pct: 30    # WALL 2 — collective guaranteed share for the is_local class
+    premium_cap_pct: 40    # WALL 1 — max share any single premium sponsor may hold
+    mid_cap_pct: 20        # max share any single mid sponsor may hold
+    min_presence_pct: 2    # no accepted sponsor rendered below this (nonzero volume to benchmark)
+    uniform_size_slot: true # WALL 3 — only frequency is purchasable; asserted, not computed
+  weights:                 # relative rotation weight BEFORE caps/compression
+    base: 1                # unpaid / free sponsor
+    mid: 3                 # mid buys 3x base frequency
+    premium: 7             # premium buys 7x base frequency
+  redistribution:
+    method: weighted_overflow_then_normalize
+    order:
+      - reserve_local_floor        # 1: locals collectively reserve local_floor_pct
+      - weight_paid_pool           # 2: pool = 100 - floor, split by weight
+      - clamp_to_per_sponsor_caps  # 3: clamp premium/mid to their caps
+      - redistribute_overflow      # 4: proportional-by-weight to under-cap sponsors, re-clamp
+      - normalize_to_100           # 5: loop 3-5 to a fixed point
+      - enforce_min_presence       # 6: bump anyone below min, re-assert caps + floor
+    invariant: >
+      At every demand level: sum(shares) = 100; no premium sponsor share >
+      premium_cap_pct; no mid sponsor share > mid_cap_pct; if any is_local
+      sponsor is accepted, the is_local class collectively holds >=
+      local_floor_pct. Consistency: local_floor_pct(30) + premium_cap_pct(40)
+      = 70 <= 100, so the walls are mutually satisfiable at every demand level.
+  fail_closed:
+    no_locals: release_floor_to_paid_pool            # floor releases; weights govern 100%
+    single_sponsor: whole_surface_is_that_sponsor    # cap moot; one sponsor = 100%
+    demand_saturation: admit_locals_first_then_by_weight_until_min_presence_feasible
+    unknown_tier: reject_never_default               # fail closed
+  is_local_derivation:
+    required: geo_derived                            # Invariant #25 — is_local must be geo-derived
+    prohibited: purchasable_or_admin_toggle
+    known_gap: >
+      TODAY classification.field is_local is ADMIN-SET (see classification block
+      above). Invariant #25 requires is_local be geo-derived (corridor-cell
+      match) and NON-purchasable. Moving is_local from admin-set to geo-derived
+      is a precondition for #25 going live — tracked with OSE-661 / OSE-663; the
+      OSE-662 buy-is_local attack is born-red against the admin-set path.
+  consumed_by:
+    - "OSE-661 sponsor rotation (draws frequency from allocateShares())"
+  attacked_by:
+    - "OSE-662 red-team (cap-breach, floor-breach, buy-size/slot, buy-is_local)"
 
 # ─── Drift detection ─────────────────────────────────────────────────────────
 # Future story (OSE-323 extension) will compare OSE's consumed copy of
