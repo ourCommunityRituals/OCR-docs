@@ -976,13 +976,14 @@ invariants:
     enforcement_statement: >
       Six-layer pyramid enforcement, all on the substrate side, all
       wired into CI:
-      (a) L0 STATIC code shape —
-      tests/e2e/0-architecture/tier-equity.invariant.spec.ts asserts the
-      resolver declares is_local on SponsorRow, tierSort() compares
-      is_local BEFORE TIER_PRIORITY, migration 0036 adds the column with
-      NOT NULL DEFAULT 0, the OSE consumed copy of sponsor-allocation.ts
-      cites the brain canonical, and the covenant brand promise is
-      documented in the resolver header.
+      (a) MECHANISM (OSE-661, 2026-08-08) — the locals-first tierSort is RETIRED.
+      The local guarantee is now the local-FLOOR sub-property of #25: is_local
+      drives a floored share of rotation frequency (allocateShares /
+      buildShareRotation), NOT a priority sort. The resolver still declares
+      is_local on SponsorRow, migration 0036 adds the column NOT NULL DEFAULT 0,
+      and the OSE consumed copy of sponsor-allocation.ts cites the brain
+      canonical; the "local stays in" brand promise is unchanged — only its
+      mechanism moved from priority-sort to share-floor (see #25).
       (b) L0 SCHEMA + INDEX — workers/oursharedevents/tests/schema.spec.ts
       and constraints.spec.ts assert the idx_sponsors_is_local index is
       present and the sponsors table column count matches the post-OSE-330
@@ -999,11 +1000,13 @@ invariants:
       workers/oursharedevents/tests/tier-equity-sort.spec.ts uses
       SELF.fetch() to call the public /api/v2/events/:id/sponsors endpoint
       against an in-process miniflare worker, seeded with mixed-locality
-      sponsors via direct D1 INSERT. 7 cases: the canonical "primary-
-      local beats platinum-nonlocal" covenant assertion, within-local-
-      group tier-breaks-ties, within-non-local-group tier-breaks-ties,
-      full 4-sponsor mixed sort, all-local and all-non-local backward
-      compat, schema NOT NULL guard.
+      sponsors via direct D1 INSERT. Rewritten for the #25 share model
+      (2026-08-08): the covenant guarantees are now uniform-placement presence
+      (every seeded sponsor returned), local-never-zeroed (a local is always in
+      the rotation against many premium non-locals), and deterministic
+      share-ordered output — plus the schema NOT NULL is_local guard. The
+      floor/cap MAGNITUDES are unit-tested against buildShareRotation in
+      tests/sponsor-share-rotation.spec.ts.
       (f) T3 NETWORK-STAGING — postman/collections/ose-api.json section
       11 runs Newman against deployed stg.oursharedevents.com: 4 seeds
       + 1 covenant assertion + 4 cleanups via the public
@@ -1973,6 +1976,214 @@ invariants:
       pact_coverage: "OSE-423 F2.3 — Pact at the frozen music seam"
       activation_pr: "OSE PR #291 — feat(security): Invariant #22 cross-repo isolation audit + CI gate (OSE-388, OSE-389)"
 
+  # ── #23 RED TEAM COVERAGE ────────────────────────────────────────────────────
+  - id: 23
+    name: red_team_coverage
+    label: "#23 — Red Team Coverage"
+    group: security_isolation
+    group_order: 7
+    title: Red Team Coverage
+    status: partial
+    test_file: tests/red-team/ (OSE repo — in construction, OSE-564)
+    enforces: >
+      Red team testing is an invariant across infrastructure. No layer ships
+      without adversarial coverage. Every red team test is born red — the test
+      is first demonstrated failing against a deliberately-broken fixture before
+      its green run counts. Coverage is enumerated against a written threat
+      ledger per layer. New layers (voting rounds, league tables, Stripe
+      read-only ingestion) arrive with their attacker list as part of their
+      brain landing.
+    applies_to:
+      - ose
+      - wkrp
+      - oaw
+      - ocr
+    protective_statement: >
+      The attack surface of an AI-assisted platform expands faster than any
+      manually-maintained threat model can track. Without a structural invariant
+      requiring adversarial coverage on every layer, security coverage drifts to
+      the layers that are easiest to test, leaving the rest untested by
+      assumption. The threat ledger makes "across infra" answerable: here is
+      every layer, here is every threat we have named, here is the test, here
+      is the date it was last run red-capable and green-passing. A gap is a gap
+      — it renders as a gap in the conformance report, not as a silent pass.
+      This invariant exists because "we test security" is not the same as
+      "we enumerate the attacks and prove each one is covered."
+    enforcement_statement: >
+      PARTIAL — enforcement infrastructure is in construction (OSE-564).
+      Target enforcement: two-part harness. (1) THREAT LEDGER — a committed,
+      versioned document (docs/security/threat-ledger.yaml or equivalent) in
+      each repo enumerating attack scenarios per infrastructure layer. Ledger
+      entry schema: id, target_invariant (number + name), test_reference,
+      status (covered/open/deferred). Every ledger entry references a test.
+      Every new infrastructure layer's brain landing must include a ledger
+      section — enforced by PR template. (2) BORN-RED GATE — CI convention
+      proving each red team test was first demonstrated catching its violation
+      before its green run counts. Annotation scheme tags each test to its
+      ledger entry + invariant number. A red team test with no recorded red
+      birth fails the OSE-560 conformance report. Full enforcement wires when
+      OSE-564 (threat ledger + born-red harness) and OSE-560 (conformance
+      report generator) both land.
+    references:
+      linear_epic: "OSE-558 — Auditable Architectural Reality"
+      linear_story: "OSE-564 — Threat ledger + born-red harness"
+      companion_invariant: "#24 auditability (conformance report generator)"
+      activation_criterion: >
+        OSE-564 landed (threat ledger committed, born-red harness in CI) AND
+        OSE-560 landed (conformance report generator producing per-invariant
+        evidence). Promote to live at that point.
+
+  # ── #24 AUDITABILITY ─────────────────────────────────────────────────────────
+  - id: 24
+    name: auditability
+    label: "#24 — Auditability"
+    group: governance_brain
+    group_order: 3
+    title: Auditability
+    status: partial
+    test_file: tests/audit-layer.spec.ts (OSE repo — in construction, OSE-560 / OSE-557)
+    enforces: >
+      Every invariant is auditable: claim mapped to enforcement mapped to
+      evidence mapped to last-attacked date, and the mapping is generated by
+      machinery, never written by hand. The audit layer itself is a red team
+      target — no PII, IP, user agent, or sub-window timestamp may survive
+      anywhere in logs, manifests, or trails, enforced by tests that attack
+      the logs.
+    applies_to:
+      - ose
+      - ocr
+    protective_statement: >
+      An audit trail that is written by hand will drift. A conformance claim
+      that is asserted without evidence is a belief, not a proof. This invariant
+      enforces that auditability is a machine property: the conformance report
+      that answers "is invariant #N enforced?" is generated from the registry,
+      the test suite, and the CI run record — not authored. The audit layer
+      itself must never become a re-identification surface, which is why the
+      tests attack the logs: if a PII or sub-window timestamp survives in any
+      audit trail, it is a violation of Invariant #1 (anonymous_id) expressed
+      through the audit system. The boundary is: audit the operators and the
+      boundary crossings, never the attendees. Provenance for the named world
+      and the exports; silence for the anonymous one.
+    enforcement_statement: >
+      PARTIAL — audit infrastructure exists; conformance generator pending.
+      Existing enforcement: (a) OPERATOR AUDIT TRAIL — admin_audit_log table
+      (migration 0026, OSE-212) captures every admin mutation with action,
+      actor, resource_type, resource_id, request_id, outcome. 18 admin routes
+      wired as of OSE-557 (2026-08-03). Fire-and-forget via ctx.waitUntil;
+      failures logged to console only. (b) REPORT ACCESS LOG — report_access_log
+      table (migration 0043, OSE-557) captures daily-aggregate SharedReport
+      access per (event_id, role, outcome). No IP, no sub-window timestamp.
+      (c) EXPORT MANIFEST — export_manifest table (migration 0043, OSE-556)
+      captures every D1→OCR boundary crossing (BIGQUERY, UPLOAD_FILE).
+      (d) PII AUDIT LOG — pii_audit_log table captures data-subject erasure
+      events (OSE-203). Target enforcement (OSE-560): conformance report
+      generator that reads the invariant registry, the test suite annotations
+      (via OSE-564 born-red scheme), and the CI run record, and outputs a
+      per-invariant evidence table: claim, enforcement mechanism, last test
+      run, last run red-capable. Promote to live when OSE-560 lands.
+    references:
+      linear_epic: "OSE-558 — Auditable Architectural Reality"
+      linear_story_audit_trail: "OSE-557 — Admin mutation audit trail + report access log"
+      linear_story_export_manifest: "OSE-556 — Export provenance manifest"
+      linear_story_conformance: "OSE-560 — Conformance report generator"
+      companion_invariant: "#23 red_team_coverage (threat ledger + born-red harness)"
+      boundary_doctrine: >
+        Audit the operators and the boundary crossings, never the attendees.
+        Provenance for the named world and the exports; silence for the
+        anonymous one.
+      activation_criterion: >
+        OSE-560 landed (conformance report generator producing per-invariant
+        evidence table). AND OSE-557 promoted to Done (all admin paths audited).
+        AND audit layer red team tests pass (attack the logs, prove no PII
+        survives). Promote to live at that point.
+
+  # ── #25 SPONSOR SHARE COVENANT ───────────────────────────────────────────────
+  - id: 25
+    name: sponsor_share_covenant
+    label: "#25 — Sponsor Share Covenant"
+    group: commercial_governance
+    group_order: 3
+    title: Sponsor Share Covenant
+    status: live
+    test_file: tests/e2e/0-architecture/sponsor-share-covenant.invariant.spec.ts (OSE repo — planned, OSE-663 / OSE-662)
+    enforces: >
+      Sponsor rotation on the public-URL surface is a share-of-voice percentage
+      computed by the covenant allocation math (OSE-663) — never a purchasable
+      position. Size, slot, and logo treatment are uniform for all sponsors
+      regardless of spend. Every is_local sponsor receives at least the
+      guaranteed local floor share. No pricing tier or individual sponsor's
+      share exceeds the premium cap. is_local is geo-derived (corridor-cell
+      match), never a purchasable or admin-toggle flag. Demand redistributes the
+      remaining shares while the local floor and the premium cap hold at every
+      demand level. Money buys frequency-share and report depth only — never
+      size, slot, position, or is_local status.
+    applies_to:
+      - ose
+    protective_statement: >
+      Invariant #5 (Local Sponsor Covenant) guarantees a local sponsor a PLACE —
+      "the local stays in." #25 makes that guarantee QUANTITATIVE on every
+      rotation surface: a floored share of voice rather than a locals-first sort
+      (the locals-first tierSort is retired). #25 is the covenant made
+      computable. On any surface, "the local stays in" is no longer enough — a system could
+      keep the local technically present while starving its share of voice to
+      near-zero and letting the highest bidder consume the rest of the rotation.
+      The Sponsor Share Covenant makes the guarantee quantitative: money buys
+      frequency-share and report depth, and nothing else. It cannot buy a bigger
+      logo, a better slot, a fixed position, a share above the premium cap, or a
+      manual is_local flag; and it cannot push a local below its guaranteed
+      floor. Without this invariant the public rotation silently degrades into
+      the commodity ad auction that #1-#5 exist to prevent — a national brand
+      buys visual dominance, is_local becomes a sales lever, and the
+      local-economy flywheel that makes OSE non-substitutable collapses.
+    enforcement_statement: >
+      LIVE (OSE-661 / OSE-670, 2026-08-08) — enforced against the pure allocation
+      math AND the resolver seam, all in CI. (a) PURE-FUNCTION — the covenant
+      allocation math (OSE-663) is a pure function allocateShares(sponsors) →
+      shares[]; every wall below is asserted against it directly (no I/O), so the
+      walls are provable at any demand level —
+      workers/oursharedevents/tests/sponsor-share-covenant.spec.ts and
+      tests/sponsor-share-rotation.spec.ts (the buildShareRotation seam that both
+      the renderer and the admin form consume via sovTierOf). (b) FLOOR PROPERTY
+      (born red vs a floor-breach fixture) — the is_local class collectively
+      holds >= LOCAL_FLOOR at every demand level. (c) CAP PROPERTY (born red vs a
+      cap-breach fixture) — no pricing tier's and no individual sponsor's share
+      exceeds PREMIUM_CAP when satisfiable. (d) UNIFORM-RENDER PROPERTY — a
+      RotationEntry exposes ONLY frequency (sharePct); no size/slot/position
+      field exists, so uniform placement holds by construction, and
+      sponsor-resolver.filterSponsorsForSurface returns every active sponsor for
+      every surface (the named-slot filter is retired). The admin authoring path
+      is walled too: sponsors.ts forces placement_formats to the uniform value on
+      create and makes it non-writable on update (tests/sponsor-covenant-authoring.spec.ts).
+      (e) GEO-DERIVED is_local PROPERTY (born red vs a buy-is_local fixture) —
+      sponsors.ts derives is_local from the sponsor<->event h3_res7 corridor-cell
+      match on create AND update, never from the request body. (f)
+      REDISTRIBUTION-INVARIANCE — across a demand sweep the floor and cap hold
+      while the remainder redistributes. Structural code-shape locked by
+      tests/e2e/0-architecture/sponsor-share-covenant.invariant.spec.ts; brain<->OSE
+      drift by sponsor-allocation-drift-check.spec.ts. Allocation parameters
+      (LOCAL_FLOOR=30, PREMIUM_CAP=40, MID_CAP=20, weights 1/3/7, MIN_PRESENCE=2)
+      live in sponsor-allocation.yaml — co-located with the #5 covenant params
+      per Invariant #13 brain_enforcement_location. The locals-first tierSort of
+      #5 is RETIRED and superseded by this share model on every rotation surface.
+    references:
+      linear_story_math: "OSE-663 — Sponsor Covenant Allocation Math (pure allocateShares)"
+      linear_story_redteam: "OSE-662 — Sponsor-share adversarial set (cap-breach, floor-breach, buy-size/slot, buy-is_local)"
+      brain_canonical: "ocr-docs-brain/sponsor-allocation.yaml (share_of_voice block)"
+      companion_invariant: >
+        #5 tier_equity / Local Sponsor Covenant — #5 guarantees the local a PLACE
+        (display-priority, no cap on today's surfaces); #25 makes the covenant
+        quantitative and capped for the public-URL rotation (finite-share
+        surface). #5 and #25 share the sponsor-allocation.yaml canonical artifact.
+        #23 red_team_coverage — #25's born-red property tests are the red-team
+        coverage for the sponsor-rotation layer. #13 brain_enforcement_location —
+        allocation params co-located in sponsor-allocation.yaml.
+      activation_criterion: >
+        OSE-663 landed (pure allocation function) AND
+        sponsor-share-covenant.invariant.spec.ts landed (property-based, born-red
+        per wall, wired to the T0 Gate invariants shard). Promote to partial at
+        floor+cap coverage; live at full adversarial set green, each born red
+        first.
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
 # invariant transitions. Documents the evolution of the registry over time so
@@ -2846,6 +3057,133 @@ enrichment_history:
       was implemented alongside the invariant definition (OSE PR #291,
       OSE-388 + OSE-389).
 
+  - invariant_id: 23
+    invariant_name: red_team_coverage
+    from_state: does not exist
+    to_state: >-
+      rich partial (2026-08-03 — new invariant; security_isolation group
+      (group_order 7); status partial — threat ledger + born-red harness
+      (OSE-564) and conformance report generator (OSE-560) not yet in CI;
+      full rich-form entry: protective_statement, enforcement_statement,
+      activation_criterion, references all populated)
+    date: "2026-08-03"
+    pr_refs:
+      - "Linear OSE-559 — Invariant registry brain landing (#23 + #24)"
+      - "Linear OSE-564 — Threat ledger + born-red harness (pending)"
+    rationale: >
+      OSE-558 Epic (Auditable Architectural Reality) identified that the
+      security posture of an AI-assisted event platform requires structural
+      adversarial coverage — not optional red team exercises. Invariant #23
+      encodes this as a structural constraint: every layer ships with a
+      threat ledger entry and a born-red harness. The invariant is partial
+      on creation because OSE-564 (threat ledger schema + born-red CI
+      convention) and OSE-560 (conformance report generator) have not yet
+      landed. The decision to encode it now (before the enforcement exists)
+      follows the same pattern as #5 tier_equity (partial on creation,
+      activation_note naming the pending work). The overnight red team fleet
+      (wf_09b2a3f2-ab8, 2026-08-02/03, 17 agents, 1.03M tokens) produced
+      103 attack vectors (4 CRITICAL, 35 HIGH) across 8 recon layers; these
+      vectors seed the threat ledger that OSE-564 will commit. Red team
+      coverage is security_isolation group_order 7, following
+      cross_repo_import_isolation (group_order 6), which enforces a different
+      property (code boundary integrity vs adversarial coverage density).
+      Companion to #24 auditability — both are partial on creation, both
+      activate together when OSE-560 and OSE-564 land.
+
+  - invariant_id: 24
+    invariant_name: auditability
+    from_state: does not exist
+    to_state: >-
+      rich partial (2026-08-03 — new invariant; governance_brain group
+      (group_order 3); status partial — audit infrastructure exists
+      (admin_audit_log, report_access_log, export_manifest) but conformance
+      report generator (OSE-560) not yet built; full rich-form entry:
+      protective_statement, enforcement_statement, activation_criterion,
+      references, boundary_doctrine all populated)
+    date: "2026-08-03"
+    pr_refs:
+      - "Linear OSE-559 — Invariant registry brain landing (#23 + #24)"
+      - "Linear OSE-557 — Admin mutation audit trail + report access log"
+      - "Linear OSE-556 — Export provenance manifest"
+      - "Linear OSE-560 — Conformance report generator (pending)"
+    rationale: >
+      OSE-558 Epic (Auditable Architectural Reality) required a governance
+      invariant capturing the machine-generated auditability commitment —
+      claim mapped to enforcement mapped to evidence, generated by machinery
+      not written by hand. The audit trail infrastructure (admin_audit_log
+      since migration 0026, report_access_log and export_manifest via
+      migration 0043, OSE-557) exists and covers operator actions and D1→OCR
+      boundary crossings. The missing layer is OSE-560 (conformance report
+      generator), which will read the invariant registry, the OSE-564 born-red
+      annotations, and the CI run record to produce a per-invariant evidence
+      table. Invariant #24 is partial on creation because the generated
+      mapping doesn't exist yet; it is live when OSE-560 ships. The boundary
+      doctrine ("audit the operators and the boundary crossings, never the
+      attendees") is encoded in the invariant entry itself so it travels with
+      the invariant in every future conformance report. The audit layer is a
+      red team target — Invariant #24 enforcement is a precondition for
+      Invariant #23 evidence; neither is complete without the other.
+      governance_brain group_order 3 follows standards_propagation_completeness
+      (group_order 2) and brain_enforcement_location (group_order 1).
+
+  - invariant_id: 25
+    invariant_name: sponsor_share_covenant
+    from_state: does not exist
+    to_state: >-
+      rich planned (2026-08-07 — new invariant; commercial_governance group
+      (group_order 3), the quantitative/capped complement to #5 Local Sponsor
+      Covenant; status planned — pure allocation function (OSE-663) and
+      property-based born-red suite (OSE-662) not yet implemented, no CI gate
+      today; full rich-form entry: protective_statement, enforcement_statement,
+      references, activation_criterion all populated)
+    date: "2026-08-07"
+    pr_refs:
+      - "Linear OSE-663 — Sponsor Covenant Allocation Math (pure allocateShares)"
+      - "Linear OSE-662 — Sponsor-share adversarial set (born-red fixtures)"
+    rationale: >
+      #5 Local Sponsor Covenant guarantees locals a PLACE via locals-first sort
+      on surfaces that render every qualifying sponsor — it has no slot cap
+      today. The public-URL sponsor rotation is the first capped-rendering
+      surface: only a finite number of frequency shares exist per cycle, so
+      "the local stays in" is no longer sufficient — a capped surface could keep
+      a local present while starving its share of voice. #25 makes the covenant
+      quantitative: a guaranteed local floor, a premium cap no buyer exceeds,
+      uniform size/slot, geo-derived is_local, and money buying frequency-share
+      + report depth only. Ratified numbers (2026-08-07): LOCAL_FLOOR=30,
+      PREMIUM_CAP=40, MID_CAP=20, weights 1/3/7, MIN_PRESENCE=2 — stored in
+      sponsor-allocation.yaml, not this file. Encoded planned ahead of
+      enforcement on the same pattern as #23 red_team_coverage and #24
+      auditability — lock the contract before any surface builds toward it. It
+      activates the slot-cap floor scaffolding reserved in sponsor-allocation.yaml
+      since OSE-330 Phase 1. commercial_governance group_order 3 follows
+      tier_equity (group_order 1) and inert_monetization_hooks (group_order 2).
+
+  - invariant_id: 25
+    invariant_name: sponsor_share_covenant
+    from_state: >-
+      planned (ratified-pending — allocation math defined, no enforcement wired
+      to CI; #5 still enforced locals-first via tierSort)
+    to_state: >-
+      live (covenant enforced in code + CI: buildShareRotation consumes
+      allocateShares on every rotation surface; placement uniform; is_local
+      geo-derived on create+update; named-slot authoring walled; born-red walls
+      green). Paired with #5 re-expression: the locals-first tierSort is retired
+      and superseded by the #25 share-floor; #5's "local stays in" promise is
+      unchanged, its mechanism moved from priority-sort to share-floor.
+    date: "2026-08-08"
+    pr_refs:
+      - "OSE-661"  # covenant flip (resolver → uniform share rotation)
+      - "OSE-670"  # spend-blind sponsor authoring + server wall
+    rationale: >
+      The share covenant moved from planned to live once the code enforced it
+      end to end and CI proved it. Owner ratified (2026-08-08) that the local
+      guarantee is a FLOOR (>= local_floor share, never zeroed), NOT a rank — a
+      premium non-local may be seen more often than a local so long as the floor
+      holds and no tier exceeds the cap. This retired the OSE-330 locals-first
+      tierSort. share_of_voice.status in sponsor-allocation.yaml flips
+      planned -> active in lockstep with the OSE TS mirror (drift-checked).
+      status_summary: live 17 -> 18, planned 1 -> 0.
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Counts are hand-maintained on every material change
@@ -2853,9 +3191,9 @@ enrichment_history:
 # on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
 status_summary:
-  live: 17    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation
-  partial: 5  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired)
+  live: 18    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
+  partial: 7  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560)
   planned: 0
-  total: 22
-  rich_form: 21 # #1-#19, #21, #22 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
+  total: 25
+  rich_form: 24 # #1-#19, #21-#25 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
   lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)
