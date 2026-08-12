@@ -43,6 +43,27 @@ def load_brain(brain_dir: Path) -> dict[str, Any]:
         sys.exit(2)
 
 
+def _resolve_test_file(tf: str) -> str:
+    """Normalize a brain `test_file` value into a globbable path.
+
+    Some `test_file` entries in architectural-invariants.yaml carry a
+    trailing human annotation in parentheses, e.g.:
+        scripts/check-cross-repo-imports.sh (OSE repo)
+        tests/.../sponsor-share-covenant.invariant.spec.ts (OSE repo — planned)
+    That ` (…)` suffix is NOT part of the path and must be stripped before
+    the value is handed to glob(), or the pattern can never match the real
+    file (which lives in the sibling OSE repo). Only a *trailing*
+    ' (' + annotation is removed; paths without such a suffix pass through
+    unchanged, so legitimate paths are never mangled.
+    """
+    if tf is None:
+        return tf
+    idx = tf.find(' (')
+    if idx != -1:
+        return tf[:idx].strip()
+    return tf.strip()
+
+
 def find_product(brain: dict, product_id: str) -> dict | None:
     """Find the product record in the registry."""
     for p in brain['products'].get('products', []):
@@ -153,7 +174,10 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
         tf = inv.get('test_file')
         if not tf:
             continue
-        hits = list(repo.glob(f'**/{tf}'))
+        # Strip any trailing ' (…)' annotation before globbing; the raw
+        # yaml value may read e.g. "scripts/foo.sh (OSE repo)".
+        resolved = _resolve_test_file(tf)
+        hits = list(repo.glob(f'**/{resolved}'))
         hits = [h for h in hits if '.git' not in h.parts and 'node_modules' not in h.parts]
         if not hits:
             if inv.get('status') == 'live':
