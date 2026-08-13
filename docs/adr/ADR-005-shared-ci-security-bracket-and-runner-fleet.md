@@ -51,8 +51,10 @@ spoke by **pinned version tag**:
   and recorded in the companion decision log.
 
 - **Security bracket → a composite action inside a reusable workflow.** A hub composite action
-  `.github/actions/security-scan/` owns Python + a **pinned** Semgrep + a **PATH-independent
-  invocation** (`python -m semgrep` → PATH → `$pythonLocation/Scripts` fallback). A reusable workflow
+  `.github/actions/security-scan/` owns Python + a **pinned** Semgrep + a **robust invocation**
+  (put setup-python's `Scripts` dir on PATH via `cygpath`, then call bare `semgrep`; **not**
+  `python -m semgrep`, which is deprecated since 1.38.0 and exits 2 — see the decision log's
+  correction note). A reusable workflow
   `.github/workflows/security-bracket.yml` (`workflow_call`) defines the **S0 + S2** bracket using that
   action. Each spoke calls
   `uses: ourCommunityRituals/ourCommunityRituals/.github/workflows/security-bracket.yml@v1`.
@@ -111,7 +113,7 @@ wrapping it in a network service adds auth, hosting, and latency for no benefit.
 
 **Chosen: C1 (grafted)** — fix each bug at the layer it lives in, smallest surface, separating a same-hour unblock from the durable work:
 
-- **Semgrep `exit 127` (fix first, same-hour):** replace the bare `semgrep scan` at S0/S2 with **module form `python -m semgrep scan …`** (resolves via interpreter site-packages, PATH-independent — so runner-2's Git-Bash-first `.env` that omits the Python `Scripts` dir stops mattering; **protects invariant #11**). Normalize the interpreter (`python` in both install and run), **pin the version**, and add a loud pre-flight `python -m semgrep --version || exit 1` so tool-unavailability fails traceably (**#24**), never as swallowed-green. Keep all `--config` + `--error` (security not weakened). Then lift into the ADR-005 composite `security-scan@v1`.
+- **Semgrep `exit 127` (fixed — OSE PR #325, merged `45c702c`):** the bare `semgrep scan` relies on the Python `Scripts` dir being on PATH, which runner-2's Git-Bash-first `.env` omits (**#11**). Fix = put `Scripts` on PATH via **`cygpath`** (appended, so Git-Bash stays first) then call bare **`semgrep`**; normalize the interpreter (`python`, not `python3`) and add a loud pre-flight `semgrep --version || exit 1` so tool-unavailability fails traceably (**#24**). **Correction:** the fleet first proposed `python -m semgrep`; consumer-zero CI falsified it (deprecated since 1.38.0, exits 2 without scanning — per commit `a3306a0`). Keep all `--config` + `--error` (security not weakened). Then lift into the ADR-005 composite `security-scan@v1` (pin the version there).
 - **No-log hang:** the invariant **#12 janitor+probe is the single dwell-cap owner** (`hangOwner: 'janitor'`); the likely runner-2 root cause is that its out-of-band reconfig skipped `setup-runner.ps1`, so the janitor was never installed — reinstall it. The `@ocr/runner-fleet` busy-dwell detector is **armed only for janitor-incapable hosts** (off by default on the production runners) to avoid a split-brain double-bounce.
 - **Fleet correctness + hardening (grafted):** fix `github.ts` hardwired **repo scope** (it cannot currently see the org-level BLOODRAVEN-2 → add `scope: 'org'` + org endpoints — a prerequisite); **fail-closed provisioning-on-recovery** (`provision-runner.ps1` → `verify-runner-env.ps1` gate before start, so an auto-recovered runner can never return mis-PATHed); **terminal `stopService`** (force-kill a wedged Listener scoped by path); env-sourced PAT + token-file registration + `execFile` arg-arrays; a schema-gated append-only **audit sink** (IDs + gate outcomes only, no PII — #24).
 

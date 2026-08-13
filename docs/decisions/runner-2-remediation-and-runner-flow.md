@@ -6,6 +6,16 @@
 **Parent:** [ADR-005](../adr/ADR-005-shared-ci-security-bracket-and-runner-fleet.md)  
 **Grounded in:** invariant constitution, existing codebase, `@ocr/runner-fleet`, the CI-watch runbook
 
+> ## CORRECTION (2026-08-13, post consumer-zero)
+> The fleet's semgrep fix below recommends **`python -m semgrep`**. That was **falsified at consumer-zero**:
+> OSE PR #325's own CI (on the healthy runner-3) rejected it — `python -m semgrep` is **deprecated since
+> 1.38.0 and exits 2 without scanning** (per commit `a3306a0`). The **actual shipped fix** (merged
+> `45c702c`) puts setup-python's `Scripts` dir on PATH via **`cygpath`** (appended, Git-Bash-first, #11)
+> and calls **bare `semgrep`**. The fleet's PATH root-cause analysis was correct; only its invocation
+> mechanism was wrong. This falsification is itself a decision-flow entry: the "prove at consumer-zero
+> before cutting `@v1`" gate worked exactly as intended. The fleet's original text is retained below
+> unedited as the record.
+
 > ## SECURITY-FIRST (S0): leaked credential
 > The fleet found a **live GitHub PAT hardcoded in `reconfig-bloodraven2.ps1`** (`gho_okr...`).
 > The file is **untracked** (never committed, so NO git-history scrub is needed), but the token is live.
