@@ -22,6 +22,10 @@ ADRs and Brain invariants are complementary, not redundant:
 | -------------------------------------------------- | ---------------------------------------------- | -------- | ---------- |
 | [ADR-001](ADR-001-docs-as-code-scaffold.md)        | Documentation-as-code scaffold before code     | Accepted | 2026-04-01 |
 | [ADR-002](ADR-002-identity-profile-keyed-invariants.md) | Key invariants to identity profile, not product-ID lists | Accepted — impl. pending | 2026-05-22 |
+| [ADR-003](ADR-003-self-checking-infrastructure.md) | Self-checking infrastructure — invariants as the core framework | Accepted — impl. in flight | 2026-06-01 |
+| [ADR-004](ADR-004-role-ready-invariants.md) | Role-ready invariants — schema extension for SCRUM execution | Proposed | 2026-06-01 |
+| [ADR-005](ADR-005-shared-ci-security-bracket-and-runner-fleet.md) | Share the CI security bracket + self-hosted runner fleet | Proposed | 2026-08-13 |
+| [ADR-006](ADR-006-cost-sustainability-free-forever-guardrails.md) | Free-forever as a structural property — cost-sustainability guardrails | Accepted | 2026-08-16 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):
