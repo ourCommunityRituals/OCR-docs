@@ -184,6 +184,13 @@ products:
   repo: OurCommunityRituals/ourSharedPulse
   repo_status: pre-tech
   identity_layer: pre-tech
+  # OSP is a stub repo today — receives propagation, but has no application
+  # code that would reference dataset names, required tags, or invariant
+  # tests. The brain conformance check (scripts/check_brain_contract.py)
+  # honors this flag and skips code-presence checks for repos where
+  # code_present is false. Flip to `true` (or remove the line) when OSP
+  # onboards real code per its phase plan.
+  code_present: false
   description: 'Pure consulting. Layered leagues with belts, trophies, community playlists. Attracting
     layers for everyone. Segway to OSE and OSM.
 
@@ -226,6 +233,13 @@ products:
   repo: OurCommunityRituals/ourSharedRecords
   repo_status: pre-tech
   identity_layer: pre-tech
+  # OSR is a stub repo today — receives propagation, but has no application
+  # code that would reference dataset names, required tags, or invariant
+  # tests. The brain conformance check (scripts/check_brain_contract.py)
+  # honors this flag and skips code-presence checks for repos where
+  # code_present is false. Flip to `true` (or remove the line) when OSR
+  # onboards real code per its phase plan.
+  code_present: false
   description: 'One story, one record side, why. Live storytelling through music. Dovetails into OSE.
 
     '
@@ -266,6 +280,13 @@ products:
   repo: OurCommunityRituals/ourSharedGames
   repo_status: pre-tech
   identity_layer: pre-tech
+  # OSG is a stub repo today — receives propagation, but has no application
+  # code that would reference dataset names, required tags, or invariant
+  # tests. The brain conformance check (scripts/check_brain_contract.py)
+  # honors this flag and skips code-presence checks for repos where
+  # code_present is false. Flip to `true` (or remove the line) when OSG
+  # onboards real code per its phase plan.
+  code_present: false
   description: 'Anchor game, cards, art table, board games, seasonal table. Get people having somewhere
     to go on Thursdays. Third space. Dovetails into OSE.
 
@@ -357,6 +378,13 @@ products:
   repo: OurCommunityRituals/ourAirwaves
   repo_status: planned
   identity_layer: non-anonymous
+  # OAW is a stub repo today — receives propagation, but has no application
+  # code that would reference dataset names, required tags, or invariant
+  # tests. The brain conformance check (scripts/check_brain_contract.py)
+  # honors this flag and skips code-presence checks for repos where
+  # code_present is false. Flip to `true` (or remove the line) when OAW
+  # onboards real code per its phase plan.
+  code_present: false
   description: 'DJ and artist community sites paired with OurWKRP. QR scan tallying during sets for credit.
     Portable reputation that accumulates over time for sponsorship and bigger venues.
 
