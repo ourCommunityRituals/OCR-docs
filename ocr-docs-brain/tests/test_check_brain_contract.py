@@ -28,6 +28,7 @@ Exit codes:
   1 — at least one contract failed
 """
 import sys
+import json
 import tempfile
 from pathlib import Path
 
@@ -142,6 +143,111 @@ def test_annotated_live_invariant_still_fails_when_file_absent():
     return 'genuinely missing live file still FAILs (no false pass)'
 
 
+# ─── Regulatory-pool / required-tag checks (OCR-70) ──────────────────────────
+
+def test_regulatory_pools_pass_when_dataset_referenced():
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / 'code.ts').write_text('const ds = "oer_general";\n', encoding='utf-8')
+        product = {'regulatory_pools': ['general'],
+                   'bigquery_datasets': {'general': 'oer_general'}}
+        _, status, detail = cbc.check_regulatory_pools_present(repo, product)
+        assert status == cbc.PASS, detail
+    return 'dataset referenced in code → PASS'
+
+
+def test_regulatory_pools_fail_when_dataset_absent():
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)  # empty — dataset name never appears
+        product = {'regulatory_pools': ['general'],
+                   'bigquery_datasets': {'general': 'oer_general'}}
+        _, status, detail = cbc.check_regulatory_pools_present(repo, product)
+        assert status == cbc.FAIL, f'expected FAIL, got {status}: {detail}'
+        assert 'oer_general' in detail, detail
+    return 'dataset absent → FAIL with actionable detail'
+
+
+def test_pipeline_present_false_skips_pool_and_tag_checks():
+    """pipeline_present=false (has code, no BigQuery pipeline yet — the WKRP
+    case) must PASS both data-pipeline checks without scanning code."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)  # empty
+        product = {'pipeline_present': False,
+                   'regulatory_pools': ['general'],
+                   'bigquery_datasets': {'general': 'oer_general'},
+                   'required_tags': ['corridor_id']}
+        _, s1, _ = cbc.check_regulatory_pools_present(repo, product)
+        _, s2, _ = cbc.check_required_tags_used(repo, product)
+        assert s1 == cbc.PASS and s2 == cbc.PASS, (s1, s2)
+    return 'pipeline_present=false → both checks PASS (deferred)'
+
+
+def test_required_tags_fail_lists_missing():
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)
+        (repo / 'code.ts').write_text('const a = "corridor_id";\n', encoding='utf-8')
+        product = {'required_tags': ['corridor_id', 'venue_id']}
+        _, status, detail = cbc.check_required_tags_used(repo, product)
+        assert status == cbc.FAIL, detail
+        assert 'venue_id' in detail and 'corridor_id' not in detail.replace('venue_id', ''), detail
+    return 'present tag ignored, missing tag reported'
+
+
+# ─── Stub-repo exemption end-to-end (code_present:false, #91) ────────────────
+
+def _run_checker(product_id: str):
+    """Invoke the real checker against the real brain with an EMPTY repo.
+    Returns (exit_code, report_dict). Empty repo means any code-presence
+    check must fail — so the only way to exit 0 is the stub exemption.
+
+    Runs cbc.main() IN-PROCESS (catching SystemExit) rather than spawning a
+    subprocess. The self-tests are themselves launched as a subprocess by
+    run_script_tests.py; adding a third nested subprocess under
+    capture_output triggered a Windows access violation (0xC0000005 /
+    exit 3221225477) on the self-hosted runner — the OSE-696 SIGSEGV flake
+    class. In-process keeps it to two levels and is deterministic."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td) / 'repo'
+        repo.mkdir()
+        report_path = Path(td) / 'report.json'
+        argv = ['check_brain_contract.py', '--brain', str(BRAIN_ROOT),
+                '--repo', str(repo), '--product-id', product_id,
+                '--report-path', str(report_path)]
+        old_argv = sys.argv
+        sys.argv = argv
+        code = 0
+        try:
+            cbc.main()
+        except SystemExit as e:
+            code = e.code if isinstance(e.code, int) else 1
+        finally:
+            sys.argv = old_argv
+        report = json.loads(report_path.read_text(encoding='utf-8')) \
+            if report_path.exists() else {}
+    return code, report
+
+
+def test_stub_repo_code_present_false_exits_zero():
+    """A registry entry flagged code_present:false (osp/osr/osg/oaw) must be
+    exempt: exit 0 + skipped, even with zero application code. This locks the
+    OCR-docs #91 fix that unblocked the stub-repo propagation PRs."""
+    rc, report = _run_checker('osp')
+    assert rc == 0, f'expected exit 0 for stub repo, got {rc}'
+    assert report.get('skipped') is True, report
+    return 'code_present:false → exit 0, skipped=true'
+
+
+def test_code_present_product_runs_checks_and_fails_on_empty_repo():
+    """Guard the other side: a product NOT flagged code_present:false (ose)
+    must actually run conformance and FAIL against an empty repo — proving the
+    exemption is narrow and the checks aren't globally disabled."""
+    rc, report = _run_checker('ose')
+    assert rc == 1, f'expected exit 1 for code-present product, got {rc}'
+    assert report.get('skipped') is not True, report
+    assert report.get('summary', {}).get('failed', 0) >= 1, report
+    return 'code-present product → checks run, empty repo FAILs'
+
+
 # ─── Run all contracts ───────────────────────────────────────────────────────
 
 CONTRACTS = [
@@ -152,6 +258,12 @@ CONTRACTS = [
      test_annotated_live_invariant_matches_when_file_exists),
     ('invariant.annotated_live_missing_still_fails',
      test_annotated_live_invariant_still_fails_when_file_absent),
+    ('pools.pass_when_dataset_referenced', test_regulatory_pools_pass_when_dataset_referenced),
+    ('pools.fail_when_dataset_absent', test_regulatory_pools_fail_when_dataset_absent),
+    ('pipeline_present_false.skips_both', test_pipeline_present_false_skips_pool_and_tag_checks),
+    ('tags.fail_lists_missing', test_required_tags_fail_lists_missing),
+    ('stub.code_present_false_exits_zero', test_stub_repo_code_present_false_exits_zero),
+    ('stub.code_present_product_still_runs', test_code_present_product_runs_checks_and_fails_on_empty_repo),
 ]
 
 for name, fn in CONTRACTS:

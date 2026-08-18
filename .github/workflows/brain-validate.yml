@@ -33,3 +33,12 @@ jobs:
       - name: Run Brain pyramid
         shell: bash
         run: python3 ocr-docs-brain/tests/run_all.py
+
+      # Script self-tests (test_*.py) lock the behavior of the helper scripts
+      # in scripts/ that the spokes check out and run at runtime. run_all.py
+      # only covers the conformance pyramid, so these are wired separately.
+      # A defect in open_drift_ticket.py / check_brain_contract.py is caught
+      # here in OCR-docs before any spoke pipeline runs it.
+      - name: Run Brain script self-tests
+        shell: bash
+        run: python3 ocr-docs-brain/tests/run_script_tests.py
