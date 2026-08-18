@@ -46,11 +46,37 @@ jobs:
         with: { python-version: '3.11' }
       - run: pip install pyyaml packaging
       - run: python3 ocr-docs-brain/tests/run_all.py
+      - run: python3 ocr-docs-brain/tests/run_script_tests.py
 ```
 
 ### Product repo CI (e.g. OSE)
 
 Product repos run the brain's pyramid first, then run their own conformance checks against it. See `brain-contract-check.yml` in the governance loop package.
+
+## Script self-tests
+
+The pyramid (`run_all.py`) validates the brain *data*. A separate suite locks
+the *behavior* of the helper scripts in `scripts/` that the spokes check out
+and run at CI time (`open_drift_ticket.py`, `check_brain_contract.py`, …):
+
+```bash
+python3 tests/run_script_tests.py   # discovers + runs every tests/test_*.py
+```
+
+`run_script_tests.py` auto-discovers `tests/test_*.py`, so new self-tests are
+picked up with no registration step. It is wired into `brain-validate.yml`
+alongside the pyramid, so a defect in a helper is caught in OCR-docs before a
+spoke runs the script at runtime. The suites are hermetic — the Linear GraphQL
+transport is monkeypatched, so no network or `LINEAR_API_KEY` is needed.
+
+Any workflow that calls a helper script SHOULD have a matching `test_*.py`
+here. Current coverage:
+
+| Test file | Locks |
+|---|---|
+| `test_open_drift_ticket.py` | dedup (`$teamId: ID!`), owner + priority on create, create-vs-update, team routing |
+| `test_check_brain_contract.py` | `_resolve_test_file`, pool/tag checks, `pipeline_present`/`code_present` stub exemptions |
+| `test_helper_cli_contracts.py` | helper CLI arg signatures the workflows depend on |
 
 ## Adding tests
 
