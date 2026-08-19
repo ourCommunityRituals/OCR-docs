@@ -411,10 +411,15 @@ invariants:
       sponsor resolution. Two resolution paths: (a) direct — sponsor.event_id
       matches the requested event; (b) template+geo — sponsor matches event
       template_id AND the sponsor's service area (zip_code match OR haversine
-      radius match). Tier sorting: title > platinum > gold > silver > bronze >
-      primary. Surface filtering: display→tvTop|tvSide, poster→posterTop,
-      public→mobileBanner, sharedReport→all. Deduplication: same sponsor via
-      both paths appears once.
+      radius match). Deduplication: same sponsor via both paths appears once.
+      Rotation ORDER and per-surface treatment are NOT governed here: sponsor
+      rotation is set by Invariant #25 (sponsor_share_covenant) as a
+      capped/floored UNIFORM frequency-share. The locals-first tier sort
+      (title > platinum > gold > silver > bronze > primary) and the named-slot
+      surface filter (display→tvTop|tvSide, poster→posterTop, public→
+      mobileBanner, sharedReport→all) are RETIRED — superseded by #5 and #25 —
+      and MUST NOT be reintroduced. #2 scopes WHICH sponsors resolve to a
+      corridor; it never sets their order, size, or slot (X-7 / OSE-839).
     applies_to:
       - ose
     protective_statement: >
@@ -433,8 +438,10 @@ invariants:
       geo-resolution.invariant.spec.ts (10 cases, runtime: uses page
       fixture against deployed worker) asserts: direct-path resolution,
       template+geo resolution, zip_code matching, haversine radius
-      matching, tier priority sort order, surface filtering per display/
-      poster/public/sharedReport surfaces, sponsor deduplication across
+      matching, tier-order-INDEPENDENCE of response order (rotation is
+      governed by #25's uniform frequency-share, NOT a tier sort — the
+      retired tier-sort/named-slot rules are guarded against reintroduction),
+      sponsor deduplication across
       resolution paths, rotation timing bounds, rotation slot scaling,
       event-types API accepts template associations, service-areas API
       accepts geo areas. Runs in T4 Functional (dispatch-only, requires
