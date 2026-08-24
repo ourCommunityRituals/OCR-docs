@@ -80,6 +80,21 @@ Full spec: `skills/ccr-protocol.knowledge.md`.
 
 ---
 
+## Knowledge homes & reconciliation
+
+Every truth has one home; reconciliation keeps the homes agreeing and promotes shared truths into the brain so every spoke inherits them.
+
+- **Product repo** = its own current state + deep detail (code wins over docs).
+- **Linear** = the historical record (ticket state, PRs, dated logs).
+- **OCR-docs brain** = shared cross-spoke understanding (invariants, standards, VISION) → propagates to spokes.
+- **Session / agent memory** = a thin, live pointer cache — never a system of record.
+
+Reconciliation = drive **code ↔ brain ↔ docs ↔ Linear ↔ deployed** to zero inconsistencies: verify first, file a story per inconsistency (never duplicate — fold into the owner), fix drift at its home, and **promote any shared truth into this brain** — the third leg, because a spoke-local fix re-enters as drift through the other spokes.
+
+Full standard: `docs/standards/OCR_STANDARD_knowledgeHomes.md`. Transport mechanism: `OCR_STANDARD_orgBrainSync.md`.
+
+---
+
 ## Pointers (not copies)
 
 To avoid drift, Claude should not duplicate these from VISION.md here:
