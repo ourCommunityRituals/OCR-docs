@@ -160,13 +160,42 @@ def check_required_tags_used(repo: Path, product: dict) -> tuple[str, str, str]:
     return ('required_tags_used', PASS, f'all {len(required_tags)} required tags referenced')
 
 
+def _requires_local_artifact(inv: dict, product_id: str) -> bool:
+    """Decide whether `product_id` must physically carry this invariant's test
+    artifact in its own repo. Implements the `lives_in` ownership axis (OCR-41).
+
+    `applies_to` declares which products an invariant PROTECTS; that is NOT the
+    same as where the enforcing artifact LIVES. A fleet-wide invariant can be
+    authored and validated by a single spec in one repo while binding many:
+
+      - `lives_in` ABSENT (default): the artifact is consumer-owned — every
+        product in `applies_to` carries its own copy (unchanged legacy behavior).
+      - `lives_in` SET: the artifact lives in the named owner repo(s) and is
+        validated in the owner's own CI; a product this invariant protects but
+        does not own is NOT required to carry the file locally.
+
+    `lives_in` accepts a single repo id or a list. A composition invariant such
+    as #22 cross_repo_import_isolation (the OSE×OW forbidden named⟂anonymous
+    join) becomes multi-home once each side builds its gate — today only OSE
+    owns one; the WKRP/OAW-side gate is tracked separately (OW-112)."""
+    lives_in = inv.get('lives_in')
+    if lives_in is None:
+        return product_id in (inv.get('applies_to') or [])
+    owners = lives_in if isinstance(lives_in, list) else [lives_in]
+    return product_id in owners
+
+
 def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tuple[str, str, str]:
-    """Every invariant that 'applies_to' this product must have its test file
-    present in the repo — status live/partial/planned determines severity."""
+    """Every invariant whose artifact is owned *by this product's repo* must have
+    its test file present — status live/partial/planned determines severity.
+    Whether a repo owns the artifact depends on the invariant's `lives_in` field
+    (OCR-41 ownership axis); see `_requires_local_artifact`. A fleet-wide
+    invariant protects a product without demanding the artifact live inside it."""
     applicable = [i for i in brain['invariants']['invariants']
-                  if product_id in (i.get('applies_to') or [])]
+                  if _requires_local_artifact(i, product_id)]
     if not applicable:
-        return ('invariant_test_files', PASS, f'no invariants apply to {product_id}')
+        return ('invariant_test_files', PASS,
+                f'no invariant artifacts are enforced in {product_id}')
 
     missing_live = []
     missing_partial = []
