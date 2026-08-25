@@ -26,6 +26,7 @@ ADRs and Brain invariants are complementary, not redundant:
 | [ADR-004](ADR-004-role-ready-invariants.md) | Role-ready invariants — schema extension for SCRUM execution | Proposed | 2026-06-01 |
 | [ADR-005](ADR-005-shared-ci-security-bracket-and-runner-fleet.md) | Share the CI security bracket + self-hosted runner fleet | Proposed | 2026-08-13 |
 | [ADR-006](ADR-006-cost-sustainability-free-forever-guardrails.md) | Free-forever as a structural property — cost-sustainability guardrails | Accepted | 2026-08-16 |
+| [ADR-007](ADR-007-reconciliation-process-paradigm.md) | Reconciliation is the process paradigm — results must return to the brain | Accepted | 2026-08-25 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):
