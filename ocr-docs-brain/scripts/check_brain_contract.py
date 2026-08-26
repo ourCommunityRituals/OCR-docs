@@ -292,6 +292,57 @@ def check_uec_codes_in_sync(repo: Path, brain: dict) -> tuple[str, str, str]:
             f'all {len(repo_codes)} UEC codes in repo resolve to brain definitions')
 
 
+def check_demo_geo_in_corridor(repo: Path, brain: dict, product_id: str) -> tuple[str, str, str]:
+    """Invariant #2 geo-realizability, demo facet (OSE-997): a demo/venue's H3
+    cell must resolve inside its named corridor. The brain (corridor-definitions
+    .yaml -> founding_corridors -> geo.anchor_h3_res7) OWNS the corridor anchor;
+    the product's demo data must stamp that same cell, catching a demo cell that
+    drifts out of its corridor (the RIPH->Colorado bug OSE-995 was born against).
+
+    Scoped to products Invariant #2 binds (applies_to). Exhaustive realizability
+    of every demo cell is checked by the product's own
+    riph-brain-conformance.spec.ts (@brain-conformance 2); here the brain
+    enforces the primary anchor cross-repo. String-precise (extracts the demo's
+    declared RIPH res-7 constant) so no H3 runtime dependency is needed — mirrors
+    check_uec_codes_in_sync's read-brain / scan-repo shape."""
+    inv2 = next((i for i in brain['invariants'].get('invariants', [])
+                 if i.get('id') == 2), None)
+    if not inv2 or product_id not in (inv2.get('applies_to') or []):
+        return ('demo_geo_in_corridor', PASS,
+                f'invariant #2 does not bind {product_id} — no demo geo to check')
+
+    blue_island = next((c for c in brain['corridors'].get('founding_corridors', [])
+                        if c.get('corridor_id') == 'blue_island'), None)
+    anchor = ((blue_island or {}).get('geo') or {}).get('anchor_h3_res7')
+    if not anchor:
+        return ('demo_geo_in_corridor', PASS,
+                'brain blue_island declares no geo anchor — nothing to enforce')
+
+    # The demo's declared corridor cell. H3 res-7 indexes are 15 hex chars.
+    pat = re.compile(r"""RIPH_H3_RES7\s*=\s*['"]([0-9a-f]{15})['"]""")
+    found = None
+    for f in repo.glob('**/mock-data.ts'):
+        if any(s in f.parts for s in ('node_modules', '.git')):
+            continue
+        try:
+            m = pat.search(f.read_text(encoding='utf-8', errors='ignore'))
+        except Exception:
+            continue
+        if m:
+            found = m.group(1)
+            break
+
+    if found is None:
+        return ('demo_geo_in_corridor', PASS,
+                'no RIPH demo anchor (RIPH_H3_RES7) defined in repo — no demo geo')
+    if found != anchor:
+        return ('demo_geo_in_corridor', FAIL,
+                f'RIPH demo cell {found} != brain blue_island anchor {anchor} — '
+                f'demo geo drifted OUT of its named corridor (Invariant #2)')
+    return ('demo_geo_in_corridor', PASS,
+            f'RIPH demo anchor matches brain blue_island corridor ({anchor})')
+
+
 def check_identity_layer_contract(repo: Path, product: dict) -> tuple[str, str, str]:
     """Anonymous products must not introduce named-identity coupling."""
     if product.get('identity_layer') != 'anonymous':
@@ -379,6 +430,7 @@ def main():
         check_tier_gate_respected(repo, product, brain),
         check_faith_organization_commitment(repo, brain),
         check_uec_codes_in_sync(repo, brain),
+        check_demo_geo_in_corridor(repo, brain, args.product_id),
         check_identity_layer_contract(repo, product),
     ]
 
