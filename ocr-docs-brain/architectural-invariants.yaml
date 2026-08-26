@@ -1499,6 +1499,12 @@ invariants:
     title: Self-Hosted Runner Bash Resolution
     status: live
     test_file: runner-environment.invariant.spec.ts
+    # SUBSTRATE invariant. Protects every product's CI (see applies_to), but the
+    # runner tooling + its structural test live once at the shared substrate:
+    # OSE owns tools/runner/* and tests/e2e/0-architecture/*. Per the OCR-41
+    # ownership axis, the artifact is validated in the owner (ose) and NOT
+    # demanded inside every spoke repo.
+    lives_in: ose
     enforces: 'On Windows self-hosted runners (Bloodraven + any sibling
       instances), `bash` MUST resolve to Git Bash (C:\Program
       Files\Git\usr\bin\bash.exe), NEVER to the WSL/Microsoft Store shim at
@@ -1588,6 +1594,10 @@ invariants:
     title: Runner Pool Readiness Probe
     status: live
     test_file: runner-pool-readiness.invariant.spec.ts
+    # SUBSTRATE invariant (see #11): runner-pool self-heal lives once at the
+    # shared substrate (OSE owns tools/runner/*), validated there — not per
+    # spoke. OCR-41 ownership axis.
+    lives_in: ose
     enforces: 'Self-hosted runner pools MUST be self-healing on a 1-minute
       cadence with a 5-minute watchdog. Concrete contract: (a) scheduled
       task "Runner Readiness Probe (1-min)" runs tools/runner/janitor.ps1
@@ -1941,6 +1951,18 @@ invariants:
     title: Cross-Repo Import Isolation
     status: live
     test_file: scripts/check-cross-repo-imports.sh (OSE repo)
+    # COMPOSITION invariant: the OSE×OW forbidden-join boundary only exists at
+    # the SEAM between products — it is meaningless for either repo in isolation
+    # (a standalone repo has no sibling to import). Each participating repo
+    # carries its OWN gate once its side of the seam is built; `lives_in` lists
+    # who currently owns one. OSE ships scripts/check-cross-repo-imports.sh
+    # today; the WKRP/OAW-side mirror gate is tracked by OW-112 (and the
+    # hybrid-identity Bridge contracts, OCR-43). Until then WKRP/OAW are
+    # PROTECTED by this invariant (they appear in applies_to) but are not
+    # required to carry the artifact — OCR-41 ownership axis. When OW-112 lands,
+    # add wkrp to lives_in (it accepts a list).
+    lives_in:
+      - ose
     enforces: >
       No module-level import (import/require/file:/workspace: dependency)
       may cross the OSE / WKRP / OAW repo boundary. The only permitted

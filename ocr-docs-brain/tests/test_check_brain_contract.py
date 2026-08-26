@@ -143,6 +143,82 @@ def test_annotated_live_invariant_still_fails_when_file_absent():
     return 'genuinely missing live file still FAILs (no false pass)'
 
 
+# ─── lives_in ownership axis (OCR-41) ────────────────────────────────────────
+# `applies_to` = which products an invariant PROTECTS; that is not the same as
+# where the enforcing artifact must physically LIVE. A fleet-wide invariant
+# (shared runner/CI substrate, or the OSE×OW composition seam) can be authored +
+# validated by a spec in one owner repo (`lives_in`); a protected-but-not-owning
+# repo (e.g. standalone WKRP) must not be forced to carry the file.
+
+def _owned_brain(lives_in):
+    return {
+        'invariants': {
+            'invariants': [
+                {
+                    'id': 11,
+                    'applies_to': ['ose', 'wkrp', 'oaw'],
+                    'lives_in': lives_in,
+                    'status': 'live',
+                    'test_file': 'runner-environment.invariant.spec.ts',
+                },
+            ]
+        }
+    }
+
+
+def test_lives_in_not_required_in_protected_only_repo():
+    """A fleet-wide invariant WKRP is protected by (in applies_to) but does not
+    own (not in lives_in) must PASS even though the file is absent. Accepts both
+    a single-repo string and a list (composition invariants are multi-home)."""
+    for lives_in in ('ose', ['ose']):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)  # empty — file deliberately absent
+            name, status, detail = cbc.check_invariant_test_files(
+                repo, _owned_brain(lives_in), 'wkrp')
+            assert status == cbc.PASS, (
+                f'lives_in={lives_in!r}: protected-only repo should not require '
+                f'artifact; got {status}: {detail}')
+    return 'lives_in invariant not demanded in protected-only repo (str + list)'
+
+
+def test_lives_in_still_required_in_owner_repo():
+    """The owner repo (in lives_in) must still FAIL when the artifact is
+    genuinely missing — ownership routing must not blunt enforcement at the
+    real site."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)  # empty — file absent
+        name, status, detail = cbc.check_invariant_test_files(
+            repo, _owned_brain('ose'), 'ose')
+        assert status == cbc.FAIL, (
+            f'owner repo must still fail on missing artifact; '
+            f'got {status}: {detail}')
+    return 'owner repo still FAILs on missing lives_in artifact'
+
+
+def test_standalone_default_requires_in_every_applies_to():
+    """Back-compat: an invariant with no lives_in is consumer-owned and required
+    in EVERY applies_to product (unchanged legacy behavior)."""
+    brain = {
+        'invariants': {
+            'invariants': [
+                {
+                    'id': 99,
+                    'applies_to': ['ose', 'wkrp'],
+                    'status': 'live',
+                    'test_file': 'some.invariant.spec.ts',
+                },
+            ]
+        }
+    }
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)  # empty
+        for pid in ('ose', 'wkrp'):
+            _, status, detail = cbc.check_invariant_test_files(repo, brain, pid)
+            assert status == cbc.FAIL, (
+                f'standalone invariant must be required in {pid}; got {status}')
+    return 'standalone (default) still required in every applies_to product'
+
+
 # ─── Regulatory-pool / required-tag checks (OCR-70) ──────────────────────────
 
 def test_regulatory_pools_pass_when_dataset_referenced():
@@ -258,6 +334,12 @@ CONTRACTS = [
      test_annotated_live_invariant_matches_when_file_exists),
     ('invariant.annotated_live_missing_still_fails',
      test_annotated_live_invariant_still_fails_when_file_absent),
+    ('lives_in.not_required_in_protected_only_repo',
+     test_lives_in_not_required_in_protected_only_repo),
+    ('lives_in.required_in_owner_repo',
+     test_lives_in_still_required_in_owner_repo),
+    ('lives_in.absent_default_required_in_every_applies_to',
+     test_standalone_default_requires_in_every_applies_to),
     ('pools.pass_when_dataset_referenced', test_regulatory_pools_pass_when_dataset_referenced),
     ('pools.fail_when_dataset_absent', test_regulatory_pools_fail_when_dataset_absent),
     ('pipeline_present_false.skips_both', test_pipeline_present_false_skips_pool_and_tag_checks),
