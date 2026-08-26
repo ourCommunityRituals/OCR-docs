@@ -84,6 +84,23 @@ founding_corridors:
       title: "Director of Community Development, Blue Island"
       relationship: "3-year bocce relationship. Primary institutional demo target."
       demo_target_date: "2026-08-01"
+    # Authoritative corridor geo (OSE-997). The brain — not a test — owns the
+    # bounds a demo/venue's H3 cells must resolve inside (Invariant #2, geo-
+    # realizability). anchor_h3_res7 is the RIPH/Blue-Island res-7 cell; bbox is
+    # the Blue Island / Southwest-Chicago corridor box (Blue Island 41.657,
+    # -87.680 and its adjacency fall inside; the stale Colorado cell 37.85,
+    # -107.69 is ~1,500 km out). Enforced cross-repo by
+    # scripts/check_brain_contract.py:check_demo_geo_in_corridor and mirrored by
+    # OSE tests/riph-brain-conformance.spec.ts (@brain-conformance 2).
+    geo:
+      anchor_lat: 41.657
+      anchor_lon: -87.680
+      anchor_h3_res7: "872664544ffffff"
+      bbox:
+        lat_min: 41.4
+        lat_max: 41.85
+        lon_min: -88.05
+        lon_max: -87.45
     status: active
 
   - corridor_id: beverly

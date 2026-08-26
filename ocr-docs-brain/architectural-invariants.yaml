@@ -452,12 +452,24 @@ invariants:
       the tables and columns the resolver depends on. Any migration that
       drops these columns would break the integration tests at deploy-
       time before going to production.
+      (c) DEMO GEO-REALIZABILITY (OSE-997) — a demo/venue's H3 cell must
+      resolve inside its NAMED corridor. corridor-definitions.yaml owns each
+      founding corridor's authoritative geo (geo.anchor_h3_res7 + bbox); the
+      product's demo data must stamp the brain's corridor anchor. Enforced
+      cross-repo by check_brain_contract.py:check_demo_geo_in_corridor (the
+      brain gate reads the anchor and the repo's RIPH_H3_RES7 — mismatch is
+      drift) and exhaustively by riph-brain-conformance.spec.ts
+      (@brain-conformance 2), which decodes every demo cell and asserts it
+      falls in the corridor bbox. Born-red against the RIPH cell that resolved
+      to the San Juan Mountains, Colorado (~1,500 km outside Blue Island).
     references:
       resolver: workers/oursharedevents/src/lib/sponsor-resolver.ts
       invariant_test: tests/e2e/0-architecture/geo-resolution.invariant.spec.ts
       migration_event_types: workers/oursharedevents/migrations/0019_create_sponsor_event_types.sql
       migration_service_areas: workers/oursharedevents/migrations/0020_create_sponsor_areas.sql
       migration_geo_events: workers/oursharedevents/migrations/0021_add_geo_to_events.sql
+      demo_geo_conformance: workers/oursharedevents/tests/riph-brain-conformance.spec.ts
+      demo_geo_brain_gate: ocr-docs-brain/scripts/check_brain_contract.py
 
   # ── #3 UNIVERSAL EVENT CODE (UEC) ─────────────────────────────────────────
   - id: 3
