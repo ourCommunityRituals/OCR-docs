@@ -10,9 +10,16 @@ Staged for `OCR-docs/ocr-docs-brain/architectural-invariants.yaml`.
 > (3) note that OSE migrations 0061/0067 already cite "#25" from committed
 > code — a committed citation of uncommitted law — which is the strongest
 > live argument for the registry-version mechanism (item 5 below).
-> Also unverified: whether `applies_to` is a schema field on registry entries
-> or only conformance-doc prose — confirm against the brain's own validator
-> (`level2_schema.py`) before landing; both drafts use it.
+> RESOLVED 2026-08-27: `applies_to` IS a machine-read field —
+> `scripts/check_brain_contract.py` filters invariants by it and requires each
+> applicable invariant's `test_file` to EXIST in the spoke repo (spoke-relative
+> path, checked per product). CONSEQUENCE FOR THESE DRAFTS: `test_file` as
+> written uses OSE paths with prose annotations — landing #27 with
+> `applies_to: [ose, wkrp]` as drafted would FAIL wkrp's brain-contract-check
+> (path absent in OW) and open a spurious drift ticket. Before landing, either
+> (a) give multi-spoke invariants a per-product test_file mapping in the
+> checker + registry, or (b) list the spoke-resolvable path per spoke:
+> OSE `tests/schema-lexicon.spec.ts`, OW `tests/security/count-floor.invariant.spec.ts`.
 
 Entry shape mirrors #25's rich form. Ruled 2026-08-26: **law leads, implementations
 conform** — #26 is registered from one spoke's implementation, deliberately ahead of
