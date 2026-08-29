@@ -40,7 +40,7 @@ defaults:
 jobs:
   audit:
     name: Audit brain enforcement code location
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:

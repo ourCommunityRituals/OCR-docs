@@ -32,7 +32,7 @@ env:
     ourSharedMagnets
     ourAirwaves
 
-# Pin bash for self-hosted Windows runner (default would be PowerShell).
+# Pin bash explicitly (harmless on ubuntu-latest, whose default is already bash) so run steps are shell-deterministic regardless of runner.
 defaults:
   run:
     shell: bash
@@ -40,7 +40,7 @@ defaults:
 jobs:
   sync-check:
     name: Audit all repos
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout OCR-docs
         uses: actions/checkout@v4
