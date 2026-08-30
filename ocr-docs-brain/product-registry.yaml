@@ -326,7 +326,7 @@ products:
   product_name: OurWKRP
   layer: non-anonymous
   repo: OurCommunityRituals/ourWKRP
-  repo_status: planned
+  repo_status: active
   # ourWKRP has application code but has not built its OCR data pipeline yet
   # (see pipeline_activation_phase: 2 below). The brain conformance check
   # (scripts/check_brain_contract.py) honors this flag and skips the
@@ -337,6 +337,33 @@ products:
   # is built.
   pipeline_present: false
   identity_layer: non-anonymous
+  # Invariant #26 explicit_identity — the non-anonymous half of the choice
+  # contract. A non-anonymous product with code MUST declare this block;
+  # check_brain_contract.py check_identity_layer_contract verifies every
+  # declared path exists and every strip symbol is referenced by the
+  # boundary module. Omitting the block is drift, not an opt-out — that is
+  # what closes the vacuous pass this check used to return for any product
+  # whose identity_layer was not 'anonymous'.
+  identity_contract:
+    # (a) AFFIRMATIVE BIRTH — the only sanctioned paths that mint a durable
+    # contributor identity. Each is an act the person initiated.
+    consent_entrypoints:
+      - src/handlers/auth-register.ts
+      - src/handlers/auth-callback.ts
+    # (b) INTACT ANONYMOUS RUNG — the spec proving a visitor can reach the
+    # public surfaces without acquiring an identity.
+    anonymous_rung_spec: tests/e2e/anonymous-journey.spec.ts
+    # (c) STRIPPED EGRESS — the module every cross-product export passes
+    # through, and the symbols that do the stripping.
+    boundary_module: src/lib/privacy.ts
+    strip_symbols:
+      - stripListenerPII
+      - sanitizeForExport
+    # (d) REVOCABLE FLAG — tombstone-not-delete: severs the person from the
+    # contributions while the opaque id preserves the provenance chain.
+    erasure_module: src/lib/erasure.ts
+    # Repo-side structural gate for all four walls (invariant #26 test_file).
+    invariant_spec: tests/security/explicit-identity.invariant.test.ts
   description: 'Community free space. Spotify fists-of-5 compete for top playlist. QR code votes tallied
     at end of night. Winner takes home the belt. All free. Cultural reclaiming against AI. Legal clearance
     path to Empty Bottle, Reckless.
