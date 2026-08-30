@@ -402,6 +402,132 @@ invariants:
       inherits the layered-enforcement template that #1 anonymous_id
       established (2026-05-17 trio enrichment).
 
+  # ── #26 EXPLICIT IDENTITY ─────────────────────────────────────────────────
+  - id: 26
+    name: explicit_identity
+    label: "#26 — Explicit Identity"
+    group: privacy_identity
+    group_order: 4
+    title: Explicit Identity
+    status: partial
+    test_file: explicit-identity.invariant.test.ts
+    enforces: >
+      The identity LAYER that composes on top of the anonymous base. OSE is the
+      base layer present in every OCR app; #1 anonymous_id governs it and stays
+      true underneath. #26 governs what sits ABOVE it in a non-anonymous product
+      — the opt-in "plant my flag, this is me" authorization layer. Identity
+      MUST be born only from an affirmative act, MUST never be required to reach
+      a public surface, MUST never cross the OER aggregation boundary
+      un-stripped, and MUST always be revocable. The layer is additive: adding
+      it never subtracts from the base beneath it.
+      Four walls: (a) AFFIRMATIVE BIRTH — no code path creates a durable
+      contributor identity except a declared consent entrypoint
+      (registration or an OAuth callback the person initiated); browsing,
+      scanning, or viewing never registers anyone. (b) INTACT ANONYMOUS
+      RUNG — every public surface (catalog, stats, public profile) stays
+      reachable with no session, and an anonymous journey spec proves it
+      by asserting the session endpoint still returns 401 after the visit.
+      (c) STRIPPED EGRESS — every cross-product export path passes through
+      the declared identity-boundary module; listener identity is removed
+      before data leaves the product. (d) REVOCABLE FLAG — an erasure path
+      severs the person from their contributions (tombstone the PII, purge
+      the KV identity material) while preserving the opaque id so
+      provenance survives. The contract is declared per product in
+      product-registry.yaml under `identity_contract` and verified by
+      scripts/check_brain_contract.py.
+    applies_to:
+      - wkrp
+      - oaw
+    depends_on:
+      - anonymous_id
+    protective_statement: >
+      #1 anonymous_id governs the BASE LAYER — the substrate every OCR app
+      ships, protecting the person who plants no flag. #26 governs the layer
+      stacked ON TOP of it: the authorization/identity capability that lets a
+      person say "this is me" and be credited for it. The relationship is
+      COMPOSITION, not opposition — #26 is not the other side of a coin, it is
+      a layer that must leave the base intact beneath it. That is precisely why
+      wall (b) exists: if adding the identity layer degrades the anonymous rung,
+      the layering has failed and the base has stopped being universal.
+      Without both, "choice infrastructure" is a slogan — a platform with only
+      the base offers anonymity but no way to be credited, and a platform whose
+      layer has eaten the base offers credit but no way to opt out.
+      The specific failures #26 prevents are the ones that quietly
+      convert a choice into a default: a surface that registers a visitor
+      as a side effect of looking (breaking (a)), a public page that starts
+      demanding a login (breaking (b)), an export that carries listener
+      names across the boundary into the anonymous product (breaking (c),
+      and silently coupling the two identity models #22 exists to keep
+      apart), or an identity that cannot be withdrawn once given (breaking
+      (d)). Each of these is individually small and individually plausible
+      as a "small change". Together they are how a community platform turns
+      into a surveillance platform without anyone deciding to.
+    enforcement_statement: >
+      PARTIAL (2026-08-30) — the structural half is enforced in CI; the
+      runtime half is not yet. (a) BRAIN-SIDE CONTRACT CHECK —
+      scripts/check_brain_contract.py check_identity_layer_contract now
+      branches on identity_layer instead of short-circuiting: an
+      `anonymous` product is checked for named-identity leakage as before,
+      and a `non-anonymous` product with code_present is checked against
+      its declared `identity_contract` block (boundary_module,
+      erasure_module, consent_entrypoints, anonymous_rung_spec, and the
+      cross-boundary strip symbols must all exist and be referenced). A
+      non-anonymous product that declares no identity_contract FAILS —
+      this is what closes the vacuous pass, where every non-anonymous
+      product conformed by definition because the check skipped it.
+      (b) REPO-SIDE STRUCTURAL SPEC — tests/security/
+      explicit-identity.invariant.test.ts in the product repo locks the
+      code-shape of all four walls (string/static assertions, no yaml
+      dependency, mirroring the L0 pattern of #1/#8) and runs on every PR
+      via the security-tests job.
+      (c) ANONYMOUS RUNG SPEC — tests/e2e/anonymous-journey.spec.ts
+      exercises wall (b) against a running worker: browse catalog, stats,
+      and a public profile, then assert /auth/session/me is still 401.
+      partial→live criterion: the runtime complement is green — the
+      erasure path and the stripped-egress path asserted against a
+      deployed worker (not just their code-shape), and the anonymous-rung
+      spec wired into the staging smoke gate rather than local E2E only.
+    references:
+      framework_relationship: >
+        THE FRAMEWORK IS THE SAME. WKRP is not a second architecture — it is the
+        OSE framework with the extra profiles (DJ / curator / contributor /
+        listener) and the non-anonymous capabilities switched ON. Nothing forks;
+        capabilities are enabled. The third thing being enabled is the invariant
+        machinery ITSELF: before #26, check_identity_layer_contract had no
+        decision to make for a non-anonymous product — it returned PASS and
+        skipped. #26 gives the invariants the ability to actually decide on this
+        layer. A conformance check that cannot decide is not governance, it is
+        decoration.
+      base_layer_invariant: >
+        #1 anonymous_id — the BASE layer, shipped in every OCR app. #26 is the
+        layer above it, not a peer and not an opposite: OSE is the substrate,
+        and the WKRP identity layer composes on top without subtracting from
+        it. Same group and adjacent order because they are one stack, and
+        `depends_on: anonymous_id` because the layer is meaningless without an
+        intact base. Read them bottom-up, not side-by-side.
+      boundary_invariants: >
+        #17 oer_emission_boundary and #22 cross_repo_import_isolation guard
+        the same WKRP↔OSE seam from the other side — #17 governs what may be
+        emitted, #22 forbids module-level coupling, #26 wall (c) requires the
+        egress path to strip identity before either applies.
+        #7 aggregate_only_reporting is the OSE-side statement of the same
+        principle.
+      retention_invariant: >
+        #8 bounded_pii_retention — #26 wall (d) is the choice-side
+        counterpart: #8 bounds how long identity may be held, #26 requires
+        that the person can end it themselves at any time.
+      wkrp_boundary_module: "ourWKRP src/lib/privacy.ts — stripListenerPII / sanitizeForExport / isCrossProductRequest"
+      wkrp_erasure_module: "ourWKRP src/lib/erasure.ts — tombstone-not-delete, preserves provenance chain"
+      wkrp_consent_entrypoint: "ourWKRP src/handlers/auth-register.ts — 'the act of registering is the consent'"
+      wkrp_anonymous_rung: "ourWKRP tests/e2e/anonymous-journey.spec.ts — asserts browsing never creates a contributor identity"
+      wkrp_audit_alignment: "ourWKRP src/lib/audit.ts — actorId is an opaque contributor UUID or null, never a name"
+      registry_contract: "product-registry.yaml → products[wkrp].identity_contract"
+      adr: "ADR-002 — the choice-infrastructure decision that indicatively reserved an explicit_identity invariant; #15/#16 were assigned elsewhere in the interim, so it lands here as #26"
+      activation_criterion: >
+        Promote to live when the runtime complement is green: erasure and
+        stripped-egress asserted against a deployed worker, and the
+        anonymous-rung spec running in the staging smoke gate.
+
   # ══ GROUP 2: PRODUCT & EXPERIENCE ═══════════════════════════════════════════
   # What the platform does — built on the privacy foundation above.
 
@@ -3341,6 +3467,30 @@ enrichment_history:
       planned -> active in lockstep with the OSE TS mirror (drift-checked).
       status_summary: live 17 -> 18, planned 1 -> 0.
 
+  - invariant_id: 26
+    invariant_name: explicit_identity
+    from_state: absent
+    to_state: partial
+    date: '2026-08-30'
+    pr_refs:
+      - 'OCR-docs — feat(brain): invariant #26 explicit_identity + non-anonymous contract check'
+    rationale: >
+      Minted to close a structural gap, not to add a rule. The brain had no
+      contract for the non-anonymous half of the choice model:
+      check_brain_contract.py check_identity_layer_contract returned PASS
+      unconditionally for any product whose identity_layer was not
+      'anonymous', so ourWKRP — the flag-in-the-sand product — conformed by
+      definition no matter what its code did. Every one of the eight
+      conformance checks was a no-op for wkrp (pools and tags skipped on
+      pipeline_present, zero UEC codes in repo, #2 not binding, identity
+      skipped), which meant a green brain check on ourWKRP PRs carried no
+      information. #26 is the mirror of #1 anonymous_id and gives the
+      checker something real to bind to via the new per-product
+      identity_contract block. Lands partial: the structural half is
+      enforced in CI now, the runtime half is the promotion criterion.
+      ADR-002 had indicatively reserved explicit_identity at #15/#16; both
+      numbers were assigned to other invariants in the interim, so the
+      number is minted centrally here as #26 per the naming spine.
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Counts are hand-maintained on every material change
@@ -3607,9 +3757,9 @@ enrichment_history:
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
-  partial: 7  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560)
+  partial: 8  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion)
   planned: 0
   retired: 2  # #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe (retired 2026-09-02, OSE-1194 — self-hosted runner fleet decommissioned; CI on GitHub-hosted ubuntu-latest)
-  total: 25
-  rich_form: 24 # #1-#19, #21-#25 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
+  total: 26
+  rich_form: 25 # #1-#19, #21-#26 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
   lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)
