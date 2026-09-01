@@ -110,3 +110,49 @@ Once `.stories.json` is fed by Linear + GitHub Actions, the lane view becomes
 a live operational picture: you'll see the Brain light up green first, then
 each downstream QA column turn blue-then-green (or blue-then-red) as CI
 completes per repo — all simultaneously for multi-app stories.
+
+---
+
+## Paths, and why they are derived (2026-09-01)
+
+`BRAIN_REPO` was previously the absolute constant
+`C:/Users/mzdan/dev/ourCommunityRituals/OCR-docs`, with `OSE_REPO` and
+`SIBLING_DIR` alongside it. That made the tool produce output on exactly one
+checkout. Everywhere else `Path("C:/...")` is a **relative** path, so the script
+logged `Wrote ...` for all eleven pages while creating a directory literally
+named `C:` and writing nothing where it belonged — a silent false success, and
+the reason no CI job could ever run it.
+
+Paths now derive from the file's own location:
+
+| Constant | Derivation | Override |
+|---|---|---|
+| `BRAIN_REPO` | `dashboard/dashboard.py` → repo root | `OCR_BRAIN_REPO` |
+| `SIBLING_ROOT` | `BRAIN_REPO.parent` | `OCR_SIBLING_DIR` |
+| `OSE_REPO` | `SIBLING_ROOT / "ourSharedEvents"` | — |
+
+`canon_path()` still handles `Our` vs `our` casing. A checkout with a different
+layout sets the two env vars rather than editing source.
+
+## What is committed, and what is not
+
+| File | Tracked | Why |
+|---|---|---|
+| `dashboard.py`, `README.md`, `.stories.json.example` | ✅ | the generator and its docs |
+| `index.html`, `app-*.html`, `dashboard.html` | ❌ | derived — regenerable exactly from the generator |
+| `.state.json` | ❌ | last-run cache, per-machine |
+| **`.history.json`** | **✅** | **append-only trend log — irreplaceable** |
+| `.stories.json` | ❌ | local feed, may carry unshipped Linear content |
+
+`.history.json` is the one output that cannot be regenerated: every `--run-tests`
+appends a row, and the day/week/month trend charts are built from the series. It
+was previously ignored, which meant the history lived only on whichever machine
+ran last and died on a fresh clone — the trend data most worth keeping was the
+one thing guaranteed not to be kept.
+
+## Scheduled regeneration
+
+`.github/workflows/dashboard.yml` regenerates the dashboard daily and uploads it
+as a run artifact. The repo is private, so a run artifact — not GitHub Pages —
+is the appropriate surface: no publishing of infra state, no Pages entitlement
+needed on a private org repo. Download it from the workflow run.

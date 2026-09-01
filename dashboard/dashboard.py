@@ -66,8 +66,20 @@ def canon_path(p: Path) -> Path:
     return p
 
 
-OSE_REPO = canon_path(Path("C:/Users/mzdan/dev/ourCommunityRituals/ourSharedEvents"))
-BRAIN_REPO = canon_path(Path("C:/Users/mzdan/dev/ourCommunityRituals/OCR-docs"))
+# Paths are DERIVED, never hardcoded. The previous absolute
+# "C:/Users/mzdan/dev/..." constants meant this tool only produced output on one
+# Windows checkout: everywhere else Path("C:/...") is a *relative* path, so the
+# script logged "Wrote ..." for every page while creating a directory literally
+# named "C:" and writing nothing where it belonged. A false success, and the
+# reason no CI job could ever run this.
+#
+# BRAIN_REPO is this file's own repo (dashboard/dashboard.py -> repo root).
+# Siblings resolve next to it, matching the repo-per-app layout. Both are
+# overridable by env so a runner with a different checkout layout can point the
+# tool without editing source.
+BRAIN_REPO = canon_path(Path(os.environ.get("OCR_BRAIN_REPO") or Path(__file__).resolve().parent.parent))
+SIBLING_ROOT = canon_path(Path(os.environ.get("OCR_SIBLING_DIR") or BRAIN_REPO.parent))
+OSE_REPO = canon_path(SIBLING_ROOT / "ourSharedEvents")
 DASHBOARD_DIR = BRAIN_REPO / "dashboard"
 STATE_FILE = DASHBOARD_DIR / ".state.json"
 HISTORY_FILE = DASHBOARD_DIR / ".history.json"
@@ -76,7 +88,7 @@ INDEX_HTML = DASHBOARD_DIR / "index.html"
 STAGING_BASE = "https://stg.oursharedevents.com"
 PROD_BASE = "https://oursharedevents.com"
 
-SIBLING_DIR = canon_path(Path("C:/Users/mzdan/dev/ourCommunityRituals"))
+SIBLING_DIR = SIBLING_ROOT
 STORIES_FILE = DASHBOARD_DIR / ".stories.json"
 
 GH_ORG = "https://github.com/ourCommunityRituals"
@@ -1639,7 +1651,7 @@ def render_index(all_features: list[dict], per_app: dict[str, dict], history: di
 <footer>
   ocr-dashboard v2 · click an app to drill into its live probes + test pyramid + drift<br>
   State: <span class="mono">OCR-docs/dashboard/.state.json</span> · History: <span class="mono">OCR-docs/dashboard/.history.json</span><br>
-  Regenerate: <span class="cmd" id="cmd-regen">py C:\\Users\\mzdan\\dev\\ourCommunityRituals\\OCR-docs\\dashboard\\dashboard.py</span>
+  Regenerate: <span class="cmd" id="cmd-regen">python3 dashboard/dashboard.py</span>
   <button class="copy-btn" data-target="cmd-regen">copy</button>
   {args_note}
 </footer>
@@ -1842,7 +1854,7 @@ def render_app_detail(app: dict, features_for_this_app: list[dict],
             )
 
             cmd_id = f"cmd-{app['key']}-{idx}"
-            refresh_cmd = f"py C:\\Users\\mzdan\\dev\\ourCommunityRituals\\OCR-docs\\dashboard\\dashboard.py --run-tests {f['key']}"
+            refresh_cmd = f"{sys.executable} {Path(__file__).resolve()} --run-tests {f['key']}"
             cmd_html = (
                 f'<div class="cmd-wrap"><span class="cmd" id="{cmd_id}">{e(f["run_cmd"])}</span>'
                 f'<button class="copy-btn" data-target="{cmd_id}" title="Copy">copy</button></div>'

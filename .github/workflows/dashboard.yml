@@ -1,0 +1,121 @@
+# ---------------------------------------------------------------------------
+# Infra dashboard — scheduled regeneration (2026-09-01).
+#
+# WHY THIS COULD NOT EXIST BEFORE
+#   dashboard/dashboard.py hardcoded C:/Users/mzdan/... as its repo root, so on
+#   any other machine Path("C:/...") resolved RELATIVE: the script logged
+#   "Wrote ..." for all eleven pages while creating a directory named "C:" and
+#   writing nothing where it belonged. Paths now derive from the file's own
+#   location (with OCR_BRAIN_REPO / OCR_SIBLING_DIR overrides), which is what
+#   makes a runner able to produce real output.
+#
+# WHY AN ARTIFACT AND NOT GITHUB PAGES
+#   Every repo in this org is private. Pages on a private org repo needs an
+#   Enterprise entitlement, and publishing an infra dashboard would turn
+#   internal verification state into a disclosure surface. A run artifact is
+#   private by construction, needs no new infrastructure, and matches the
+#   pattern conformance-report.yml already uses.
+#
+# SCOPE NOTE
+#   Sibling repos are NOT checked out here. The generator degrades honestly when
+#   a sibling is absent — the roster still renders, per-app git/drift columns
+#   read as unavailable rather than as green. Adding ourWKRP to this checkout
+#   would put it and ourSharedEvents in one workspace, which R3 forbids; that
+#   boundary is deliberate, not an oversight.
+# ---------------------------------------------------------------------------
+name: Infra Dashboard
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # daily 06:00 UTC, after the 03:17 nightly has reported
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/dashboard.py'
+      - '.github/workflows/dashboard.yml'
+
+permissions:
+  contents: read
+  actions: read # resolve + download the prior run's history artifact
+
+concurrency:
+  group: infra-dashboard
+  cancel-in-progress: false
+
+jobs:
+  render:
+    name: 'Render infra dashboard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Fail loudly if the generator silently writes nowhere — the exact defect
+      # this workflow was blocked on. A green run must mean pages exist.
+      # Trends need a SERIES, so history must survive across runs. Committing
+      # .history.json back would need contents:write on a scheduled job — the
+      # same write-scope-in-automation shape this org already decided against.
+      # Chaining artifacts gives the same accumulation with zero write scope:
+      # pull the previous run's history in, append, publish it again.
+      # `continue-on-error` covers only the very first run, when no prior
+      # artifact exists; a missing history yields an empty series, never a
+      # fabricated one.
+      # actions/download-artifact only reads the CURRENT run, so it cannot pull
+      # the prior series. Resolve the most recent successful run of this
+      # workflow explicitly and download from that. Needs actions:read only.
+      - name: Restore history from the previous run
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          prev=$(gh run list --workflow "${{ github.workflow }}" --status success \
+                   --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null || true)
+          if [ -z "${prev:-}" ] || [ "$prev" = "null" ]; then
+            echo "::notice::no prior successful run — this run seeds the series"
+            exit 0
+          fi
+          if gh run download "$prev" --name infra-dashboard-history --dir dashboard/ 2>/dev/null; then
+            rows=$(python3 -c "import json;print(len(json.load(open('dashboard/.history.json'))))" 2>/dev/null || echo '?')
+            echo "history restored from run $prev — $rows prior snapshot(s)"
+          else
+            echo "::notice::prior run $prev had no history artifact — seeding"
+          fi
+
+      - name: Render
+        run: |
+          set -euo pipefail
+          python3 dashboard/dashboard.py --run-tests all
+          test -s dashboard/index.html || { echo "::error::index.html missing or empty — generator wrote nothing"; exit 1; }
+          count=$(ls dashboard/app-*.html 2>/dev/null | wc -l)
+          [ "$count" -ge 1 ] || { echo "::error::no per-app pages rendered"; exit 1; }
+          echo "rendered index.html + $count app pages"
+
+      - name: Upload dashboard
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-dashboard
+          path: |
+            dashboard/index.html
+            dashboard/app-*.html
+            dashboard/dashboard.html
+          retention-days: 30
+
+      # The series itself, kept separately and for far longer than the rendered
+      # pages: index.html is regenerable from the generator, .history.json is
+      # not. Every --run-tests appends a row, and the success/fail percentages
+      # and maintenance trend are computed from the accumulated series.
+      - name: Upload history series
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: infra-dashboard-history
+          path: dashboard/.history.json
+          retention-days: 90
+          include-hidden-files: true
