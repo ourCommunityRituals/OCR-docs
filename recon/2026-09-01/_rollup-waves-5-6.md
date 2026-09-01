@@ -17,7 +17,15 @@ First, because it governs every other use of the fleet. Fix: containment comes f
 
 Pre-data lowers the consequence of a bad deploy today; it does not change that the path exists and will be the path when data arrives.
 
-**3. `S2 Post-Execution Security` is a required check that no workflow produces.**
+**3. `S2 Post-Execution Security` — RESOLVED 2026-09-01: branch protection no longer matches its versioned source of truth.**
+
+*Answered empirically.* PR #430 (head `41250fe`) reports **24 check runs**, all `success` or `skipped`, and **`S2 Post-Execution Security` is not among them.* A green, mergeable PR without that context means live GitHub branch protection does **not** require it. So of the two possible states, it is the second: the check was edited out of branch protection out-of-band, and `tools/ci/main-branch-protection.json:7` still lists it — the versioned source of truth is stale fiction.
+
+Nothing will ever tell you this: `scripts/apply-branch-protection.mjs --check`, documented as "safe to wire into CI as a drift detector," is invoked by no workflow. Wire it, then reconcile the JSON to reality (or restore the check). Original finding below.
+
+*The finding as originally written:*
+
+**`S2 Post-Execution Security` is a required check that no workflow produces.**
 Required in `tools/ci/main-branch-protection.json:7`; the string appears in exactly two places repo-wide, both documentation. The job that emitted it was retired 2026-08-28 and re-homed into `functional-staging`, which `if:`-skips on PRs. Either GitHub still requires the dead context and every PR is stuck pending, or it was edited out-of-band and the versioned source of truth is now fiction — the exact failure its own README exists to prevent. **The drift detector that would catch this is wired into no workflow.** Ten minutes to determine which state you are in; do that before anything else on this list.
 
 **4. The brain asserts LIVE invariants on repos its own checker is told to skip.**
