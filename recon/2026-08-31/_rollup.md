@@ -5,7 +5,36 @@
 >
 > **Five items for the wave, not five per report.** Every one was independently re-verified by the lead session against the working tree or the Linear API before landing here. One worker finding did not survive that check and was corrected in `ose-board`; one was narrowed in `ose-drift`.
 
-## Gate Queue
+## Correction (2026-09-01) — re-ranked for a pre-data system
+
+The Gate Queue below was ranked by blast radius **without first establishing what is
+live**. OCR is pre-revenue by contract (invariant #6, `inert_monetization_hooks`: no
+billing logic on any code path) and currently has no data flowing — no live events, no
+attendees, no sponsors in production. Blast radius is a function of what is exposed,
+so the original order is wrong. Corrected ranking:
+
+| Was | Now | Item | Why it moved |
+|---|---|---|---|
+| 2 | **1** | CI credential pattern on the deploy jobs | Unchanged in severity. The exposure is an org-write token present while untrusted dependency lifecycle scripts run — the target is the **repos and the org**, not user data. It is the only item on this list with a live adversary today. |
+| 4 | **2** | Red-team suite unwired | One workflow step, and pre-data is exactly when you want it green — before there is anything to lose. |
+| 5 | **3** | Register wrong in both directions | Cheap to fix now; every conformance number depends on it, and the cost of a wrong denominator compounds. |
+| 3 | **4** | Docs name a deleted file as the trust boundary | Costs a reviewer's time at the next security review, and degrades further with age. Not urgent. |
+| **1** | **5** | OSE-349 / invariant #5 covenant unproven | **Drops furthest.** The covenant guards sponsor equity. With no sponsors and no events, nothing inequitable is happening. This matters at launch, not today. |
+
+Items 4 and 5 of the original ranking — PII retention, anonymous ID, aggregate-only
+enforcement — are guarding zero rows. They are not less important as invariants; they
+are less *urgent* as findings.
+
+**The reframe that matters more than the re-ranking:** pre-data is the cheapest moment
+this work will ever have. Making an invariant mechanical costs a test today and a data
+migration after launch. The gap between PROSE and MECHANICAL closes for free right now.
+
+The original ranking is left intact below rather than rewritten, so the series shows
+what was concluded and what corrected it.
+
+---
+
+## Gate Queue (original ranking, 2026-08-31)
 
 **1. Settle whether OSE-349 is fixed. It gates the commercial covenant's only live proof.**
 Invariant #5 `tier_equity` has been mechanically enforced at the code-shape and unit layers, and **unproven against a running worker since 2026-05-19** — the T3 Newman covenant assertion (`postman/collections/ose-api.json` §11) is blocked by a CF Access service token. The probe is still in CI at `oursharedevents-ci.yml:1109`, labelled "diagnostic only, does not gate," warning *"fix the service token first."* But commit `96ba467` (2026-08-21) says *"Root cause of the recurring OSE-349/OSE-889 admin-auth failure — a code bug."* Either the fix landed and both the probe and the ticket are stale, or it was partial and the covenant layer is still dark. **Neither report settles it, and it is the single highest-consequence open question in the wave.** One person, ten minutes, one staging run.
