@@ -69,3 +69,47 @@ Plus `workers/oursharedevents/tests/schema-lexicon.spec.ts` (OSE-801) — the ba
 **Against the documentation**, it contradicts itself on four entries, and its own validator cannot detect any of them because it type-checks the field instead of resolving it.
 
 **The single change that closes most of this** is one check the brain does not have: resolve every `test_file` to a path, assert the path exists, and assert it is named in a blocking workflow — then invert it and assert every gated invariant spec has a register entry. Both directions, mechanically. This artifact is that check run by hand once; as a script it would have failed on the day each of these drifted.
+
+---
+
+## 5. The reconciliation checklist, as it now stands
+
+Each item is a check that would have failed on the day the drift it catches was introduced. Two are now implemented; the rest are open.
+
+| # | Check | Direction | State |
+|---|---|---|---|
+| 1 | Every register `test_file` resolves to a path that **exists** | register → code | **open** — 2 entries fail today (#14, #24) |
+| 2 | Every register `test_file` is **named in a blocking workflow** | register → code | **open** — 4 `live` invariants fail (#1, #2, #3, #4) |
+| 3 | Every gated invariant spec has a **register entry** | code → register | **open** — 7 gates unrecorded |
+| 4 | Every register `status` agrees with its own prose | register → docs | **open** — 4 contradictions (#14, #21, #24, #25) |
+| 5 | Every `applies_to` names a surface that **could violate** the invariant | register → estate | **open** — ~17 pairs on code-empty repos |
+| 6 | **Every tier has a placement guard** | code → CI | **2 of N done** |
+
+### Item 6 — added 2026-09-01
+
+A tier runs because of one line somewhere: a shard name in a matrix, a glob in a config, a filename on a command line. Nothing asserts those lines stay. Delete one and the suite still reports green, because a test that is never *discovered* cannot fail. This estate has produced that failure three times already — 55 FE specs named in no workflow, `tests/red-team/` (1,847 lines) referenced by nothing, and OSE-852's Playwright steps discovering zero tests.
+
+The repo already had one guard of this shape, for the invariants shard (OSE-350): classify the specs, assert every structural one is wired into the T0 step. It was never generalised.
+
+Now implemented for two more tiers:
+
+- **component** — asserts the matrix carries the shard, the step exists, `playwright.component.config.ts` exists *and defines a webServer that starts `wrangler dev`* (without which the tier silently reverts to pointing at staging), the batch names ≥1 spec, and every named spec exists on disk. Mutation-proved both ways.
+- **pact** — asserts `tests/pact/**` is in the vitest include, the verifier exists, ≥1 `.pact.json` is defined, and every pact names a provider snapshot that exists. Mutation-proved: removing the include drops the pacts from discovery entirely while the suite stays green.
+
+**Still unguarded**, in rough priority: the a11y shard, the lint shard's individual guards (banned-origins, no-GAS, covenant), the T2 Newman collections, and T4a's own directory glob.
+
+### A seam worth naming
+
+The invariants placement guard passes today while four `live` invariants are ungated — because the guard classifies those four as **runtime** (they use `page`/`request`/`baseURL`) and exempts runtime specs from T0. The guard encodes *"runtime specs may be T4-only."* The register encodes *"live = enforced in CI."* Each is internally consistent; together they contradict, and that contradiction is exactly what OSE-1151 asks a human to resolve.
+
+## 6. Test automation still owed on this session's own changes
+
+Recorded rather than quietly skipped:
+
+| Change | Coverage | Gap |
+|---|---|---|
+| component tier | placement guard + 35 specs green in CI | none |
+| pact tier | placement guard + 22 checks, mutation-proved | none |
+| XSS mock fix | the test itself, now passing for the right reason | none |
+| `branch-protection-drift.yml` | **none** | it calls `apply-branch-protection.mjs`, whose pure `normalize()` and `diff()` have no unit test. PR #430 set the precedent exactly — a pure classifier plus `cf-access-probe.test.sh` wired into the T0 lint shard. This should match it. |
+| `dashboard.py` path fix | **none** | the bug was "paths resolve wrong off one machine", which is precisely unit-testable: assert `BRAIN_REPO` resolves to the repo containing the script. Natural home is the brain's `level3_unit.py`. |
