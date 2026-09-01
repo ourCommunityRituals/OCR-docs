@@ -49,7 +49,34 @@ They run in **T4a Architecture Invariants**, which executes the whole `tests/e2e
 **4. Structural invariant coverage is uneven by surface.**
 Only `shared-report` has a surface-specific gated invariant. `admin`, `public`, `display` and `poster` have none — their structural guarantees are covered obliquely, through cross-cutting invariants (`sponsor-share-covenant`'s WALL-3b geometry sub-suite touches `display`/`poster`/`public`/`shared-report` templates) rather than by a per-surface contract.
 
-## Reconciling the doc that already exists
+## The ratified matrix — `FE-DEV-PREP-2026-08-29.md` §1
+
+**This is the current grid, and it supersedes `TEST_MATRIX.md` as the thing to reconcile against.** Dated 2026-08-29, status *Ratified (Phase A in progress)*, owner PO. It defines a parameterized matrix — 4 screens × 5 cells (`wizard|advanced` × `local|mid|enterprise`, with `wizard × enterprise` excluded by design because enterprise is provisioned through the OA layer, never self-serve).
+
+| | Doc says | Reality |
+|---|---|---|
+| Spec home: `tests/e2e/3-flows/sponsor-lifecycle.matrix.spec.ts` | core deliverable | **exists**, 6,479 B, implements scenario × tier across admin path / public / sponsor card / display |
+| Fixture home: `tests/e2e/fixtures/scenario-tier-matrix.ts` | mirrors `demo.ts` mapping | **exists**, 4,437 B, mapping documented, design gap explained |
+| `is_local` asserted independently of tier | covenant floor, every cell | **implemented** — `sponsor-local-badge` asserted separately, comment states it renders because the sponsor IS local, never because of tier |
+| Runs in CI | implied by "core deliverable" | **ZERO workflow references** |
+
+**The spec is well-built and wired to nothing.** T4b `Core Journeys` names `sponsor-journey.spec.ts` and `cross-brand-isolation.spec.ts` — not the matrix spec. Verified: `grep -rn "sponsor-lifecycle.matrix" .github/workflows/` returns nothing.
+
+### Why that is worse than an ordinary ungated spec
+
+The suite is **born-red by design**. Its own header: *"BORN-RED (Phase A): the wizard admin path does not exist yet — those cells MUST fail today. Their failure is the proof this suite bites."*
+
+A born-red suite that no workflow runs cannot prove anything. Nobody observes the red, so the claim that it bites is untested. And when Phase B ships the wizard, **nothing will turn green**, because nothing is watching. The mechanism that makes born-red valuable — a visible failure that flips to visible success — is absent at both ends.
+
+### And wiring it into T4 would not be enough
+
+T4 `functional-staging` is dispatch-only (checkbox or a `full-pipeline/*` branch — never PR, push, or nightly), runs against live staging, and needs `CF_ACCESS_CLIENT_ID`/`SECRET` — the credential stale since 2026-05-19 that already killed T2 and T3. Adding the matrix spec to T4b would move it from *ungated* to *in a tier that cannot currently run*.
+
+**This is the doc → code → CI chain, traced on a two-day-old ratified document.** Doc and code agree; code and CI do not; and the CI tier it would join is itself dark. That is the reconciliation gap, located precisely.
+
+---
+
+## The older matrix it supersedes
 
 `docs/qa/TEST_MATRIX.md` is the right structure and stale in a specific, correctable way. Of eight test files it cites, four are **archived**:
 
