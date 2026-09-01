@@ -65,15 +65,32 @@ def run_level(num, script, label, gate=False):
     status = 'PASS' if result.returncode == 0 else 'FAIL'
     print(f'  {status}  Level {num} — {label:28} {summary_line.strip():>50}  ({elapsed:.1f}s)')
 
+    if result.returncode != 0:
+        # Surface WHY the level failed, for EVERY level (gated or not). Previously
+        # result.stderr was captured (line ~57) but never referenced, and the only
+        # detail print was the stdout "[FAIL]" loop gated behind `and gate`. So a
+        # level that RAISED rather than reported (e.g. a missing import) exited
+        # non-zero with empty stdout and logged just "FAIL … (0.Xs)" with no
+        # traceback — invisible in CI. See OSE-1155.
+        fail_lines = [line for line in lines if '[FAIL]' in line]
+        for line in fail_lines:
+            print(f'    {line.strip()}')
+        if not fail_lines and result.stdout.strip():
+            # No structured [FAIL] lines => the level likely crashed before its
+            # report was printed; show the stdout tail so nothing is swallowed.
+            for line in result.stdout.strip().splitlines()[-15:]:
+                print(f'    {line}')
+        if result.stderr.strip():
+            # The traceback sink. This is the line that turned OSE-1155 from a
+            # glance into a dig.
+            for line in result.stderr.strip().splitlines()[-25:]:
+                print(f'    {line}')
+
     if result.returncode != 0 and gate:
         print()
         print(f'  GATE FAILURE at Level {num} ({label}). Subsequent levels will not run.')
         print(f'  Fix Level {num} issues before proceeding.')
         print()
-        # Print the failing details
-        for line in lines:
-            if '[FAIL]' in line:
-                print(f'    {line.strip()}')
 
     return result.returncode
 
