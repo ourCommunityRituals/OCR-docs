@@ -127,12 +127,15 @@ summary = inv.get('status_summary', {})
 actual_live = sum(1 for i in invariants if i.get('status') == 'live')
 actual_partial = sum(1 for i in invariants if i.get('status') == 'partial')
 actual_planned = sum(1 for i in invariants if i.get('status') == 'planned')
+actual_retired = sum(1 for i in invariants if i.get('status') == 'retired')
 check('invariant_summary_live', summary.get('live') == actual_live,
       f'declared={summary.get("live")} actual={actual_live}')
 check('invariant_summary_partial', summary.get('partial') == actual_partial,
       f'declared={summary.get("partial")} actual={actual_partial}')
 check('invariant_summary_planned', summary.get('planned') == actual_planned,
       f'declared={summary.get("planned")} actual={actual_planned}')
+check('invariant_summary_retired', summary.get('retired', 0) == actual_retired,
+      f'declared={summary.get("retired", 0)} actual={actual_retired}')
 check('invariant_summary_total', summary.get('total') == len(invariants),
       f'declared={summary.get("total")} actual={len(invariants)}')
 

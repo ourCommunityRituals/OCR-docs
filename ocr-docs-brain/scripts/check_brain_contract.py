@@ -201,6 +201,12 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
     missing_partial = []
     for inv in applicable:
         tf = inv.get('test_file')
+        # Retired invariants (OSE-1194, 2026-09-02: the subject no longer exists,
+        # e.g. #11/#12 self-hosted runner apparatus) keep their historic test_file
+        # name for traceability, but the spec is gone from the substrate by design
+        # — never required.
+        if inv.get('status') == 'retired':
+            continue
         if not tf:
             continue
         # Strip any trailing ' (…)' annotation before globbing; the raw

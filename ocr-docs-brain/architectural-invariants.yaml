@@ -22,6 +22,13 @@
 # number is preserved and an entry is appended to `enrichment_history` at the
 # top level of this file. Never renumber. Never delete an entry.
 #
+# RETIRED form (added 2026-09-02, OSE-1194): when an invariant's SUBJECT ceases
+# to exist (e.g. #11/#12 after the self-hosted runner fleet was decommissioned),
+# its status becomes `retired`. The entry, its number and its historic
+# test_file name all stay; the substrate spec may be deleted, and
+# scripts/check_brain_contract.py stops requiring the file. A retirement is a
+# material change and gets its own `enrichment_history` entry.
+#
 # `enrichment_history` is append-only and documents every lean → rich (or
 # planned → live, or other material change) transition for traceability.
 # Pattern established 2026-05-17 with the trio enrichment of #1 / #3 / #5.
@@ -84,7 +91,8 @@ invariant_groups:
     order: 5
     description: >
       Deployment layer. Deprecation locks make one-way decisions actually
-      one-way; runner environment and pool-health invariants keep CI reliable.
+      one-way. The runner-environment and pool-health invariants (#11/#12)
+      are retired since 2026-09-02 (OSE-1194): CI runs on GitHub-hosted runners.
   - id: governance_brain
     title: Governance & Brain
     order: 6
@@ -1509,15 +1517,28 @@ invariants:
     group: infrastructure_ci
     group_order: 2
     title: Self-Hosted Runner Bash Resolution
-    status: live
+    status: retired
+    # test_file is the HISTORIC name — the spec was deleted from OSE in the paired
+    # OSE-1194 PR. Kept so conformance reports and the enrichment_history below
+    # stay resolvable. check_brain_contract.py skips retired entries.
     test_file: runner-environment.invariant.spec.ts
+    retirement_note: >
+      RETIRED 2026-09-02 (OSE-1194). The self-hosted runner fleet (BLOODRAVEN,
+      BLOODRAVEN-2, BLOODRAVEN-3 — Windows) was decommissioned; every OCR
+      workflow runs on GitHub-hosted ubuntu-latest, where bash resolution is
+      owned by the runner image and the WSL-vs-Git-Bash trap cannot occur.
+      Every mechanism listed under enforces/enforcement_statement/references
+      (tools/runner/*.ps1, runner-env-validation.yml, the structural spec)
+      was deleted from OSE. The text below is preserved verbatim as the
+      historical contract; nothing in it is enforced or to be re-created.
     # SUBSTRATE invariant. Protects every product's CI (see applies_to), but the
     # runner tooling + its structural test live once at the shared substrate:
     # OSE owns tools/runner/* and tests/e2e/0-architecture/*. Per the OCR-41
     # ownership axis, the artifact is validated in the owner (ose) and NOT
     # demanded inside every spoke repo.
     lives_in: ose
-    enforces: 'On Windows self-hosted runners (Bloodraven + any sibling
+    enforces: 'RETIRED 2026-09-02 (OSE-1194) — historical contract, no longer
+      enforced (see retirement_note). On Windows self-hosted runners (Bloodraven + any sibling
       instances), `bash` MUST resolve to Git Bash (C:\Program
       Files\Git\usr\bin\bash.exe), NEVER to the WSL/Microsoft Store shim at
       C:\Users\<user>\AppData\Local\Microsoft\WindowsApps\bash.EXE. WSL bash
@@ -1604,13 +1625,22 @@ invariants:
     group: infrastructure_ci
     group_order: 3
     title: Runner Pool Readiness Probe
-    status: live
+    status: retired
+    # test_file is the HISTORIC name — the spec was deleted from OSE in the paired
+    # OSE-1194 PR (see #11). check_brain_contract.py skips retired entries.
     test_file: runner-pool-readiness.invariant.spec.ts
+    retirement_note: >
+      RETIRED 2026-09-02 (OSE-1194), together with #11 (its depends_on). With
+      no self-hosted pool there is nothing to keep ready: GitHub-hosted runner
+      capacity is managed by GitHub. The janitor probe, watchdog, installer and
+      regression suite (tools/runner/) and the structural spec were deleted
+      from OSE. The text below is the historical contract only.
     # SUBSTRATE invariant (see #11): runner-pool self-heal lives once at the
     # shared substrate (OSE owns tools/runner/*), validated there — not per
     # spoke. OCR-41 ownership axis.
     lives_in: ose
-    enforces: 'Self-hosted runner pools MUST be self-healing on a 1-minute
+    enforces: 'RETIRED 2026-09-02 (OSE-1194) — historical contract, no longer
+      enforced (see retirement_note). Self-hosted runner pools MUST be self-healing on a 1-minute
       cadence with a 5-minute watchdog. Concrete contract: (a) scheduled
       task "Runner Readiness Probe (1-min)" runs tools/runner/janitor.ps1
       -EnsureReady every 60 seconds — prunes orphan job children, kills
@@ -3231,10 +3261,65 @@ enrichment_history:
 # AND validated against the invariant records by level2_schema.py check 1.5d
 # on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
+  - invariant_id: 11
+    invariant_name: self_hosted_runner_bash_resolution
+    from_state: >-
+      rich live (2026-07-27 — setup-runner.ps1 satisfied the partial→live
+      criterion; 8-case structural spec in the OSE T0 Gate invariants shard)
+    to_state: >-
+      rich retired (2026-09-02 — the self-hosted runner fleet (BLOODRAVEN,
+      -2, -3) was decommissioned; every OCR workflow runs on GitHub-hosted
+      ubuntu-latest. Entry, number and historic test_file preserved; the OSE
+      spec, runner-env-validation.yml and tools/runner/ are deleted in the
+      paired OSE PR; check_brain_contract.py skips retired entries)
+    date: "2026-09-02"
+    pr_refs:
+      - "Linear OSE-1194 — Retire self-hosted runner apparatus (GitHub Actions now runs all CI/CD)"
+      - "OCR-docs — this PR: status `retired` added to the invariant schema (level2/level3 tests, check_brain_contract.py)"
+      - "OSE — paired PR: deletes runner-env-validation.yml, runner-environment + runner-pool-readiness invariant specs, tests/runner-env.spec.ts, tools/runner/"
+    rationale: >
+      The invariant's subject no longer exists. With no Windows self-hosted
+      runner there is no PATH to provision, no WSL shim to out-rank and no
+      machine for runner-env-validation.yml to run on — that workflow sat
+      permanently `queued` on every OSE PR after the fleet was decommissioned
+      (surfaced on OSE PR #445). Deleting the OSE spec alone would have failed
+      check_brain_contract.py (live invariant test missing), so the brain moves
+      first: the entry is preserved (never delete, never renumber) but marked
+      retired, and the contract checker stops demanding the file. `retired`
+      is a new, explicit schema state rather than an abuse of `planned` or
+      `partial`, so the status_summary stays an honest count.
+
+  - invariant_id: 12
+    invariant_name: runner_pool_readiness_probe
+    from_state: >-
+      rich live (2026-07-27 — setup-runner.ps1 auto-invokes
+      install-janitor-tasks.ps1; 9-case structural spec in the OSE T0 Gate
+      invariants shard)
+    to_state: >-
+      rich retired (2026-09-02 — retired together with #11, which it
+      depends_on. No self-hosted pool means nothing to keep ready; the janitor
+      probe, watchdog, installer, regression suite and structural spec are
+      deleted from OSE in the paired PR)
+    date: "2026-09-02"
+    pr_refs:
+      - "Linear OSE-1194 — Retire self-hosted runner apparatus (GitHub Actions now runs all CI/CD)"
+      - "OCR-docs — this PR (see #11 entry above)"
+      - "OSE — paired PR (see #11 entry above)"
+    rationale: >
+      #12 exists only to keep a self-hosted pool ready; GitHub-hosted runner
+      capacity is GitHub's responsibility and has no probe, watchdog or
+      circuit breaker for OCR to own. The OSE-1194 deletion of
+      tools/runner/setup-runner.ps1 and tools/runner/README.md (named in the
+      ticket) already breaks the #12 structural spec, so retiring #11 without
+      #12 would leave a live invariant whose spec fails on every PR. Both
+      retire in the same landing. The PR #159 incident record and the
+      janitor design stay in enrichment_history and git history.
+
 status_summary:
-  live: 18    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
+  live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
   partial: 7  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560)
   planned: 0
+  retired: 2  # #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe (retired 2026-09-02, OSE-1194 — self-hosted runner fleet decommissioned; CI on GitHub-hosted ubuntu-latest)
   total: 25
   rich_form: 24 # #1-#19, #21-#25 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
   lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)
