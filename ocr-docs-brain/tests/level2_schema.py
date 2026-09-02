@@ -121,7 +121,12 @@ for cat in et.get('categories', []):
 INV_REQUIRED = ['id', 'name', 'label', 'group', 'group_order', 'title', 'status', 'test_file', 'enforces', 'applies_to']
 # planned invariants do not have a spec yet — test_file is deferred until activation
 INV_REQUIRED_PLANNED = [f for f in INV_REQUIRED if f != 'test_file']
-INV_STATUS_ENUM = ['live', 'partial', 'planned']
+# retired (added 2026-09-02, OSE-1194): the invariant's subject no longer exists
+# (e.g. #11/#12 self-hosted runner apparatus). Entries are never deleted or
+# renumbered; a retired entry keeps its historic test_file name for traceability
+# even though the spec is gone from the substrate — check_brain_contract.py does
+# not require the file for retired entries.
+INV_STATUS_ENUM = ['live', 'partial', 'planned', 'retired']
 for i in inv.get('invariants', []):
     iid = i.get('id', '?')
     req = INV_REQUIRED_PLANNED if i.get('status') == 'planned' else INV_REQUIRED
@@ -245,7 +250,7 @@ check('status_summary_present',
       else f'{len(ss)} keys')
 
 if isinstance(ss, dict):
-    SS_KEYS = ['live', 'partial', 'planned', 'total', 'rich_form', 'lean_form']
+    SS_KEYS = ['live', 'partial', 'planned', 'retired', 'total', 'rich_form', 'lean_form']
     missing_ss = [k for k in SS_KEYS if k not in ss]
     check('status_summary_keys', not missing_ss,
           f'missing {missing_ss}' if missing_ss else f'all {len(SS_KEYS)} present')
@@ -255,6 +260,7 @@ if isinstance(ss, dict):
         'live':    sum(1 for i in invariants if i.get('status') == 'live'),
         'partial': sum(1 for i in invariants if i.get('status') == 'partial'),
         'planned': sum(1 for i in invariants if i.get('status') == 'planned'),
+        'retired': sum(1 for i in invariants if i.get('status') == 'retired'),
         'total':   len(invariants),
         'rich_form': sum(1 for i in invariants
                          if isinstance(i.get('enforcement_statement'), str)
@@ -270,10 +276,10 @@ if isinstance(ss, dict):
 
     # Internal arithmetic — the summary must be self-consistent even before
     # it is compared against the records.
-    lpp = ss.get('live', 0) + ss.get('partial', 0) + ss.get('planned', 0)
-    check('status_summary_sum:live+partial+planned==total',
+    lpp = ss.get('live', 0) + ss.get('partial', 0) + ss.get('planned', 0) + ss.get('retired', 0)
+    check('status_summary_sum:live+partial+planned+retired==total',
           lpp == ss.get('total'),
-          f'live+partial+planned = {lpp}, total = {ss.get("total")}'
+          f'live+partial+planned+retired = {lpp}, total = {ss.get("total")}'
           if lpp != ss.get('total') else f'{lpp}')
     rl = ss.get('rich_form', 0) + ss.get('lean_form', 0)
     check('status_summary_sum:rich+lean==total',
