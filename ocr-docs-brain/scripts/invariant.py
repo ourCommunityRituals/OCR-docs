@@ -61,8 +61,13 @@ INVARIANTS_FILE = BRAIN_DIR / "architectural-invariants.yaml"
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 
-VALID_STATUSES = {"live", "partial", "planned", "canceled"}
-STATUS_ICON = {"live": "✅", "partial": "⚙️ ", "planned": "📋", "canceled": "❌"}
+# retired (OSE-1194, 2026-09-02): the invariant's subject no longer exists (e.g.
+# #11/#12 after the self-hosted runner fleet was decommissioned). Entries are
+# never deleted or renumbered; retired entries keep their historic test_file and
+# still count toward status_summary.total (mirrors tests/level2_schema.py).
+VALID_STATUSES = {"live", "partial", "planned", "retired", "canceled"}
+STATUS_ICON = {"live": "✅", "partial": "⚙️ ", "planned": "📋", "retired": "🗄️ ",
+               "canceled": "❌"}
 
 # Required fields per status (planned invariants defer test_file)
 REQUIRED_ALWAYS = ["id", "name", "label", "group", "group_order", "title",
@@ -153,7 +158,7 @@ def rebuild_status_summary(data: CommentedMap) -> None:
     regenerating the inline ID-list comments for live + partial.
     """
     by_status: dict[str, list[CommentedMap]] = {
-        "live": [], "partial": [], "planned": [], "canceled": []
+        "live": [], "partial": [], "planned": [], "retired": [], "canceled": []
     }
     rich: list[int] = []
     lean: list[int] = []
@@ -173,8 +178,9 @@ def rebuild_status_summary(data: CommentedMap) -> None:
     summary["live"] = len(by_status["live"])
     summary["partial"] = len(by_status["partial"])
     summary["planned"] = len(by_status["planned"])
+    summary["retired"] = len(by_status["retired"])
     summary["total"] = (len(by_status["live"]) + len(by_status["partial"])
-                        + len(by_status["planned"]))
+                        + len(by_status["planned"]) + len(by_status["retired"]))
     summary["rich_form"] = len(rich)
     summary["lean_form"] = len(lean)
 
@@ -188,6 +194,8 @@ def rebuild_status_summary(data: CommentedMap) -> None:
         _set_eol_comment(summary, "live", _ids(by_status["live"]))
     if by_status["partial"]:
         _set_eol_comment(summary, "partial", _ids(by_status["partial"]))
+    if by_status["retired"]:
+        _set_eol_comment(summary, "retired", _ids(by_status["retired"]))
 
     data["status_summary"] = summary
 
@@ -485,14 +493,15 @@ def cmd_validate(args: argparse.Namespace, data: CommentedMap) -> None:
     # ── status_summary accuracy ──
     declared = data.get("status_summary", {})
     # Build expected counts without mutating data
-    by_status: dict[str, int] = {"live": 0, "partial": 0, "planned": 0}
+    by_status: dict[str, int] = {"live": 0, "partial": 0, "planned": 0, "retired": 0}
     for inv in data.get("invariants", []):
         s = inv.get("status")
         if s in by_status:
             by_status[s] += 1
     expected_total = sum(by_status.values())
-    for key in ["live", "partial", "planned"]:
-        if declared.get(key) != by_status[key]:
+    for key in ["live", "partial", "planned", "retired"]:
+        # `retired` may be absent from an older summary — treat absent as 0.
+        if declared.get(key, 0) != by_status[key]:
             errors.append(
                 f"status_summary.{key}: declared={declared.get(key)}, "
                 f"computed={by_status[key]}"
@@ -548,7 +557,8 @@ def _require_invariant(data: CommentedMap, id_or_name: str) -> CommentedMap:
 def _print_summary(data: CommentedMap) -> None:
     s = data.get("status_summary", {})
     print(f"  summary: live={s.get('live',0)}  partial={s.get('partial',0)}  "
-          f"planned={s.get('planned',0)}  total={s.get('total',0)}")
+          f"planned={s.get('planned',0)}  retired={s.get('retired',0)}  "
+          f"total={s.get('total',0)}")
 
 
 def _ok(msg: str)   -> None: print(f"✓ {msg}")
