@@ -139,3 +139,17 @@ Ordered. Each step names the skill or connection best suited to it. Steps 1–3 
 ---
 
 *Written 2026-09-03 on branch `claude/content-market-fit-site-design-1lj7j8`. Source of truth remains `docs/OCR_VISION.md`; this file is discovery evidence, not doctrine.*
+
+---
+
+## 7. Pricing-plan vision (captured from Matt, 2026-09-03)
+
+Recorded here so the thread survives; the ticket of record is OSE-1198.
+
+**The unit is the activity, not the organization.** A church is free all the time for its own community services. If the church runs something truly for profit, that activity cannot ride the free plan; it takes a for-profit plan like anyone else. Same entity, two plans, no contradiction. Qualification is mutually exclusive per placement, never per letterhead. (Drift: `tier-gates.yaml` "faith_always_free" and ADR-006 read as entity-level; amend to host-side platform access, with sponsor placements priced by class regardless of who buys.)
+
+**A pricing plan is an object, and an entity can hold several.** Price (zero, flat, per cycle) · term (this event, a period, open-ended) · eligibility as facts on the record (entity type, license age, corridor match, nature of the activity) · exclusions · adjustments. "Free forever for the block party" and "first placement free for a first-year business" are plans with price zero and a term, not special cases.
+
+**Year one scope:** pricing plans, the ability to apply for one, the free plan, and the first-year credit. Nothing else.
+
+**Later (explicitly deferred):** discount grammar — kind (flat, percent, fixed price) · amount · cadence (once, every cycle, every other, a named cycle) · window (six months of plan A, then plan B) · stacking · scope — then coupons and rebates. The catalog becomes brain YAML with a resolver `(record, placement, date) → price`, proven by a fixture matrix in CI while billing stays inert (invariant #6). Computing a rebate at runtime is the line where billing stops being inert and needs an ADR. The pricing plan's "quarantined billing-clock" is the time axis those windows will need.
