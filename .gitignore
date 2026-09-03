@@ -1,4 +1,42 @@
+# The org brain is a docs hub — no credential should ever land here.
+# NOTE: name-based ignores are defense-in-depth only and are POROUS. The
+# authoritative gate is a CONTENT secret-scanner (detect-secrets / gitleaks)
+# in brain CI — a scanner, not a filename guess, is what actually enforces
+# "secrets never stored." See OCR_STANDARD_reconciliationLoop §8.
 
-# Python bytecode
+# ── Secrets & session state ────────────────────────────────────────────────
+cookies.txt
+*.token
+*.key
+*.pem
+.env
+.env.*
+secrets.json
+doppler.yaml
+*.credentials
+# credential-value + command-paste scratch shapes (2026-09-03: a
+# "! gh secret set CF_ACCESS_CLIENT_ID --re.txt" slipped past extension globs)
+\!*
+*CLIENT_ID*.txt
+*CLIENT_SECRET*.txt
+*ACCESS_KEY*.txt
+* gh secret set *
+
+# ── Generated artifacts (regenerated, never committed) ──────────────────────
+phantom-scan-report.json
+conformance-report.json
+*conformance-report.json
+*.log
+.sync.log
+
+# ── Scratch / drafts (belong in Linear or an out-of-brain archive, not here) ─
+Untitled-*
+SESSION-LOG.md
+PROJECT-STATUS.md
+
+# ── Tooling / local state ─────────────────────────────────────────────────
 __pycache__/
 *.pyc
+.claude/worktrees/
+.DS_Store
+Thumbs.db
