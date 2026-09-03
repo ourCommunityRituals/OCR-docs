@@ -326,7 +326,11 @@ products:
   product_name: OurWKRP
   layer: non-anonymous
   repo: OurCommunityRituals/ourWKRP
-  repo_status: planned
+  # repo_status flipped planned -> active 2026-09-03 (reconciliation): the repo
+  # carries a deployed Worker (register-first auth, catalog, CSV import, DJ
+  # surfaces), its own brain-contract-check + CI on ubuntu-latest, and ~600
+  # tests. The DATA PIPELINE is still unbuilt — see pipeline_present below.
+  repo_status: active
   # ourWKRP has application code but has not built its OCR data pipeline yet
   # (see pipeline_activation_phase: 2 below). The brain conformance check
   # (scripts/check_brain_contract.py) honors this flag and skips the

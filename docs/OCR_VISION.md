@@ -58,7 +58,9 @@ We give it to you by choice. Not because we have to. Because we choose to.
 
 ## 6. Architecture
 
-Architecture is defined by **the Triangle** plus **four invariants** plus **the four governance files per repo**. Everything else is a derived pattern.
+Architecture is defined by **the Triangle** plus **the invariant registry** plus **the four governance files per repo**. Everything else is a derived pattern.
+
+The registry is `ocr-docs-brain/architectural-invariants.yaml` (schema 1.2.0). As of 2026-09-03 it holds 25 entries: 16 live · 7 partial · 2 retired (#11/#12, self-hosted runner fleet decommissioned in OSE-1194). The registry is the only place an invariant is *counted*; this document mirrors it and never restates the enforcement prose.
 
 **Discipline: simplicity over completeness.** The code is the source of truth. This document mirrors what the code enforces. When code and document disagree, the code wins and this document gets fixed.
 
@@ -74,24 +76,41 @@ Three corners and a derived layer. Any entity can plug into any corner. The Tria
 
 Open-ended examples of pluggable entities — drawn from code comments — include sports, school, church, museum, civic, tourism, bars, government, travel partners, faith organizations, university research nodes, healthcare clinics, and small business collectives. Matt's earlier examples (Bars, Schools, Hospitals, Recreational Centers, Business Meetings/Conventions, Sports, Art/Cultural, Political Rallies, Research Opportunities) fit this same shape — they are entity examples, not a fixed enum.
 
-### 6.2 The ten invariants
+### 6.2 The invariant registry
 
-Each invariant is (or will be) enforced by an executable test file in `ourSharedEvents/tests/e2e/0-architecture/`. A new product personality (OW, future verticals) must pass these to plug into the Triangle.
+Each invariant is a numbered entry in `ocr-docs-brain/architectural-invariants.yaml` with a `status`, a `test_file`, and the products it binds (`applies_to`). OSE-bound entries are enforced by executable specs — structural ones in the T0 Gate `invariants` shard of `ourSharedEvents/.github/workflows/oursharedevents-ci.yml` on every PR/push, runtime ones in T4 against deployed staging. `ocr-docs-brain/scripts/check_brain_contract.py` runs in every spoke's `brain-contract-check` workflow and fails CI when a live invariant's `test_file` is missing. A new product personality (OW, future verticals) must pass the invariants that bind it to plug into the Triangle.
 
-**Status legend**: ✅ in code · ⚙️ partial (CI gate or related tests exist; promote to 0-architecture suite) · 📋 proposed (write the spec)
+**Status legend**: live · CI-enforced today. partial · mechanism shipped but not yet complete/blocking. retired · subject no longer exists; entry kept for provenance (never renumber, never delete).
 
-| # | Invariant | Test file | Status | Enforces |
-|---|-----------|-----------|--------|----------|
-| 1 | **Anonymous ID** | `anonymous-id.invariant.spec.ts` | ✅ | Zero-PII scan system, two-database separation (DB / FORMS_DB), `ose_anon` cookie contract (HttpOnly, Secure, SameSite=Lax), no cross-linking |
-| 2 | **Hyper-local Geo-Resolution** | `geo-resolution.invariant.spec.ts` | ✅ | `sponsor_areas` + `sponsor_event_types` tables, corridor-level resolution, zip+radius matching |
-| 3 | **UEC Encoding** | `uec-codes.invariant.spec.ts` | ✅ | 7 color-semantic QR codes + 4 extensions; canonical hex values; URL path semantics |
-| 4 | **NCR Data Accumulation** | `ncr-accumulation.invariant.spec.ts` | ✅ | `poster_deployments` lat/lng, `scan_aggregates` pipeline, permanent storage (no PII = no TTL) |
-| 5 | **Tier Equity / Pricing Governance** | `tier-equity.invariant.spec.ts` | 📋 | Pricing tiers govern display priority within events only — never platform access. Same QR system, same form quality, same privacy protection, same real-time counts at every tier (Free / Mid / Enterprise). **Local stays in at all flag levels.** |
-| 6 | **Inert Monetization Hooks** | `monetization-inert.invariant.spec.ts` | ⚙️ | `X-Monetization-Inert: true` header on every response. No billing logic executes. Billable units are read-only. Existing CI gate `checkMonetizationHooksInert` + contract test `story-f4-monetization-hooks_MOCK.test.js` already enforce; promote to 0-architecture suite |
-| 7 | **Aggregate-Only Reporting** | `aggregate-only.invariant.spec.ts` | 📋 | SharedReport endpoints return aggregates only — never individual records. Closes the privacy story on the output side; the Anonymous ID invariant guards the data; this invariant guards the reports |
-| 8 | **Bounded PII Retention** | `pii-retention.invariant.spec.ts` | ⚙️ | All opt-in PII has a finite TTL (`expires_at`, `retention_expires_at`). Daily lifecycle cron deletes expired registrations (90d), scrubs survey PII, deletes expired email signups (30d). No PII has unbounded retention. Cron + TTL columns + PRIVACY.md exist; promote unified test to 0-architecture suite |
-| 9 | **Tenant Isolation** | `tenant-isolation.invariant.spec.ts` | ⚙️ | Dual-key pattern (`id` + `brandId`) on every multi-tenant table. No cross-tenant data leakage in queries. Brand-scoped URLs maintain isolation. Schema pattern exists; needs the cross-cutting test |
-| 10 | **Deprecation Lock** | `deprecation-lock.invariant.spec.ts` | ⚙️ | Once a runtime is removed (GAS, Sheets, etc.), CI forbids its re-introduction. Generalizes the existing `scripts/guard-no-gas.js` and the no-GAS CI gate. Future deprecations (e.g., embedded HTML when Phase 3 Firebase lands) inherit this pattern |
+| # | Invariant | Status | Test file (spoke-relative) |
+|---|-----------|--------|-----------------------------|
+| 1 | **Anonymous ID** (`anonymous_id`) | live | `anonymous-id.invariant.spec.ts` |
+| 2 | **Hyperlocal Geo-Resolution** (`hyperlocal_geo_resolution`) | live | `geo-resolution.invariant.spec.ts` |
+| 3 | **Universal Event Code Standard** (`uec_encoding`) | live | `uec-codes.invariant.spec.ts` |
+| 4 | **NCR Data Accumulation** (`ncr_data_accumulation`) | live | `ncr-accumulation.invariant.spec.ts` |
+| 5 | **Local Sponsor Covenant** (`tier_equity`) | partial | `tier-equity.invariant.spec.ts` |
+| 6 | **Inert Monetization Hooks** (`inert_monetization_hooks`) | live | `monetization-inert.invariant.spec.ts` |
+| 7 | **Aggregate-Only Reporting** (`aggregate_only_reporting`) | partial | `aggregate-only.invariant.spec.ts` |
+| 8 | **Bounded PII Retention** (`bounded_pii_retention`) | live | `pii-retention.invariant.spec.ts` |
+| 9 | **Tenant Isolation** (`tenant_isolation`) | partial | `tenant-isolation.invariant.spec.ts` |
+| 10 | **Deprecation Lock** (`deprecation_lock`) | live | `deprecation-lock.invariant.spec.ts` |
+| 11 | **Self-Hosted Runner Bash Resolution** (`self_hosted_runner_bash_resolution`) | retired | `runner-environment.invariant.spec.ts` |
+| 12 | **Runner Pool Readiness Probe** (`runner_pool_readiness_probe`) | retired | `runner-pool-readiness.invariant.spec.ts` |
+| 13 | **Brain Enforcement Co-location** (`brain_enforcement_location`) | live | `audit_brain_enforcement_location.py` |
+| 14 | **Mobile Workability** (`mobile_workability`) | partial | `mobile-workability.invariant.spec.ts` |
+| 15 | **CORS Allowlist Immutability** (`cors_allowlist_immutability`) | live | `cors-allowlist.invariant.spec.ts` |
+| 16 | **API Response Schema Stability** (`api_response_schema_stability`) | live | `api-response-schema.invariant.spec.ts` |
+| 17 | **OER Emission Boundary** (`oer_emission_boundary`) | live | `oer-emission-boundary.invariant.spec.ts` |
+| 18 | **QR Code URL / Slug Permanence** (`slug_permanence`) | live | `slug-permanence.invariant.spec.ts` |
+| 19 | **Migration Monotonicity** (`migration_monotonicity`) | live | `migration-monotonicity.invariant.spec.ts` |
+| 20 | **Standards Propagation Completeness** (`standards_propagation_completeness`) | partial | `ocr-docs-brain/tests/level2_schema.py` |
+| 21 | **SharedReport Schema Stability** (`shared_report_schema_stability`) | live | `shared-report-schema.invariant.spec.ts` |
+| 22 | **Cross-Repo Import Isolation** (`cross_repo_import_isolation`) | live | `scripts/check-cross-repo-imports.sh` |
+| 23 | **Red Team Coverage** (`red_team_coverage`) | partial | `tests/red-team/` |
+| 24 | **Auditability** (`auditability`) | partial | `tests/audit-layer.spec.ts` |
+| 25 | **Sponsor Share Covenant** (`sponsor_share_covenant`) | live | `tests/e2e/0-architecture/sponsor-share-covenant.invariant.spec.ts` |
+
+Seven OSE structural specs gate T0 today but have **no registry entry yet** (spoke-ahead-of-brain, see Open decisions): `runtime-llm-free` (COST-101), `cost-metric-never-who` (COST-301), `scan-path-split`, `sponsor-identity-split` (OSE-799), `edge-token-verification` (OSE-573), `sponsor-signal-never-who` (OSE-1164), `worker-claude-md` (COST-403).
 
 **UEC color contract** (from the test file). The seven core codes:
 
@@ -111,7 +130,7 @@ Blue is "the most valuable pixel in the system" — the sponsor revenue surface.
 
 ### 6.3 The four governance files per repo
 
-Every repo in the OCR line maintains exactly four governance files. Architectural invariant.
+Every repo in the OCR line maintains exactly four governance files. This is a governance convention, not a numbered registry invariant: each spoke's Docs CI `required-files` step mechanically checks `CLAUDE.md`, `README.md`, `SKILL.md` (and, from 2026-09-03, `docs/OCR_VISION.md` in OSE and OW); the registry entry question is in Open decisions.
 
 | File | Role |
 |------|------|
@@ -131,7 +150,7 @@ OSM and OA are the **back** and **front** of one mechanism for spinning up new e
 | **Back** | **OSM — OurSharedMagnets** | APIs, Postman collections, Newman CI, ritual execution skill, institutional knowledge |
 | **Front** | **OA — OurAirwaves** | Client workspace fork, onboarding runbook, per-client environment schema, deployment surface |
 
-A new entity instance (a Hospital partner, a faith kitchen, a DJ profile) is hydrated by OSM loading the back and OA standing up the front. The instance inherits all four invariants by construction — no bespoke engineering.
+A new entity instance (a Hospital partner, a faith kitchen, a DJ profile) is hydrated by OSM loading the back and OA standing up the front. The instance inherits every registry invariant that binds it (`applies_to`) by construction — no bespoke engineering.
 
 OA serves at every scale: corridor, venue, partner, individual creator. Every DJ profile is effectively a single-person OA deployment.
 
@@ -244,23 +263,20 @@ Full doctrine: `LOCKED_NCR_Methodology_v1.3`.
 
 ## 10. Open decisions
 
-- **Promote invariants 5–10 to the 0-architecture test suite** — write the proposed specs and migrate the partial CI-gate enforcement into the canonical location:
-  - `tier-equity.invariant.spec.ts` (📋 new)
-  - `monetization-inert.invariant.spec.ts` (⚙️ migrate from contract tests + CI gate)
-  - `aggregate-only.invariant.spec.ts` (📋 new)
-  - `pii-retention.invariant.spec.ts` (⚙️ unify cron + TTL tests)
-  - `tenant-isolation.invariant.spec.ts` (⚙️ cross-cutting brandId test)
-  - `deprecation-lock.invariant.spec.ts` (⚙️ generalize no-GAS guard pattern)
+- **Register the seven OSE structural specs that already gate T0** (listed in §6.2) — spoke-ahead-of-brain; the brain must own them before a second spoke re-implements them differently.
+- **Resolve the #27 number collision** — ourWKRP ships `no_biometric_identifiers` as "invariant #27" (OW #48) while `docs/proposals/PROPOSAL_invariants-26-27-mutual-acceptance-honesty-lexicon.md` reserves #27 for the Honesty Lexicon; the registry has neither #26 nor #27. Law leads: assign numbers in the registry first.
+- **Promote #23 and #24 from partial** — the red-team suite exists in OSE (`tests/red-team/`, 5 specs) but no workflow runs it; `tests/audit-layer.spec.ts` (#24) does not exist and the conformance-meter refresh (OSE-560/OSE-1031) is red on `main`.
+- **Governance files as a registered invariant?** §6.3 is enforced only by each repo's Docs CI required-files step (OSE and OW now check all four files; other spokes check three); decide whether it earns a numbered registry entry.
 - **Qualifying privacy gate** — define field-level criteria for OW consent metadata, OA PII stripping, OSM telemetry boundaries.
 - **OER ingestion threshold** — archive depth that triggers activation; per-source schemas, cadence, retention.
 - **Sponsor schema vertical field** — per code review, the sponsor schema does not yet record which entity-type/vertical the sponsor belongs to. Decide whether to add (v1.2.0 contract bump + D1 migration) or rely on the entity-agnostic Triangle wrapper alone.
 - **Apple Developer license (OW)** — application status, timeline, fallback if denied.
 - **OW cross-arts expansion** — music is the starting medium. Roadmap and triggers for visual arts, performance, literature.
 - **QR code routing rules (OW → SharedReports)** — when anonymous vs. named. Per-set, per-DJ, per-corridor?
-- **OSE drift** — OSE CLAUDE.md says "5 MVP Surfaces" but should be 6 to match this document and OSE's own SURFACES.md. OSE's product VISION lives at `docs/features/VISION.md` rather than `docs/OCR_VISION.md` per the four-files invariant.
+- **OSE drift (reconciled 2026-09-03)** — OSE `CLAUDE.md`/`README.md`/`SKILL.md` now name six surfaces (landing, public, admin, display, poster, shared report); `ourSharedEvents/docs/OCR_VISION.md` exists as the product-vision pointer (detail stays in `docs/features/VISION.md`). Residual: OSE `docs/architecture/API_CONTRACT.md` and `worker-routing.md` describe the retired GAS/proxy stack and carry archival banners until moved to `archive/`.
 
 ---
 
-*Last updated: 2026-04-14 (v2 — code-matched rewrite. Architecture mirrors `ourSharedEvents/tests/e2e/0-architecture/`. Earlier inventions removed.)*
+*Last updated: 2026-09-03 (v3 — reconciliation pass: §6.2 now mirrors the 25-entry invariant registry instead of the April ten-invariant table; §10 refreshed against ourSharedEvents `main` @ 2159601 and OCR-docs @ 5955133.)*
 *Owner: Matt*
 *Status: DRAFT — awaiting review. Source-of-truth version remains `OCR_VISION.md`.*

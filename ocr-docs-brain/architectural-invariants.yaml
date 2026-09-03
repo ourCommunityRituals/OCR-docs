@@ -806,6 +806,12 @@ invariants:
       enforcement statement) but not yet wired to CI. partial→live criterion:
       campaigns PR merges — shared-report-schema.invariant.spec.ts and
       shared-report.snapshot.json committed and wired to the T0 invariants shard.
+      RESOLVED 2026-09-03 (reconciliation): the campaigns migrations (0039/0040)
+      landed, shared-report-schema.invariant.spec.ts and
+      shared-report.snapshot.json are committed in OSE and the spec is named in
+      the T0 "Architecture: structural invariants" step of
+      oursharedevents-ci.yml — the partial→live criterion above is met and the
+      `status: live` field is the truth; the paragraph above is kept as history.
 
   # ── #14 MOBILE WORKABILITY ────────────────────────────────────────────────
   # Added 2026-06-01 to resolve a second phantom (same failure mode as #13):
@@ -2176,7 +2182,7 @@ invariants:
     group_order: 3
     title: Sponsor Share Covenant
     status: live
-    test_file: tests/e2e/0-architecture/sponsor-share-covenant.invariant.spec.ts (OSE repo — planned, OSE-663 / OSE-662)
+    test_file: tests/e2e/0-architecture/sponsor-share-covenant.invariant.spec.ts (OSE repo — live in the T0 invariants shard since OSE-661 / OSE-670)
     enforces: >
       Sponsor rotation on the public-URL surface is a share-of-voice percentage
       computed by the covenant allocation math (OSE-663) — never a purchasable
@@ -3314,6 +3320,26 @@ enrichment_history:
       #12 would leave a live invariant whose spec fails on every PR. Both
       retire in the same landing. The PR #159 incident record and the
       janitor design stay in enrichment_history and git history.
+
+  - invariant_id: 21
+    invariant_name: shared_report_schema_stability
+    from_state: >-
+      rich live with a stale activation_note still reading "PARTIAL … not yet
+      wired to CI" (2026-07-27 wording)
+    to_state: >-
+      rich live — activation_note carries a dated RESOLVED paragraph; #25's
+      test_file annotation corrected from "(OSE repo — planned)" to "(live in
+      the T0 invariants shard since OSE-661 / OSE-670)"
+    date: "2026-09-03"
+    pr_refs:
+      - "OCR-docs — reconciliation pass (branch claude/shared-events-reconciliation-xmmt2z)"
+      - "OSE main @ 2159601 — both specs listed in the T0 invariants step"
+    rationale: >
+      Reconciliation (code ↔ brain) found the registry contradicting itself:
+      the status field said live while prose in the same entry said partial /
+      planned. Code wins — both specs exist in ourSharedEvents and gate every
+      PR — so the prose is corrected in place (never delete, never renumber)
+      and the correction is recorded here.
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)

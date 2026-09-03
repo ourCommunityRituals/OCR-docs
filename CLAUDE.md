@@ -35,28 +35,17 @@ Full registry with per-product detail → `docs/OCR_VISION.md §6`.
 
 ## Architectural boundaries
 
-Architecture is the Triangle + 4 invariants + 4 governance files per repo. Source of truth lives in code at `ourSharedEvents/tests/e2e/0-architecture/`. This document mirrors what the tests enforce. Full prose in `docs/OCR_VISION.md` (Architecture section).
+Architecture is the Triangle + the invariant registry (`ocr-docs-brain/architectural-invariants.yaml`, 25 entries: 16 live · 7 partial · 2 retired as of 2026-09-03) + 4 governance files per repo. Source of truth lives in code at `ourSharedEvents/tests/e2e/0-architecture/`. This document mirrors what the tests enforce. Full prose in `docs/OCR_VISION.md` (Architecture section).
 
 **The Triangle.** `Sponsor → Event ← Customer` with `SharedReport` derived. Any entity plugs into any corner. The Triangle enforces HOW entities participate, not WHAT they are.
 
-**The ten invariants.** Status legend: ✅ in code · ⚙️ partial (CI gate or related tests; promote to 0-architecture suite) · 📋 proposed.
-
-1. ✅ **Anonymous ID** — Zero-PII, two-DB separation (DB / FORMS_DB), `ose_anon` cookie contract, no cross-linking.
-2. ✅ **Hyper-local Geo-Resolution** — `sponsor_areas` + `sponsor_event_types`, corridor-level resolution, zip+radius matching.
-3. ✅ **UEC Encoding** — 7 color-semantic QR codes (Blue `#1A3A8A` = SPONSOR) + 4 extensions.
-4. ✅ **NCR Data Accumulation** — `poster_deployments` lat/lng + `scan_aggregates` pipeline, permanent storage (no PII = no TTL).
-5. 📋 **Tier Equity / Pricing Governance** — pricing tiers govern display priority only, never platform access. Same QR / forms / privacy / counts at every tier. Local stays in at all flag levels.
-6. ⚙️ **Inert Monetization Hooks** — `X-Monetization-Inert: true` header on every response. Existing CI gate `checkMonetizationHooksInert` already enforces.
-7. 📋 **Aggregate-Only Reporting** — SharedReports return aggregates only, never individual rows.
-8. ⚙️ **Bounded PII Retention** — every opt-in PII column has a TTL; daily lifecycle cron deletes/scrubs on schedule.
-9. ⚙️ **Tenant Isolation** — dual-key (`id` + `brandId`) on multi-tenant tables; no cross-tenant leakage.
-10. ⚙️ **Deprecation Lock** — once a runtime is removed (GAS today; HTML/Phase-3 future), CI forbids its re-introduction. Generalizes `scripts/guard-no-gas.js`.
+**The invariants.** Counted only in the registry; this file names the groups, not the rows. Privacy & identity (#1 anonymous ID, #7 aggregate-only reporting, #8 bounded PII retention) · product & experience (#2 geo-resolution, #3 UEC, #4 NCR accumulation, #14 mobile workability, #16 API schema stability, #18 slug permanence, #21 SharedReport schema stability) · commercial governance (#5 local sponsor covenant, #6 inert monetization hooks, #25 sponsor share covenant) · security & isolation (#9 tenant isolation, #15 CORS allowlist, #17 OER emission boundary, #22 cross-repo import isolation) · infrastructure & CI (#10 deprecation lock, #19 migration monotonicity, #11/#12 retired runner invariants) · governance brain (#13 enforcement co-location, #20 propagation completeness, #23 red-team coverage, #24 auditability). Full table with status and test file → `docs/OCR_VISION.md` §6.2; machine truth → the registry.
 
 **The four governance files per repo.** Every repo maintains `CLAUDE.md`, `docs/OCR_VISION.md`, `README.md`, `SKILL.md`.
 
 **Derived patterns Claude enforces:**
 
-- **OSM + OA is one flywheel.** OSM = back (API, skills, CI). OA = front (fork, onboarding, environment). Together they spin up new entity instances that inherit all four invariants by construction.
+- **OSM + OA is one flywheel.** OSM = back (API, skills, CI). OA = front (fork, onboarding, environment). Together they spin up new entity instances that inherit every registry invariant that binds them by construction.
 - **OSE and OW are parallel platforms, not one merged service.** Same architecture, separate databases, opposite identity invariants (OSE anonymous-by-construction; OW named with voluntary attribution). "Converge under the OCR moniker" = shared architecture and brand, NOT merged data. Cross-platform features are per-record decisions.
 - **OA serves at every scale.** Corridor, partner, venue, AND individual creator (every DJ profile is a single-person OA deployment).
 - **OER is the BigQuery RAG.** All qualifying product DBs (OSE, OW, OA, OSM) feed it. Products do not query each other's DBs directly — they emit, OER ingests, OER answers.
@@ -99,7 +88,7 @@ Full standard: `docs/standards/OCR_STANDARD_knowledgeHomes.md`. Transport mechan
 
 To avoid drift, Claude should not duplicate these from VISION.md here:
 
-- **The Triangle and four invariants (source of truth)** → `ourSharedEvents/tests/e2e/0-architecture/` (executable specs) and `docs/OCR_VISION.md` (Architecture section, prose mirror)
+- **The Triangle and the invariant registry (source of truth)** → `ourSharedEvents/tests/e2e/0-architecture/` (executable specs) and `docs/OCR_VISION.md` (Architecture section, prose mirror)
 - **Four governance files per repo** → `docs/OCR_VISION.md` (Architecture section, governance-files subsection)
 - **OSM + OA flywheel** → `docs/OCR_VISION.md` (Architecture section)
 - **OSE / OW platform symmetry** → `docs/OCR_VISION.md` (Architecture section)
@@ -112,6 +101,6 @@ To avoid drift, Claude should not duplicate these from VISION.md here:
 
 ---
 
-*Last updated: 2026-04-14 (v2 — de-duplicated against VISION.md)*
+*Last updated: 2026-09-03 (v3 — invariant count now points at the registry instead of the April ten-invariant list)*
 *Owner: Matt*
 *Status: DRAFT — awaiting review.*

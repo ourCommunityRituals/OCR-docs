@@ -13,7 +13,7 @@
 **Every story-scope PR ships tests at all three pyramid layers before it moves to QA:**
 
 1. **Unit / Worker-binding** — vitest (`tests/*.spec.ts`)
-2. **API contract** — Postman/Newman (`postman/collections/*.json`)
+2. **API contract** — Bruno (`bruno/<collection>/`; git-native, runs offline. Postman/Newman were retired in OSE-1191, 2026-09-02)
 3. **UI / browser flow** — Playwright (`tests/playwright/*.spec.ts`)
 
 A PR that ships code without all three layers is not "code review ready." It's "developer slop being thrown over the wall to the tester."
@@ -50,7 +50,7 @@ Cause: vitest catches code-shape errors but doesn't catch:
 - A11y violations that only surface in screen readers
 - Mobile layouts that look fine at 1080p and break at 375px
 
-Postman tests catch the network-contract layer; Playwright tests catch the browser-rendering layer. Together with vitest, all three close the customer-experience loop **before** a human ever has to drive the flow manually.
+Bruno tests catch the network-contract layer; Playwright tests catch the browser-rendering layer. Together with vitest, all three close the customer-experience loop **before** a human ever has to drive the flow manually.
 
 ---
 
@@ -59,28 +59,28 @@ Postman tests catch the network-contract layer; Playwright tests catch the brows
 | Layer | Per story you ship | Test file lives at |
 |---|---|---|
 | **Unit / Worker** | At least one `*.spec.ts` whose name names the story or refinement ID | `<repo>/workers/<svc>/tests/<feature>.spec.ts` |
-| **API contract** | At least one entry in the relevant Postman collection naming the story or refinement ID | `<repo>/postman/collections/<surface>.json` |
+| **API contract** | At least one request in the relevant Bruno collection naming the story or refinement ID | `<repo>/bruno/<collection>/<request>.bru` |
 | **UI / browser** | At least one `*.spec.ts` in the Playwright tree naming the story or refinement ID | `<repo>/tests/playwright/<surface>.spec.ts` |
 
 **"At least one"** — not "every assertion duplicated three times." Different layers test different things:
 
 - Unit tests: function behavior, edge cases, internal invariants
-- Postman: response shape, headers, status codes, content negotiation
+- Bruno: response shape, headers, status codes, content negotiation
 - Playwright: DOM elements present, click flows, mobile viewports, real-browser behavior
 
-If a story changes both an API and a UI surface, it ships tests on BOTH surfaces' collections (Postman) AND files (Playwright).
+If a story changes both an API and a UI surface, it ships tests on BOTH surfaces' collections (Bruno) AND files (Playwright).
 
 ---
 
 ## Test naming — the unified format
 
-**A reader 6 months from now must be able to read a test name once and know what it does.** Therefore Postman items, Playwright tests, AND vitest tests use one format:
+**A reader 6 months from now must be able to read a test name once and know what it does.** Therefore Bruno requests, Playwright tests, AND vitest tests use one format:
 
 ```
 <PRODUCT-PREFIXED-STORY-ID> | <LAYER> | <method + path> (<condition>) | <assertion>
 ```
 
-Four pipe-delimited segments. **Same string in every runner that tests the same scenario at the same layer** — vitest and Postman both test `API` layer, so their names match exactly when the scenario is identical. Playwright tests `FE` layer, so its name differs only by the qualifier. The matching name across runners (same layer) and the differing-by-qualifier name (across layers) is the feature — it lets you cross-reference any scenario across runners AND distinguish which layer of behavior is being verified.
+Four pipe-delimited segments. **Same string in every runner that tests the same scenario at the same layer** — vitest and Bruno both test `API` layer, so their names match exactly when the scenario is identical. Playwright tests `FE` layer, so its name differs only by the qualifier. The matching name across runners (same layer) and the differing-by-qualifier name (across layers) is the feature — it lets you cross-reference any scenario across runners AND distinguish which layer of behavior is being verified.
 
 ### Anatomy
 
@@ -97,7 +97,7 @@ The qualifier names **the layer of behavior being tested, not the runner**. A vi
 
 | Qualifier | What it tests | Runners that typically produce it |
 |---|---|---|
-| **`API`** | HTTP endpoint contract — request goes in, response comes out, no rendering | Postman/Newman, curl, vitest with `SELF.fetch()`, Playwright API mode, supertest |
+| **`API`** | HTTP endpoint contract — request goes in, response comes out, no rendering | Bruno, curl, vitest with `SELF.fetch()`, Playwright API mode, supertest |
 | **`FE`** | Browser-rendered behavior — DOM, navigation, viewport, accessibility, click flows | Playwright, Cypress, Puppeteer, real-browser smoke checks |
 | _(no qualifier)_ | Pure unit test of an internal function — no HTTP, no DOM | Vitest direct function calls (`expect(phaseToPool(4)).toBe('hipaa')`); use sparingly; if a test maps to `API` or `FE` behavior, prefer those qualifiers |
 
@@ -136,16 +136,16 @@ This matches the existing OCR naming spine (`OSE_UNIT_...`, `OW_MIGRATION_...`) 
 
 ### Reference implementation (OSE-R-001)
 
-API-layer tests (vitest with `SELF.fetch()` + Postman items) share **identical name strings** when they test the same scenario — only the runner differs. FE-layer tests (Playwright) differ from the API-layer test of the same scenario only by the qualifier (`API` vs `FE`).
+API-layer tests (vitest with `SELF.fetch()` + Bruno requests) share **identical name strings** when they test the same scenario — only the runner differs. FE-layer tests (Playwright) differ from the API-layer test of the same scenario only by the qualifier (`API` vs `FE`).
 
 | Layer | Test name | Runners |
 |---|---|---|
-| API | `OSE-R-001 \| API \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | Vitest, Postman/Newman |
+| API | `OSE-R-001 \| API \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | Vitest, Bruno |
 | FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| 401 HTML sign-in page` | Playwright |
-| API | `OSE-R-001 \| API \| GET /admin (Accept: application/json) \| 401 JSON error` | Vitest, Postman |
-| API | `OSE-R-001 \| API \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | Vitest, Postman |
+| API | `OSE-R-001 \| API \| GET /admin (Accept: application/json) \| 401 JSON error` | Vitest, Bruno |
+| API | `OSE-R-001 \| API \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | Vitest, Bruno |
 | FE | `OSE-R-001 \| FE \| GET /manage (unauthenticated) \| 401 HTML sign-in page (alias)` | Playwright |
-| API | `OSE-R-001 \| API \| POST /api/v2/admin/events (unauthenticated) \| 401 JSON (no HTML leak)` | Postman |
+| API | `OSE-R-001 \| API \| POST /api/v2/admin/events (unauthenticated) \| 401 JSON (no HTML leak)` | Bruno |
 | FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| heading + lede + CTAs render` | Playwright |
 | FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| brand matches landing (logo + nav)` | Playwright |
 | FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| a11y skip-link + semantic main + focus` | Playwright |
@@ -153,7 +153,7 @@ API-layer tests (vitest with `SELF.fetch()` + Postman items) share **identical n
 | FE | `OSE-R-001 \| FE \| GET /admin (mobile 375px viewport) \| card fits within viewport width` | Playwright |
 | FE | `OSE-R-001 \| FE \| GET /admin (unauthenticated) \| no admin dashboard content leaked` | Playwright |
 
-**Cross-runner contract**: when a scenario is verifiable in BOTH vitest (`SELF.fetch`) AND Postman (Newman) at the API layer, the test name string is **byte-identical** across the two runners.
+**Cross-runner contract**: when a scenario is verifiable in BOTH vitest (`SELF.fetch`) AND Bruno at the API layer, the test name string is **byte-identical** across the two runners.
 
 **Cross-layer contract**: when a scenario is verifiable at BOTH API and FE layers (the same outcome appears in the response AND in the rendered DOM), ship two tests with the same product+story+surface+condition+assertion but different qualifiers (`API` vs `FE`).
 
@@ -192,7 +192,7 @@ The rule is "every **customer-facing** story." Carve-outs:
 | Story type | Required layers | Why |
 |---|---|---|
 | Customer-facing HTTP endpoint or page | All 3 | The thing customers actually use |
-| Internal cron / scheduled job | Vitest only | Not user-facing; Postman/Playwright provide no value |
+| Internal cron / scheduled job | Vitest only | Not user-facing; Bruno/Playwright provide no value |
 | Migration-only PR | Vitest only (schema drift gate) | Not user-facing |
 | Docs-only PR (this file, ADRs, READMEs) | None | No code to test |
 | Brain contract YAML change | Brain conformance check (existing CI) | Per-repo CI handles this |
@@ -211,16 +211,16 @@ For every refinement story (R-NNN in `REFINEMENT-BACKLOG-YYYY-MM-DD.md`):
 1. **Branch** off `main`: `<repo>/r-NNN-<short-description>`
 2. **Fix the code** — surgical, single concern, no scope creep
 3. **Vitest spec** — `tests/r-NNN-<feature>.spec.ts` (or extend an existing spec with a `describe('R-NNN ...')` block)
-4. **Postman update** — add named items to the relevant collection JSON, using the unified naming format (see § Test naming)
-5. **Playwright spec** — `tests/playwright/<feature>.spec.ts` with the unified naming format — same string as the matching Postman item
+4. **Bruno update** — add named requests to the relevant collection under `bruno/`, using the unified naming format (see § Test naming)
+5. **Playwright spec** — `tests/playwright/<feature>.spec.ts` with the unified naming format — same string as the matching Bruno request
 6. **Run all three locally** before pushing:
    - `npx vitest run tests/r-NNN-*.spec.ts` → pass
-   - `newman run postman/collections/<surface>.json -e postman/environments/staging.json` → pass (or doc'd skip)
+   - `cd bruno/<collection> && npx bru run . -r --env ose-staging` → pass (or doc'd skip)
    - `npx playwright test tests/playwright/<feature>.spec.ts --list` → enumerated; `--reporter=line` against staging → pass when deployed
 7. **PR** title: `fix(R-NNN): <short description>` or `feat(STORY-NNN): <short description>`
 8. **PR description** lists the three test artifacts explicitly under a `## Tests` heading
 
-CI runs vitest. Newman runs on staging deploy. Playwright runs on staging post-deploy or in the smoke pipeline. Each layer fails independently — no single layer can mask another's failure.
+CI runs vitest. Bruno runs on staging deploy (T2 Contract). Playwright runs on staging post-deploy or in the smoke pipeline. Each layer fails independently — no single layer can mask another's failure.
 
 ---
 
@@ -239,7 +239,7 @@ CI runs vitest. Newman runs on staging deploy. Playwright runs on staging post-d
 Reference implementations of the standard, post-R-001 ship (2026-05-15):
 
 - **Vitest:** `ourSharedEvents/workers/oursharedevents/tests/admin-signin-page.spec.ts` (7 cases)
-- **Postman:** `ourSharedEvents/postman/collections/ose-pages.json` — search `"R-001 |"` for the 4 new entries
+- **Bruno:** `ourSharedEvents/bruno/ose-pages/` — search `"R-001 |"` for the 4 entries (migrated from the retired Postman collection in OSE-1191)
 - **Playwright:** `ourSharedEvents/tests/playwright/admin-signin-page.spec.ts` (9 cases)
 
 Each layer tests something the other two layers cannot. Use these as the template for R-002 onward.
@@ -251,7 +251,7 @@ Each layer tests something the other two layers cannot. Use these as the templat
 | Tool | Where | Used by |
 |---|---|---|
 | **vitest** | `<repo>/workers/<svc>/vitest.config.mts` | All OSE worker tests |
-| **Newman** | `<repo>/newman.config.json`, `<repo>/postman/` | Existing OSE Postman collections (ose-api.json, ose-pages.json, ose-api-sharedreport.json) |
+| **Bruno** | `<repo>/bruno/` (`@usebruno/cli`) | OSE contract collections `ose-api`, `ose-pages`, `ose-sharedreport` (Postman/Newman retired in OSE-1191; `postman/` now holds SQL fixtures only) |
 | **Playwright** | `<repo>/playwright.*.config.ts`, `<repo>/tests/playwright/` + `<repo>/tests/e2e/` | Existing OSE landing-page Playwright |
 
 This standard does NOT require new tooling. It requires writing tests in the existing layers.

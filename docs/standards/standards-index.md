@@ -30,7 +30,7 @@
 | 14 | Mobile Workability | partial | `tests/playwright/mobile-workability.spec.ts` |
 | 16 | API Response Schema Stability | live | `tests/e2e/0-architecture/api-response-schema.invariant.spec.ts` |
 | 18 | QR Code URL / Slug Permanence | live | `tests/e2e/0-architecture/slug-permanence.invariant.spec.ts` |
-| 21 | SharedReport Schema Stability | partial | `tests/e2e/0-architecture/shared-report-schema.invariant.spec.ts` |
+| 21 | SharedReport Schema Stability | live | `tests/e2e/0-architecture/shared-report-schema.invariant.spec.ts` |
 
 ---
 
