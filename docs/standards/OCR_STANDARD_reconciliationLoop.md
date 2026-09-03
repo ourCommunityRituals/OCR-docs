@@ -14,6 +14,29 @@
 
 ---
 
+## 0. The loop — named, referenceable rungs (owner-canonical, 2026-09-03)
+
+```
+Shared Brain → Invariant → Code → CI/CD → Test Pyramid → Results → Reporting → ↺ Shared Brain
+                                                                                (brain reads & reacts)
+```
+
+The reconciliation loop **is** this ordered cycle — the path a change/signal travels, closing back
+to the Shared Brain so the brain can *read the Reporting and react* (agentic reconciliation). Each
+rung is named so it is individually referenceable:
+
+1. **Shared Brain** — OCR-Docs doctrine; the source of intent every downstream rung must conform to.
+2. **Invariant** — the enforceable rule the brain emits from doctrine (`architectural-invariants.yaml`).
+3. **Code** — the implementation across the corner repos (BE route handlers · D1 schema/migrations · FE surfaces), flowing OSE anon-base → OW named → spokes.
+4. **CI/CD** — the gates that deploy + guard the seam (S0…T4, static gates, hosted runners).
+5. **Test Pyramid** — unit → integration → API → E2E; the layers that corroborate the claim.
+6. **Results** — reds/greens + staging outcomes; reality's verdict.
+7. **Reporting** — the synthesized readout of Results (SharedReport-grade, SCRUM-POV close-outs, drift tables).
+8. **↺ Shared Brain** — Reporting loops back for the brain to **read and react**: findings become new invariants, stories, and doctrine updates — closing the loop.
+
+This is the same object as the truth-triangle in §2, seen as a cycle: the **triangle** names the three
+*surfaces* kept in sync; the **loop** names the ordered *path* a signal travels and returns.
+
 ## 1. Why this exists
 
 A ticket can sit "In Review" for weeks while its code is already merged (or was never written).
