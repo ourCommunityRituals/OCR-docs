@@ -70,9 +70,11 @@ What exists:
 - Pricing plan (COST-112): Local $0 forever; Mid $25–75 per event or $99/mo; Premier $149–199/mo. All of it sits under the research's CTV minimums ($2,000–3,000/mo) and outside the CPM inflation curve.
 - The SharedReport answers the sponsor's honest question, including "are local organic advertisers out-performing paid spend?"
 
-This is a cleaner answer to pain #2 than the research imagined. The research proposes selling the barber a cheap flat ad. OSE's position is: the barber is in for free, cannot be outbid by anyone, and the chain that wants in pays for frequency and never for prominence. That is a headline, not a footnote.
+**Decision (Matt, 2026-09-03):** the established local business (the barber) is in for cheap, a small flat fee. A brand-new business, license issued within the last 12 months, gets its first placement free. This replaces the "Local $0 forever" row in `PRICING-PLAN.md`.
 
-The tension to resolve (§4): the research's Stage-3 validation benchmark is "will local businesses pay a modest flat fee." Under the covenant they will not be asked to. The proof point on the site must therefore be the covenant itself, and the revenue proof must be hosts plus non-local sponsors.
+What the decision does not touch, because it lives in code or the brain and governs prominence, not price: the 30% local floor and locals-first ordering (`sponsor-allocation.ts`), the 7× / 3× / 1× weights, `local_always_present` and `faith_always_free` in `tier-gates.yaml`, and Tier Equity (invariant #5). Money still buys frequency only. The mechanism doc (`SPONSOR-PRICING.md`) already said the Local price point is a go-to-market decision; this is that decision.
+
+Read against the research: this is now the exact Stage-3 proof the research asks for (local businesses pay a modest flat fee to reach a verified local audience without tracking), with a sharper opener for the newest businesses. The pain-#2 line on the front door becomes: opened this year, your first ad is free; after that it's cheap, it's your own corridor, and nobody can outbid you for it.
 
 ---
 
@@ -91,7 +93,7 @@ The OW nuance the research supplies: Gen Z is the most privacy-anxious cohort an
 ## 4. Decisions the research forces
 
 1. **Hook order.** The research ranks surveillance as the hook, connection as the promise, business as the proof. OCR-116 orders the problems connection → business → surveillance. Recommendation: keep OCR-116's problem section in the visitor's words, but make the hero the surveillance-relief line. The two are compatible. The research's Stage-1 benchmark (privacy-led vs local-led engagement) can be run by time window, not by requester, so the byte-identical-per-cell rule holds.
-2. **The Local-is-free headline.** Decide whether the site says "the corner store is in for free, forever, and cannot be outbid." If yes, that is the pain-#2 answer and the pricing plan already supports it. If pricing intends to charge locals later, the covenant and the plan must change together, and the site must not say "free forever."
+2. **The Local price. Decided 2026-09-03:** established local pays a small flat fee; a business licensed within the last 12 months gets its first placement free. Three sub-decisions remain, each with a recommendation in the Linear story drafted from this document: the dollar figure for "cheap" (hypothesis: a flat monthly number under Mid's $25–75 per event); the unit of "first placement" (recommend one event template + one area for one cycle); and whether the Local tier sits on the pricing plan's 3-month free flip at all (recommend no: Local is cheap from day one, and the new-business credit is the only Local free window, so the two rules never stack). Schema note: `sponsor_business` has no date field to hang "new" on; add a self-attested license issue month, never the license number.
 3. **47, presented honestly.** Show all 47 types as what a host can run (the spiderweb is a "bring your ritual" picker), not as what is on tonight. The attendee view of the same web inherits OSE-1014's honest activation state: "this area hasn't lit up yet" plus plant-a-flag. Run OSE-804 first; it decides whether the web renders 8 categories or the top handful.
 4. **Domain.** The epic implies one page with doors. It does not name whether that page is `oursharedevents.com` or an OCR-branded domain. Record the decision in VISION §10 before design starts.
 5. **Surface count.** VISION says six OSE surfaces; the hybrid brief says five; OCR-114 calls the map the sixth. One number, one home.
