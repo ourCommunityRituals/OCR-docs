@@ -1,4 +1,29 @@
+# ── Secrets & session state ────────────────────────────────────────────────
+# The org brain is a docs hub — no credential should ever land here.
+cookies.txt
+*.token
+*.key
+*.pem
+.env
+.env.*
+secrets.json
+doppler.yaml
 
-# Python bytecode
+# ── Generated artifacts (regenerated, never committed) ──────────────────────
+phantom-scan-report.json
+conformance-report.json
+*conformance-report.json
+*.log
+.sync.log
+
+# ── Scratch / drafts (belong in Linear or an out-of-brain archive, not here) ─
+Untitled-*
+SESSION-LOG.md
+PROJECT-STATUS.md
+
+# ── Tooling / local state ─────────────────────────────────────────────────
 __pycache__/
 *.pyc
+.claude/worktrees/
+.DS_Store
+Thumbs.db

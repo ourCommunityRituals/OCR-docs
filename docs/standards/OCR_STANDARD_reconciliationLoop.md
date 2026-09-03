@@ -121,3 +121,30 @@ recurrence → 0, MTTD ↓, coverage of surfaces ↗. A green board is not the g
 * **One ticket → one PR** for any code fix that falls out of a reconcile
   ([[feedback-one-ticket-commit-pr-merge]]).
 * Status flips are cheap to reverse and always carry their evidence, so a wrong flip is falsifiable.
+
+## 8. Brain lightness (a loop discipline)
+
+The loop feeds findings back to the **Shared Brain** (rung 8) on every run — so without discipline the
+brain bloats exactly as fast as it heals. Keeping it light **is part of the loop**, not a separate chore;
+run it at each ↺.
+
+**Two storage costs:**
+- **×N propagation** — every file under `docs/standards/`, `skills/`, `templates/` is copied into
+  *each* spoke's `.ocr-standards/` by `propagate-standards.yml`, so brain size × (spokes + 1). A verbose
+  standard is verbose eight times over. Size every propagated byte for that blast radius.
+- **Accidental accumulation** — run-logs, session dumps, drafts, generated reports, and (worst) leaked
+  secrets pile up untracked and creep in.
+
+**Rules — apply on every ↺ back to the brain:**
+1. **Durable rules + pointers only.** Snapshots / run-logs / status dumps / dated reconcile records live
+   in Linear (history), never the brain. Log a loop run as a one-line note, not a new file.
+2. **One fact, one home.** Don't restate a rule across invariant ↔ standard ↔ ADR — `[[link]]` instead.
+3. **Thin propagated surface.** Keep `docs/standards/` + `skills/` terse; push heavy rationale to a
+   brain-only doc *outside* the propagated dirs, referenced by link. Propagate the contract, not the essay.
+4. **Generated ≠ stored; secrets never stored.** `.gitignore` covers generated artifacts
+   (`*conformance-report.json`, `*.log`) and every credential shape (`*.token`, `*.key`, `*.pem`,
+   `.env*`, `doppler.yaml`, `secrets.json`). The brain is a docs hub — no credential ever lands here.
+5. **Retire, don't delete** invariants (provenance via `retired` status); **GC** scratch + drafts.
+
+Health tie-in: brain **KB-per-repo** and **untracked-scratch count** are reconcile signals like any
+other ([[kaizen-reconciliation-health-doctrine]]) — trending them down is part of a healthy loop.
