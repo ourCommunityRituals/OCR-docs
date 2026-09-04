@@ -193,3 +193,128 @@ Two different articles both claim the number, and one of them is already enforce
 This is precisely the failure ADR-003 names — numbers asserted before the registry encodes them, the same mechanism that produced the earlier phantom pair. The brain must assign both numbers, and one claimant must renumber. Filed for resolution; nothing in this assessment depends on which number wins, only on the gates existing, which they do.
 
 *(Note on phrasing: unratified articles are written "Article #N" throughout, matching the proposal doc's own convention — the scanner reserves the literal "invariant #N" form for registry-encoded articles, which is the point of the gate.)*
+
+---
+
+## 10. Third reassessment — live staging, 2026-09-04 23:07 UTC
+
+**Build:** `stg-2850903-20260904`. Verified to contain both merges from this session —
+`bb37029` (#455, counts post-event only) and `7e58eff` (#456, share card + poster
+reconciliation). Main has since moved to `84d5802` (#457–#459, OSE-946 / 1224 / 1228).
+
+### 10.1 The headline finding
+
+**`/events` renders "No events scheduled."**
+
+The public events API returns exactly one row:
+
+| | |
+|---|---|
+| title | Community Game Night |
+| dates | 2026-05-01 → 2026-05-01 |
+| status | `active` |
+| **ended** | **126 days ago** |
+| `cover_image_url` | `null` |
+| `legal_clearance_tier` | 1 |
+
+Pain point #1 in the visitor's own words is *"there's nothing to do around here."* **The
+platform's answer to that pain point currently renders "No events scheduled."**
+
+This is not a code defect — the phase logic is correct, and an event that ended in May
+*should* fall out of an upcoming list. It is a **demo-data gap**, and for a content-market-fit
+demonstration it is the single most consequential thing on the site, because `/events` is the
+one surface that has to prove the thesis. Every other finding below is secondary to it.
+
+It also means the "spiderweb to 47 event types" claim has **zero live evidence**: zero event
+types and zero categories are surfaced anywhere on `/events`, because there is nothing to
+categorise.
+
+### 10.2 What changed since the second reassessment (same day, ~05:30 UTC)
+
+**The hero was rewritten, and it is a real improvement.**
+
+```html
+<h1 data-testid="hero-headline">Gather with your neighborhood on Chicago's Southside</h1>
+```
+
+Previously generic ("Community events that bring people together"). Now neighbourhood-rooted
+and place-named — squarely on brand voice, and close to the OCR-116 **Variant C** shape
+("Your neighborhood, visible to itself"). Pain point #1 is now well served *by the hero*.
+
+**But the surveillance hook is still not the hook.** The word "anonymous" appears **once** on
+the entire landing page, and the privacy section is the second `<h2>` (`id="anon-heading"`,
+"How this works") — below the fold. The research ranks surveillance first; the live page
+ranks it third at best. This is unchanged from every prior run, and it is the one open
+recommendation from §4.1 that has not moved.
+
+### 10.3 Merged work — verified live
+
+| Fix | Source | Live? |
+|---|---|---|
+| `/sharedReport` returns `text/html` 403, "switched on here yet" | #454 | ✅ confirmed |
+| `/display` consent line (`display-consent`) | #454 | ✅ confirmed |
+| `/events` phase-aware cards — recap CTA, "Wrapped" tag | #454 | ✅ confirmed (in template) |
+| No attendance counts on `/events` or `/display` | #455 | ✅ confirmed — zero occurrences |
+| Counts removed from `/events/:id` | #455 | ⛔ **unverifiable** |
+| Share card never declares a large-image card with no image | #456 | ⛔ **unverifiable** |
+
+### 10.4 OSE-1211 is wider than recorded, and it now blocks verification of this session's work
+
+`/poster/:id` returns **403** and the response carries the Cloudflare challenge's own CSP
+(`img-src 'self' https://challenges.cloudflare.com`), not the poster's. The morning's probe
+set covered `/`, `/events`, `/events/:id`, `/display`, `/q/:token`, `/forms/:id` and
+`/health` — **`/poster` was never tested**, so this is newly observed rather than proven new.
+
+Current challenged set: **`/events/:id`, `/q/:token`, `/poster/:id`.**
+
+Consequence worth stating plainly: **both fixes merged in this session live on `/events/:id`,
+and neither can be verified on staging.** The challenge is no longer only a testing
+inconvenience — it is now the reason two shipped changes cannot be confirmed in the
+environment they were shipped to.
+
+`cover_image_url: null` on the only live event also confirms **OSE-1213** against real data —
+there is no image for the share card to use, so the derived `summary` card from #456 is the
+correct output today.
+
+### 10.5 Fit assessment against the three pain points
+
+| Pain point | Architecture fit | **Live-site fit** | Gap |
+|---|---|---|---|
+| **#1 Nothing to do / third places** | Strong — 47 registered types, phase model, corridor geo | **Weak** — the discovery page is empty | Demo data, not code |
+| **#2 Little guys priced out** | Strong — share covenant, 30% local floor, 7×/3×/1× weights, geo-derived `is_local`, no purchasable slot | **Unproven** — sponsor rendering can't be seen without an event | Blocked by #1 |
+| **#3 Surveillance / false consent** | **Strongest** — two-DB split, K=5, honesty lexicon, consent line on `/display`, declined regimes ratified today | **Under-weighted** — one word, below the fold | Hero hook order (OCR-116) |
+
+**The pattern is unchanged across all three runs and is now sharper:** the architecture fits
+the research well, and the *live site* under-demonstrates it — not because the build is wrong,
+but because the site has nothing to show and leads with its third-best claim.
+
+### 10.6 Answer to "what skills, connections, steps"
+
+Ordered. Steps 1–2 are prerequisites for any design work and neither is a design task.
+
+| # | Step | Owner / skill | Why it is first |
+|---|---|---|---|
+| 1 | **Seed a live corridor of demo events** across several categories and phases (pre-event, live, post-event) with `data_class='demo'` | Backend + the existing demo doctrine | Without it `/events` says "No events scheduled" and there is nothing to design *against*. Blocks 2, 3 and 4. |
+| 2 | **Resolve OSE-1211** — the Slack-unfurl test decides whether it is a launch blocker or a test-harness convenience | Founder, 2 minutes | Three surfaces including the poster are unverifiable; two merged fixes cannot be confirmed |
+| 3 | **Ratify OCR-116** — hero variant and section order | Founder | Copy-first; blocks the design canvas, which is OCR-115's named dependency |
+| 4 | **Design canvas** — mobile-first 390px, `[data-brand=ose]` tokens, UEC hues never re-themed | `/design`; `/dataviz` for the category web | Only after 1–3 |
+| 5 | **CCR-gate the copy at ≥95%** before it becomes design | `/ccr` | Governance artifact discipline |
+
+**On the "50 event types" in the prompt: it is 47**, and the number is not the interesting
+part. Per §13 of the poster reconciliation, `uec_code` is a namespaced string
+(`REC-BOCCE-001`), so there was never a technical ceiling — 47 is a **clearance frontier**, the
+count of types legally reviewed and tiered. The list can grow freely because an uncleared type
+is inert until a corridor earns it.
+
+**And as of today, it must never grow into tiers 4–5.** `OCR_STANDARD_declinedRegimes.md`
+(ratified 2026-09-04) puts hospital PII and under-13 child data permanently off the books. The
+spiderweb runs across tiers 1–3, and item-tracking is what lets it reach libraries, rec centres
+and schools without entering a declined regime.
+
+### 10.7 The one thing to fix first
+
+**Seed the corridor.** Every other finding in this reassessment is either already fixed, held
+behind a founder decision, or invisible because the discovery surface is empty. A site that
+answers *"there's nothing to do around here"* cannot ship while its own answer page reads
+"No events scheduled."
+
