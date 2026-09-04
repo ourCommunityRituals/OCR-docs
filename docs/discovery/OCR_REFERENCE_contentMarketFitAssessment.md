@@ -202,7 +202,7 @@ This is precisely the failure ADR-003 names — numbers asserted before the regi
 `bb37029` (#455, counts post-event only) and `7e58eff` (#456, share card + poster
 reconciliation). Main has since moved to `84d5802` (#457–#459, OSE-946 / 1224 / 1228).
 
-### 10.1 The headline finding
+### 10.1 The headline finding — **RETRACTED, see 10.1a**
 
 **`/events` renders "No events scheduled."**
 
@@ -228,6 +228,47 @@ one surface that has to prove the thesis. Every other finding below is secondary
 It also means the "spiderweb to 47 event types" claim has **zero live evidence**: zero event
 types and zero categories are surfaced anywhere on `/events`, because there is nothing to
 categorise.
+
+### 10.1a RETRACTION (2026-09-04, after rendering the page)
+
+**§10.1 is wrong.** `/events` does **not** render "No events scheduled." Rendered at 390px in
+a real browser, it shows:
+
+> **Community Game Night** `WRAPPED` · Friday, May 1, 2026 · Beverly Arts Center, Chicago IL
+> **[See how it went]**
+
+The phase-aware work from #454 is doing exactly what it should: a past event surfaces as a
+**wrapped recap**, not as a vanished row and not as a false registration offer.
+
+**Cause of the error:** "No events scheduled." was found by grepping the served HTML. It is
+the **client-side empty-state string in the template**, not the rendered output. The page
+hydrates and renders the card. I asserted a rendered state from a source grep without
+rendering the page.
+
+This is the same failure mode as four earlier errors in this session — a grep returned
+something, and the something was read as the answer. **Render the surface before describing
+what a visitor sees.**
+
+**What survives from §10.1:**
+
+- Staging still holds exactly **one** event, ended 126 days ago. The demo-corridor
+  recommendation stands, and it remains the top item — one wrapped event is not a
+  demonstration of discovery.
+- Zero event types / categories are surfaced, so the 47-type spiderweb still has no live
+  evidence.
+
+**What does not survive:** the claim that the discovery surface is broken or empty. It is
+neither. It is *sparse*, which is a seeding problem, not a product one.
+
+**New, and better than the retracted finding:** the page heading reads **"Upcoming Events"**
+above a single **past** event. That is a real copy mismatch and it is small to fix.
+
+Also worth recording: the anonymity block ("How this works") sits **second on `/events`, above
+the fold** — exactly where it should be, and the opposite of its position on the landing page
+(2027px, 87% scroll). The right pattern already exists in the product; the landing page is the
+outlier.
+
+---
 
 ### 10.2 What changed since the second reassessment (same day, ~05:30 UTC)
 
