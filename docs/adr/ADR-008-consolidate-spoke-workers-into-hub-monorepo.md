@@ -25,6 +25,19 @@ What the split *is* costing, measured on 2026-09-04 against live checkouts:
 
 The net: the separation is not producing isolation. It is producing a vendored fork in one spoke, a token-authenticated sibling clone in the other, and a manual propagation loop between all three — the cost of a monorepo without its guarantees.
 
+## The objection that governs this ADR (founder, 2026-09-04)
+
+*"Then we'll start making your whole effort about making CI work."*
+
+Measured rather than assumed. **OSE `main`, last 60 days: 52 commits — 56% CI/test/chore, 37% product feat/fix, 4% docs.** Of the 60 most-recently-touched backlog issues, roughly half are test or pipeline machinery (mutation testing, DAST/ZAP, Schemathesis fuzzing, k-anon metamorphic properties, flake-vs-regression classifiers, per-flow security ledgers, named-job restructures, pw-guarded floors). Meanwhile staging serves one seeded event, a generic hero, and a poster that prints no code.
+
+The objection is therefore not a risk this ADR introduces. It is a description of the present, and this ADR could make it worse. Two constraints follow, and they bind the decision:
+
+1. **Consolidation is justified only as CI *reduction*.** The acceptance test for Phase 1 is a smaller pipeline surface — 30 workflow files across three repositories collapsing to one pipeline with path filters, propagation commits going to zero, `scripts/ci-stage-ocr-workspace.sh` and cross-repo secrets deleted. If a Phase 1 design does not measurably cut CI surface, Phase 1 is wrong and does not happen. The measurement is taken before and after; no reduction, no merge.
+2. **Phase 0 is one gate, and it is honestly CI work.** The fork-detection check adds to the pile the founder is objecting to. Its only defense is narrow and must stay narrow: it catches a class of defect that has already shipped to a customer-visible surface (the landing accent, drifted for four months after OSE-221 named its source). CI that prevents a shipped product bug earns its place; CI that raises a sophistication score before the platform has a second real event does not.
+
+**Corollary, outside this ADR's scope but recorded because the evidence demands it:** the queued test-sophistication backlog has overshot the product's stage. Before the Founding Six activate, the load-bearing question is whether a poster on a wall produces an honest report the next morning — not a mutation score trend. Sequencing that backlog behind launch is a separate decision for the founder; this ADR simply refuses to add to it without a reduction to show for it.
+
 ## Decision
 
 **Consolidate the OSE and OW application workers into the hub repository `ourCommunityRituals/ourCommunityRituals` as workspace packages — after the Founding Six launch window, not before — while keeping databases, workers, deployments, wrangler configs and the identity boundary strictly separate.** One repository, one lockfile, one copy of the standards, one CI pipeline with per-package job filters; two workers, two database pairs, two domains, two identity models. Before that migration, and starting immediately, the spokes stop vendoring shared packages and consume the hub's canonical copies (Phase 0), so the fork stops widening whether or not the consolidation ever happens.
@@ -77,6 +90,7 @@ An ADR without a self-check hook is doctrine without teeth (ADR-003). The struct
 - **Fork detection (Phase 0, the load-bearing gate).** A CI check comparing any vendored `packages/*` tree against the hub canonical at the declared version; divergence at an equal version fails the build. This is the gate whose absence produced the 24-file fork, and it is worth having *even if Phase 1 never happens*.
 - **Deployment isolation (Phase 1).** A test asserting each deploy job's `--config` resolves to exactly one worker, so a change under one product cannot deploy the other.
 - **The identity boundary is unchanged and must prove it.** `anonymous-id.invariant.spec.ts`, `tenant-isolation.invariant.spec.ts` and OSE's `architecture.spec.ts` two-database guard must pass, unmodified, on the consolidated tree. If consolidation requires editing an identity invariant, the migration is wrong and stops.
+- **CI-surface budget (the Phase 1 go/no-go).** Count workflow files, propagation commits per 30 days, and cross-repo secret usages before and after. Phase 1 merges only if all three fall. This is the founder's objection turned into an acceptance criterion.
 - **Standards single-source (Phase 2).** The brain-contract check reads one copy; a re-introduced `.ocr-standards` directory fails the deprecation-lock pattern (Invariant #10).
 
 ## Open questions
