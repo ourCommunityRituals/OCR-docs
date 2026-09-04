@@ -1,7 +1,7 @@
 # OCR Standard — Declined Regimes
 
-**Status:** Founder doctrine, 2026-09-04. Supersedes any reading of the clearance tiers as
-"future capabilities."
+**Status:** **RATIFIED** by the founder, 2026-09-04. Supersedes any reading of the clearance
+tiers as "future capabilities."
 **Owner:** Matt · **Applies to:** every OCR product that declares a `pool-contract.ts`
 
 ---
