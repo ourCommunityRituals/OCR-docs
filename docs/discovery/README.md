@@ -23,9 +23,15 @@ Those patterns belong here, in the fleet hub, so the founder isn't reading seven
 
 ## What lives here
 
-### Now (2026-05-15)
+### Now (2026-09-03)
 
-This directory is freshly seeded. Discovery work to date all lives in `ourSharedEvents/docs/discovery/` — see [§ Pointers](#pointers) below.
+| File | What it is |
+|------|-----------|
+| [`OCR_REFERENCE_contentMarketFitResearch.md`](OCR_REFERENCE_contentMarketFitResearch.md) | Sept 2025 – Sept 2026 sentiment study of the three pain points (surveillance / false consent, third places, small business priced out). Source input. |
+| [`OCR_REFERENCE_stagingWalkthrough_2026-09-03.md`](OCR_REFERENCE_stagingWalkthrough_2026-09-03.md) | Every OSE staging surface screenshotted and measured against the message; three defects filed (OSE-1199/1200/1201); flow mapping, release shape, deck outline, marketing channels. |
+| [`OCR_REFERENCE_contentMarketFitAssessment.md`](OCR_REFERENCE_contentMarketFitAssessment.md) | Fit of OCR hub, OSE foundation, and OW spoke against that research, drift found, and the ordered path to the Front Door site design (Linear OCR-115 / OCR-116). |
+
+Per-product discovery work still lives in `ourSharedEvents/docs/discovery/` — see [§ Pointers](#pointers) below.
 
 ### Planned (as fleet-wide discovery accumulates)
 

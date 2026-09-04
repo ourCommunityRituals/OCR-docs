@@ -27,6 +27,7 @@ ADRs and Brain invariants are complementary, not redundant:
 | [ADR-005](ADR-005-shared-ci-security-bracket-and-runner-fleet.md) | Share the CI security bracket + self-hosted runner fleet | Proposed | 2026-08-13 |
 | [ADR-006](ADR-006-cost-sustainability-free-forever-guardrails.md) | Free-forever as a structural property — cost-sustainability guardrails | Accepted | 2026-08-16 |
 | [ADR-007](ADR-007-demo-reference-installation.md) | Demo sites are a permanent reference installation — three-site trio, `demo` data class, break-demo-break-build | Accepted | 2026-08-25 |
+| [ADR-008](ADR-008-consolidate-spoke-workers-into-hub-monorepo.md) | Consolidate the OSE and OW workers into the hub monorepo after the launch window — databases, workers and the identity boundary stay separate | Proposed | 2026-09-04 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):
