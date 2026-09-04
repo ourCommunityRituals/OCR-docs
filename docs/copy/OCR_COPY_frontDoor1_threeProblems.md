@@ -12,7 +12,43 @@
 
 ---
 
-## 1. The one decision this document needs
+## 0. RATIFIED — the hero (founder, 2026-09-04)
+
+> # Never who, only how many.
+
+**This supersedes variants A, B and C in §3.** They are kept below as the record of what was
+considered, not as live options.
+
+Why the founder's line beats all three: it is five words, it is an anti-promise rather than a
+claim, and it is simultaneously the hero, the standing tagline, and a plain-language statement
+of Invariant #1. Nothing in §3 does all four.
+
+**One word matters and it is `only`.** An earlier draft of §7 had *"Never who. Always how
+many."* — that is wrong. *Always* is a frequency claim and reads as a boast about counting.
+*Only* is a limit, and the limit is the whole promise: the count is all that is taken. Do not
+let this drift back.
+
+### 0.1 The hero block as it should ship
+
+> # Never who, only how many.
+>
+> Community events on Chicago's Southside, run on a platform built so it *cannot* know who
+> showed up. Not a policy. Not a setting you have to find. The architecture.
+>
+> **[See what's happening near you]**   [How this works]
+
+Live-site evidence for the subhead change (2026-09-04 staging walkthrough): the current
+subhead is *"Community events that bring people together"* — the generic register the Voice
+Constant bans. The current above-the-fold ask is an **email capture**, and the anti-promise
+sits at **2027px of a 2318px page**. So the page asks for the one piece of PII it has before
+telling the visitor it does not want their PII. Fixing the hero fixes that inversion.
+
+**Sequencing caveat:** `[See what's happening near you]` must not ship before `/events` is
+seeded — it currently renders *"No events scheduled."* Seed the corridor first.
+
+---
+
+## 1. The decision this document needed (RESOLVED — see §0)
 
 **Hero hook order.** The research ranks surveillance as the hook, connection as
 the promise, business as the proof. OCR-116 orders the *problems* connection →
@@ -41,7 +77,7 @@ fold; levers, weights and depth tables live in settings, never in the pitch.
 | 2 | **Problem 1 — "There's nothing to do around here"** | Meet them where they are | Drafted §4 |
 | 3 | **Problem 2 — "The little guys got priced out"** | Widen it past themselves | Drafted §5 |
 | 4 | **Problem 3 — "Everything watches you now"** | Name the thing they feel but haven't said | Drafted §6 |
-| 5 | **The turn — The Choice** | Relief. Never who, always how many | Drafted §7 |
+| 5 | **The turn — The Choice** | Relief. Earns the hero's promise | Drafted §7 |
 | 6 | Product — how a night actually runs | Poster → corner → wall. The event triangle | Out of scope for OCR-116 |
 | 7 | The 47 types | Breadth without a wall of text | Out of scope |
 | 8 | Doors | OSE, OSR, OSG live; OW and OA as wave slots | Out of scope |
@@ -177,9 +213,7 @@ not a brief.
 
 ## 7. The turn — The Choice
 
-> ## Never who. Always how many.
->
-> Here's the whole idea.
+> ## Here's the whole idea.
 >
 > A poster goes up in a window. Someone scans it. We learn that **a scan happened
 > at that corner, in that hour** — and that is the end of the list. No name. No
@@ -244,12 +278,12 @@ Named here so a reviewer doesn't read the omissions as gaps:
 
 ## 10. Open for ratification
 
-1. **Hero variant — A, B, or C.** (§3. Recommendation: A.)
+1. ~~Hero variant — A, B, or C.~~ **RESOLVED 2026-09-04: "Never who, only how many."** See §0.
 2. **Section order 1–5** as drafted — hero on surveillance, problems climbing
    connection → business → surveillance, relief last.
 3. **Section 6's frame** — "how a night runs" (recommended) vs "the Triangle."
-4. **Whether "You stay a stranger, on purpose" graduates** from body copy to the
-   page's standing tagline.
+4. ~~Whether "You stay a stranger, on purpose" graduates to the standing tagline.~~
+   **Moot** — the ratified hero *is* the standing tagline.
 
 Once 1 and 2 are ratified, this unblocks the design canvas (OCR-115's named
 dependency) and sections 6–10 of the copy.
