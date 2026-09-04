@@ -153,3 +153,26 @@ Recorded here so the thread survives; the ticket of record is OSE-1198.
 **Year one scope:** pricing plans, the ability to apply for one, the free plan, and the first-year credit. Nothing else.
 
 **Later (explicitly deferred):** discount grammar — kind (flat, percent, fixed price) · amount · cadence (once, every cycle, every other, a named cycle) · window (six months of plan A, then plan B) · stacking · scope — then coupons and rebates. The catalog becomes brain YAML with a resolver `(record, placement, date) → price`, proven by a fixture matrix in CI while billing stays inert (invariant #6). Computing a rebate at runtime is the line where billing stops being inert and needs an ADR. The pricing plan's "quarantined billing-clock" is the time axis those windows will need.
+
+---
+
+## 8. Reassessment against staging (2026-09-04, same prompt, same research)
+
+**Staging build:** still `stg-11ed7a5-20260903`. Nothing from branch `claude/content-market-fit-site-design-1lj7j8` (12 OSE commits, 7 OCR-docs commits, no pull request) has merged, so the live site is byte-for-byte the site the first pass reviewed. Re-probed: poster CSP still has no img-src; hero still generic; four Tailwind-blue values on the landing; one post-event event still listed with Register; `/sharedReport` still raw JSON 403 to a browser; no consent line on the display; poster QR still greyscale with no `uec` in the bundle.
+
+**Fit verdict, live vs. branch:**
+
+| Pain point | Live staging today | On the branch (unmerged) | Decided, not yet built |
+|---|---|---|---|
+| #3 Surveillance (hook) | Strong in architecture; anchor below the fold; TV silent | TV consent line; poster prints consent tier per code; recap no longer claims "attendance" | Hero hook order (OCR-116) |
+| #1 Third places (promise) | 47 rituals in schema; no surface shows them; list phase-blind | List is phase-aware | Density census (OSE-804); the 47-ritual web; discovery rails (OSE-1014) |
+| #2 Small business (proof) | "Local $0 forever" in plan; puffery card on landing | Pricing plan carries the three-way Local split (OSE-1198) with doc guard | Flat-fee number; 3-month-clock ratification; license month (OSE-1207); the apply door |
+
+**What changed since the first pass, all off-staging:** seven tickets filed and reconciled (OSE-1198–1207 minus none; 1204 folded under 818), six defects fixed with tests, three drift items fixed with tests, pricing decision recorded, front-door copy handed to OCR-116, staging walkthrough published. **What did not change:** the user-visible site. The gap between "fixed" and "live" is one pull request per repo.
+
+**Reassessed path to the site design (unchanged in order, sharper in status):**
+1. Merge the branch (PR + CI) so staging shows the fixes before any demo.
+2. OSE-804 density census — still the gate for how many of the 47 the web renders.
+3. OCR-116 copy from the 3×3 grid (§ above), hero hook order decided.
+4. Design canvas on `@ocr/tokens` — the accent question is now settled (platform indigo, OSE-221).
+5. Build into `landing.html` with the scan-path guard suite extended.
