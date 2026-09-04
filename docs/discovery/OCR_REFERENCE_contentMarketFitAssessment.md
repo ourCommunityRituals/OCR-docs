@@ -13,7 +13,7 @@ The three pain points the research validates are the same three problems the Lau
 
 | Pain point (research rank) | Where the answer lives | Fit | The one gap |
 |---|---|---|---|
-| **#3 Surveillance / false choice of consent** (strongest) | OSE anonymous-by-architecture: two databases, CI invariant gates, `ose_anon` contract, K=5 count floor, honesty lexicon, the anonymity affordance shipped on `/` and `/events`; OW BIPA gate (invariant #27, PR #48) | **Strong — this is the architecture's native message** | The live landing hero is still generic ("Community events that bring people together"). The privacy anchor sits below the fold. Already flagged as open question 3 in the 2026-08-29 brand discovery report. |
+| **#3 Surveillance / false choice of consent** (strongest) | OSE anonymous-by-architecture: two databases, CI invariant gates, `ose_anon` contract, K=5 count floor, honesty lexicon, the anonymity affordance shipped on `/` and `/events`; OW's `no_biometric_identifiers` BIPA absence gate (PR #48 — shipped as a CI gate; its invariant number is unratified, see §9) | **Strong — this is the architecture's native message** | The live landing hero is still generic ("Community events that bring people together"). The privacy anchor sits below the fold. Already flagged as open question 3 in the 2026-08-29 brand discovery report. |
 | **#1 Local connection / third places** (strong, rising) | 47 Phase-1 event types in `event_type_registry` (OSE migration 0024) and `ocr-docs-brain/event-taxonomy.yaml`, 8 categories, each UEC-colored. Block parties, potlucks, run clubs, book clubs, game nights, open mics, garden workdays: the third-place inventory, verbatim. | **Strong on inventory, weak on surface** | The attendee discovery surface is designed, not built (hybrid brief §6; OSE-1014, OCR-114 in Backlog, sequenced post-launch). `corridors` has 0 rows and the density census (OSE-804) is unrun. |
 | **#2 Small business priced out** (moderate-strong) | Share covenant: money buys rotation frequency only, never size, slot, or position; local businesses hold a guaranteed rotation floor and cannot be outbid; Local sponsor tier is $0 forever; Tier Equity invariant #5; corridor targeting instead of people targeting ("buy the corridor, not the contact list"). | **Strong, and stronger than the research asks for** | The research's Stage-3 proof is "local businesses pay a modest flat fee." OSE's covenant makes the corner store free forever; paid revenue comes from hosts and non-local (Regional / Premier) sponsors. The message and the pricing plan must say the same thing. See §4. |
 
@@ -32,7 +32,7 @@ What exists, in code or CI:
 - SharedReport K=5 floor server-side; sub-floor rows dropped; floor declared in the payload.
 - Honesty lexicon lint: "attendance, impressions, reach, unique, people, views" are banned words on report surfaces.
 - The anonymity affordance, live on `/` and `/events` since 2026-08-29 with four regression guards (`tests/brand-voice-surfaces.spec.ts`).
-- OW: `no_biometric_identifiers` gate (invariant #27) — the BIPA anchor OCR-116 wants on the page is already a CI check.
+- OW: the `no_biometric_identifiers` BIPA absence gate — the anchor OCR-116 wants on the page is already a CI check (`tests/security/no-biometrics.invariant.test.ts`). Its invariant number is unratified; see §9.
 - Discovery design law (OSE-1014, OSE-1015): responses are a function of (cell, k, filters), byte-identical for every requester; the area is picked, never detected; tourism mode is a toggle, not detection.
 
 How this maps to the research's copy guidance:
@@ -176,3 +176,20 @@ Recorded here so the thread survives; the ticket of record is OSE-1198.
 3. OCR-116 copy from the 3×3 grid (§ above), hero hook order decided.
 4. Design canvas on `@ocr/tokens` — the accent question is now settled (platform indigo, OSE-221).
 5. Build into `landing.html` with the scan-path guard suite extended.
+
+---
+
+## 9. Drift found by the phantom gate (2026-09-04) — Article #27 is claimed twice
+
+Writing §2.1 above, I cited OW's BIPA gate by a registry number taken from its commit subject. The OCR-docs phantom scanner rejected it on PR #112, correctly: **the registry holds 1–25; there is no Article #26 or #27.** Chasing the number surfaced a genuine collision, not just a bad citation:
+
+| Claimant | What it calls Article #27 | State |
+|---|---|---|
+| `docs/proposals/PROPOSAL_invariants-26-27-mutual-acceptance-honesty-lexicon.md` | **Honesty Lexicon** (with Article #26 = Sponsor Placement Mutual Acceptance) | Proposed, unratified |
+| ourWKRP, PR #48 | **`no_biometric_identifiers`** (BIPA absence gate) | **Shipped** — `tests/security/no-biometrics.invariant.test.ts`, `tests/support/biometric-scan.ts` |
+
+Two different articles both claim the number, and one of them is already enforced in a spoke's CI. The proposal additionally plans to re-cite OSE's honesty lexicon from Article #25 to Article #27, which would collide head-on with the shipped OW gate.
+
+This is precisely the failure ADR-003 names — numbers asserted before the registry encodes them, the same mechanism that produced the earlier phantom pair. The brain must assign both numbers, and one claimant must renumber. Filed for resolution; nothing in this assessment depends on which number wins, only on the gates existing, which they do.
+
+*(Note on phrasing: unratified articles are written "Article #N" throughout, matching the proposal doc's own convention — the scanner reserves the literal "invariant #N" form for registry-encoded articles, which is the point of the gate.)*
