@@ -169,6 +169,113 @@ The below-threshold state is not an apology and not a waiting room — it is the
 
 > Surface: OSE-1242 (carries the map interaction spec). Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (10 loops; the metric claim was retracted in Loop 9 and **replaced by owner decision in Loop 10**). Constant: `ourSharedEvents/src/lib/corridor-readiness.ts` → `CORRIDOR_READY_MIN_EVENTS`.
 
+### 6.2c The choice network — presence is chosen, not assumed
+
+Two Triangle corners already had a guarantee. The Customer is anonymous **by
+construction** (Invariant #1). The Sponsor cannot buy access (Invariants #5,
+#25). The Event corner — the host, the person whose porch or living room or
+storefront the gathering happens in — had nothing. That absence is why a public
+surface could ship a rigorous refusal to *accept* a reader's coordinates while
+freely *emitting* a host's street address, and nothing felt inconsistent: there
+was no commitment to violate.
+
+**The choice network is that corner's guarantee. A location appears on a public
+surface because someone chose to put it there, for that occasion.**
+
+**Publication is an act, not a setting.** The bit lives on the **event**, never
+on the address. This is what makes the hard case work: a Beverly historical home
+is a home three hundred and sixty-four days a year and a venue on house-walk
+day. A classification of the *address* ("residential" / "commercial") cannot say
+that and would fight the owner when they wanted to open their doors. A decision
+about *this event* says it natively.
+
+The same bit therefore reads two ways, and the second is the one that matters:
+
+- **Protective** — *keep my home off the map.*
+- **Generative** — *put my home on the map for the art walk.*
+
+A privacy setting gets ignored. A publish button gets used. The platform should
+speak in the second voice, because **for the events this product exists to
+serve, publication is the contribution** — a resident who opens their porch is
+not tolerating exposure, they are giving something, and the listing is how the
+gift is delivered.
+
+**It is binary.** Unpublished means absent from every discovery surface — not
+listed-without-an-address, not "somewhere in Beverly". Absent. Unpublished does
+**not** mean unreachable: the host still printed a QR poster and still handed a
+link to the people they invited, so a direct link to the event still works.
+Discovery is what the choice governs.
+
+#### Three postures, and they complete the lattice
+
+This section's parent already said the surface shows what is **cleared and
+listed**. `legal_clearance_tier` implemented *cleared*. This implements
+*listed*, and the two axes together describe every actor:
+
+| Actor | Posture | Default | Why |
+|---|---|---|---|
+| **Private citizen** | publication is a **choice** | closed | control over what they publish, and in what regards |
+| **Business** | publication is **value** | open | public record is public impact; being listed is the point |
+| **Government entity** | publication is **obligation** | compelled | a dedicated rule dictates that, and how, it is made public |
+
+**Cleared overrides listed.** A public body does not get to un-list a public
+meeting. That rule was not invented for this design — it is what the two words
+already meant, and it means a compelled actor's flag is *governed* rather than
+freely toggled.
+
+#### What it unlocks
+
+The form this enables is not hypothetical. Porch-front music festivals, historic
+home and garden tours, open studio and art walks, progressive dinners,
+neighbourhood runs with open houses — all share one structure: **one organising
+body with no venue of its own, N locations each belonging to a different
+resident, each consenting individually, and the published roster IS the
+advertisement.**
+
+A platform that can only model institutional venues cannot host this category
+at all. This is the neighbourhood's own assets — porches, gardens, front rooms,
+people — becoming the venue.
+
+It also lands exactly on NCR: each open house is a **Node** (res 9, ~201 m), the
+walk is a **Corridor** (res 7, ~1,406 m). The map draws a route rather than a
+pin. It is the first product use of res 9 as something a reader *sees* rather
+than something the platform records.
+
+#### Three things the choice network requires
+
+1. **Per-stop consent, held by that stop's host.** In a twelve-stop walk the
+   organiser is not the host of eleven of those locations. A flag held at the
+   event level by the organiser lets them publish eleven people's home
+   addresses. Consent is per stop, per host — which is also just how these
+   events actually organise.
+2. **Publication expires with the event.** A house published for one Saturday
+   stops being published after. This composes free with the map, which is
+   forward-only; it does **not** compose with the list, which shows recaps, so a
+   home event's recap drops its address.
+3. **A publish is not reversible, and the interface must say so once.** The
+   toggle is symmetric; the act is not. Un-flipping does not un-send. Asking
+   someone to weigh that in one tap, with no context, is not informed consent —
+   and the civic forms above solve it the honest way, by having an organiser
+   brief their hosts.
+
+#### The failure mode to watch
+
+If citizens default closed and businesses default open, **the map fills with
+commerce while civic and residential life stays dark** — not by intent, by the
+arithmetic of defaults. It is self-reinforcing: the below-threshold door asks
+for supply, commercial supply arrives first, and the map teaches every later
+reader that this is a business listings product.
+
+For a company whose subject is community ritual, that is a mission failure that
+would arrive quietly and look like growth. The counterweight is a product
+decision, and the strongest candidate is the multi-stop event itself: a house
+walk publishes twelve residents at once, each briefed by an organiser.
+
+> Surface: OSE-1245 (`events.is_published`, migration 0070), OSE-1248
+> (multi-stop events). Governance review:
+> `docs/ccr/OCR_CCR_choiceNetwork_2026-09-05.md` — PASS at 96%, extended scrum
+> team including Director of Security and Community Development Specialist.
+
 ### 6.3 The four governance files per repo
 
 Every repo in the OCR line maintains exactly four governance files. Architectural invariant.
