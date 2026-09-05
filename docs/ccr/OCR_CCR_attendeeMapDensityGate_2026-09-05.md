@@ -391,3 +391,68 @@ that does not block the entry — it governs one surface's card order, not the d
 
 **Confidence 94%** on the amended entry — down from 96% only because 7.3 is unresolved, and the
 answer changes one shipped surface.
+
+---
+
+## Loop 8 — owner resolution of 7.2 and 7.3
+
+Both open findings were put to the owner and answered. This loop records the answers, checks
+what they change, and re-scores.
+
+### 8.1 · RESOLVED · 7.2 — the gate counts **events**
+
+Owner confirmed: reuse the ratified `CORRIDOR_BASELINE_MIN_SAMPLE` (10 events / 30 days) rather
+than introducing a landing-specific constant.
+
+Consequences checked:
+
+- **No new number to keep honest.** The constant already has two enforcing call sites
+  (`shared-report-builder.ts:336,346`). A third consumer inherits the enforcement rather than
+  inventing a parallel one that can drift away from it.
+- **The circularity is closed**, not merely acknowledged. The recorded reasoning is now in
+  doctrine so a future reader cannot "improve" the gate into an attendee count without first
+  reading why that was rejected.
+- **Coupling accepted and named.** Moving the SharedReport baseline now also moves the landing
+  gate. That is a real constraint and is the intended one — the doctrine states it as *"the same
+  bar that decides a corridor can be reported on decides it can be shown."* If the two ever need
+  to diverge, that divergence is a decision with a paper trail, which is the outcome a separate
+  constant would have bought silently and prematurely.
+
+### 8.2 · RESOLVED · 7.3 — public flips to **sponsor-first** below the threshold
+
+Owner chose the third option: the public below-threshold order becomes
+`register sponsor · create event · attendee`, matching `/admin`. `/admin` does not move.
+
+This is the stronger resolution of the three, and for a reason worth recording:
+
+- **The two states are now an exact inversion**, not two unrelated orderings. Below:
+  sponsor · event · attendee. Above: attendee · event · sponsor. One sentence describes the whole
+  behaviour, which means one sentence is all a future implementer has to hold.
+- **Event lands in the middle of both**, and that is architecturally motivated rather than
+  incidental: Event is the corner the other two connect *through* (§6.1). The card that is never
+  first and never last is the one that is never the *point* — it is the hinge.
+- **The consistency argument that created the finding is now satisfied in the direction it was
+  originally made.** Sponsor-first on `/admin` was justified by consistency with the public door;
+  the public door now agrees. No surface is carrying an unexplained exception.
+- **Sponsor rank still falls to third above the threshold**, and this is not a contradiction of
+  the above. The inversion is the rule; sponsor leads only while the page is asking for supply.
+  Once the area is served by demand, the reader leads and the sponsor ask moves to where a
+  sponsor with proof of density is *more* likely to convert, not less.
+
+### 8.3 · LOW · Implementation note carried to OSE-1241
+
+The chooser markup must not encode order in the DOM as an assumption. Build the three cards in a
+single intrinsic grid track and let rank be assigned, so the inversion is a data-driven attribute
+rather than two hand-maintained template branches that can fall out of step. The existing
+per-link `testid` convention applies — *position is not an identity* — so tests must assert the
+card by identity and its rank separately, or they will pass in both states and prove neither.
+
+### Verdict on Loop 8: **PASS**
+
+Both open findings are closed by owner decision; neither answer introduced a new finding. The
+entry's remaining risk is implementation fidelity (8.3), which is a story-level concern with a
+named gate, not a doctrine gap.
+
+**Confidence 96%** — restored to the Loop 6 level. The two resolutions removed the only
+unresolved dependency, and 8.2 improved the doctrine rather than merely settling it: the entry
+now states one rule where it previously stated two orderings.

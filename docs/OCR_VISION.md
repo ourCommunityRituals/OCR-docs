@@ -119,14 +119,18 @@ So the customer perspective is **always present and changes rank with the area's
 
 | Area state | Order | The customer card is |
 |---|---|---|
-| **Below threshold** | create event · register sponsor · **attendee** | an **invitation** — *this is the map of your area; fill it so you can see it* |
+| **Below threshold** | register sponsor · create event · **attendee** | an **invitation** — *this is the map of your area; fill it so you can see it* |
 | **At or above** | **attendee** · create event · register sponsor | the **map**, and the page's primary answer |
 
-Below the line the product is asking for **supply**; above it, it is serving **demand**. The same page states which it needs, and the reader's own area decides. Two people in the same city can correctly see different front doors.
+**The order inverts; it does not re-shuffle.** The two states are the same three cards read in opposite directions, and Event sits in the middle of both because Event is the middle of the Triangle — the corner the other two connect *through*. Below the line the product is asking for **supply**, so the scarcest input leads; above it, it is serving **demand**, so the reader leads. The same page states which it needs, and the reader's own area decides. Two people in the same city can correctly see different front doors.
+
+Sponsor leads the below-threshold state on the same reasoning that put it first on `/admin`: sponsorship is the input the platform cannot manufacture for itself, and a front door that ranks the two corners differently depending on which entrance you used argues with itself.
 
 The below-threshold state is not an apology and not a waiting room — it is the clearest possible statement of what the platform does, shown to exactly the person who could make it true. It is also the top of the attendee-becomes-host ladder.
 
 **Sufficiency is measured per corridor, and the threshold is not a new number.** OSE already ratified and enforces a corridor baseline minimum sample (`ourSharedEvents/src/lib/shared-report.ts` → `CORRIDOR_BASELINE_MIN_SAMPLE`, consumed by `shared-report-builder.ts`). The same bar that decides a corridor can be *reported* on decides it can be *shown*.
+
+**The bar counts events, not attendees.** This is load-bearing, not a detail of units. An attendee-denominated gate is circular by construction — no map means fewer attendees means the map never opens — so an area could never climb out of the state the gate put it in. Events are supplied by the corner the below-threshold page is actively recruiting, which makes the gate something a reader can *act on* from the page they are standing on.
 
 **The gate governs launch, not answers.** Once the surface is open, it answers for *any* location a reader stands in — including quiet ones. "Nothing near you this week" is a legitimate answer, not a failure state; a reader travelling, visiting, or camping is asking a real question and deserves a real reply. Gating a *query result* on density would be a different and wrong rule.
 
@@ -140,7 +144,7 @@ The below-threshold state is not an apology and not a waiting room — it is the
 
 **It is a listing, not a census.** The surface shows what is cleared and listed across the clearance lattice — from a backyard gathering to a library programme. It does not claim to show everything happening in an area, and it never will: [[OCR_STANDARD_declinedRegimes]] permanently excludes regimes the platform does not serve.
 
-> Surface: OSE-1242. Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (6 loops, PASS at 96%).
+> Surface: OSE-1242. Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (8 loops, PASS at 96%).
 
 ### 6.3 The four governance files per repo
 
