@@ -128,9 +128,15 @@ Sponsor leads the below-threshold state on the same reasoning that put it first 
 
 The below-threshold state is not an apology and not a waiting room — it is the clearest possible statement of what the platform does, shown to exactly the person who could make it true. It is also the top of the attendee-becomes-host ladder.
 
-**Sufficiency is measured per corridor, and the threshold is not a new number.** OSE already ratified and enforces a corridor baseline minimum sample (`ourSharedEvents/src/lib/shared-report.ts` → `CORRIDOR_BASELINE_MIN_SAMPLE`, consumed by `shared-report-builder.ts`). The same bar that decides a corridor can be *reported* on decides it can be *shown*.
+**Sufficiency is measured per corridor. The instrument is an open decision (OSE-1242).**
 
-**The bar counts events, not attendees.** This is load-bearing, not a detail of units. An attendee-denominated gate is circular by construction — no map means fewer attendees means the map never opens — so an area could never climb out of the state the gate put it in. Events are supplied by the corner the below-threshold page is actively recruiting, which makes the gate something a reader can *act on* from the page they are standing on.
+> ⚠️ **Correction, 2026-09-05.** This section previously stated that the gate reuses `CORRIDOR_BASELINE_MIN_SAMPLE` as *"10 events / 30 days"*. **That was wrong, and it was ratified on the strength of a stale code comment rather than the query beneath it.** The constant is real and enforced, but it counts `COUNT(DISTINCT anon_id_hash)` — **distinct anonymous attendees** — grouped by *(corridor, day-of-week, hour)*, over a **trailing** window (`ourSharedEvents/migrations/0032_create_corridor_density_baseline.sql:44`, `src/lib/shared-report.ts:240-256`). Its job is suppressing an unpublishable **density ratio**, not answering a front-door readiness question. Wrong unit, wrong grain, wrong direction.
+
+**What the correction does not undo.** The circularity objection stands: a gate denominated in *attendees* cannot be climbed out of, because no map means fewer attendees means the map never opens. Whatever instrument is chosen must be one a reader can **act on from the page they are standing on**.
+
+**Why the direction matters most.** The customer surface shows a **forward** window — what a reader can still attend. A **trailing** gate can disagree with it in both directions, and one of those failures is the exact thing this section exists to prevent: a corridor with a busy history clears the gate, the attendee card is promoted to first position, and **the map it opens on is empty** because nothing is scheduled ahead. The mechanism meant to stop the surface reading as abandoned would be the thing that made it read that way.
+
+**The standing recommendation** is therefore that readiness be a question the surface can answer about *itself* — the attendee card leads when the forward window it would open on holds at least N events in the reader's corridor. Self-consistent by construction, since the thing counted is the thing shown; non-circular, since events come from the corner the below-threshold page recruits; and it leaves `CORRIDOR_BASELINE_MIN_SAMPLE` doing its real job instead of being overloaded into a second, contradictory one. **N is a new number, openly.** Reusing a constant whose unit, grain and direction are all wrong is not thrift.
 
 **The gate governs launch, not answers.** Once the surface is open, it answers for *any* location a reader stands in — including quiet ones. "Nothing near you this week" is a legitimate answer, not a failure state; a reader travelling, visiting, or camping is asking a real question and deserves a real reply. Gating a *query result* on density would be a different and wrong rule.
 
@@ -144,7 +150,7 @@ The below-threshold state is not an apology and not a waiting room — it is the
 
 **It is a listing, not a census.** The surface shows what is cleared and listed across the clearance lattice — from a backyard gathering to a library programme. It does not claim to show everything happening in an area, and it never will: [[OCR_STANDARD_declinedRegimes]] permanently excludes regimes the platform does not serve.
 
-> Surface: OSE-1242. Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (8 loops, PASS at 96%).
+> Surface: OSE-1242 (carries the map interaction spec and the open decision on the gate instrument). Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (9 loops; **the metric claim was retracted in Loop 9** — the entry's rank-and-invitation design stands).
 
 ### 6.3 The four governance files per repo
 

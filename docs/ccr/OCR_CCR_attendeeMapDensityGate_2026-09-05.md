@@ -456,3 +456,102 @@ named gate, not a doctrine gap.
 **Confidence 96%** — restored to the Loop 6 level. The two resolutions removed the only
 unresolved dependency, and 8.2 improved the doctrine rather than merely settling it: the entry
 now states one rule where it previously stated two orderings.
+
+---
+
+## Loop 9 — retraction of the Loop 8 metric finding
+
+Triggered by the owner's map interaction spec (OSE-1242), which introduced a
+**forward** display window and so forced the gate's *direction* to be stated.
+Stating it revealed that the instrument had never been read.
+
+### 9.1 · CRITICAL · The Loop 8 metric conclusion was wrong, and it is now doctrine
+
+Loop 8 recorded, and §6.2b then asserted, that the gate reuses
+`CORRIDOR_BASELINE_MIN_SAMPLE` as **"10 events / 30 days"**. The constant is
+real and enforced at two call sites. Everything else about the claim is false:
+
+| Claimed | Actual | Source |
+|---|---|---|
+| events | `COUNT(DISTINCT anon_id_hash)` — **attendees** | `shared-report.ts:240-256`; `migrations/0032:44` says *"rolling 30-day distinct anon_id_hash count"* |
+| corridor-wide | per **(corridor, day-of-week, hour)** | `GROUP BY … bucket_dow, bucket_hour` |
+| a readiness bar | a floor for publishing a **density ratio** | `shared-report-builder.ts:336-349` |
+| (direction unstated) | **trailing** | `WHERE e.start_date >= floor90dIso` |
+
+**The provenance is the finding.** Loop 8 cited `shared-report.ts:60`:
+
+```ts
+// Q4 ratified — corridor baseline minimum sample size: 10 events / 30d
+export const CORRIDOR_BASELINE_MIN_SAMPLE = 10;
+```
+
+That comment disagrees with its own schema and with the query 180 lines below
+it. **A comment was read as evidence and a query was not opened.** This is the
+same failure mode this document has now recorded three times, and the second
+time it reached a ratified artifact.
+
+It is worse than the earlier instances in one respect: the owner's original
+instinct — *"when it's under the amount of attendees"* — **matched the column**.
+Loop 7 talked them out of it. The reviewer's correction was the error, and the
+review's confidence in it (recorded at HIGH) came from the same unverified line.
+
+### 9.2 · What survives the retraction
+
+The **circularity objection does not depend on the constant**, and it stands: a
+gate denominated in attendees cannot be climbed out of, because no map means
+fewer attendees means the map never opens. So Loop 7's *reasoning* was sound
+even though its *conclusion about the code* was not. The requirement it yields —
+that the gate be something a reader can act on from the page they are standing
+on — carries forward unchanged.
+
+Everything else in §6.2b is untouched: always-present, rank-follows-density,
+the inversion, readiness latching, launch-not-answers, tier-blindness, and
+location-resolves-to-a-cell. **None of those cited the constant.** The blast
+radius is one paragraph, which is the only reason this is a correction rather
+than a rebuild.
+
+### 9.3 · HIGH · Trailing gate vs forward surface
+
+Independent of units, a **trailing** gate governing a **forward** surface can
+fail in both directions, and one failure is precisely what §6.2b exists to
+prevent: a corridor clears on history, the attendee card is promoted to first
+position, and the map opens **empty** because nothing is scheduled ahead. The
+mechanism meant to stop the surface reading as abandoned becomes the thing that
+makes it read that way.
+
+This could not have been caught before the interaction spec existed, because
+until the map's window was stated the gate's direction was never a question.
+Recorded as an argument for writing the interaction spec *before* ratifying the
+gate, not after.
+
+### 9.4 · The standing recommendation
+
+Readiness should be a question the surface answers about **itself**: the
+attendee card leads when the forward window it would open on holds at least N
+events in the reader's corridor. Self-consistent (the thing counted is the thing
+shown), non-circular (events come from the corner the page recruits), and it
+leaves `CORRIDOR_BASELINE_MIN_SAMPLE` doing its real job. **N is a new number,
+openly.** Owner decision.
+
+### 9.5 · Process finding — what would have caught this
+
+Loop 8 scored 96% on a claim about code that no loop had opened the code for.
+The gap is that this protocol's *evidence* rule ("Verified requires citable
+evidence, not 'I looked at it'") was satisfied by a citation to a **comment**.
+
+**Proposed amendment to the CCR protocol:** a citation to a comment, a doc, or a
+constant's *name* is not evidence of runtime behaviour. Behavioural claims cite
+the **query, the expression, or the test that exercises it**. A constant may be
+cited for its value; never for its meaning.
+
+### Verdict on Loop 9: **RETRACTION ACCEPTED — the entry stands, minus one claim**
+
+§6.2b amended: the metric paragraph is replaced with the correction, the
+surviving circularity requirement, the trailing-vs-forward finding, and the
+recommendation. The gate instrument is now an **open owner decision** on
+OSE-1242 rather than settled doctrine.
+
+**Confidence 91%** on the amended entry — below Loop 8's 96% and correctly so.
+The design is better evidenced than it was; the gate is now honestly marked
+unresolved instead of falsely marked settled. A number that goes *down* after a
+loop that improved the document is the protocol working.
