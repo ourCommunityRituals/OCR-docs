@@ -1,6 +1,7 @@
 # CCR — Attendee map & the density gate (proposed VISION amendment)
 
-**Date:** 2026-09-05 · **Tier:** governance (5 loops, ≥95%) · **Verdict: HELD**
+**Date:** 2026-09-05 · **Tier:** governance (6 loops, ≥95%) · **Verdict: PASS**
+**Holds cleared:** owner statement 2026-09-05 (see Loop 6). Verdict revised HELD → PASS.
 **Target:** proposed `OCR_VISION.md` amendment — the three front-door perspectives as the
 Triangle's corners, and the density gate holding the attendee map closed.
 **Source:** owner statement 2026-09-05 · **Surface story:** OSE-1242
@@ -228,3 +229,89 @@ constant, no claim the Triangle was incomplete.
   permission to use ring emergence as the gate.
 - States the open question rather than papering it, so the entry does not assert a resolved
   design it does not have.
+
+---
+
+## Loop 6 — Delta review after the owner statement (holds cleared)
+
+### H1 — CLEARED, and reframed better than the review's synthesis
+
+Owner: *"that shared report is a product of the event that's created. But for the attendee…
+it would use their geolocation to understand what are the events that are available."*
+
+Loop 1.1 proposed "same rendering, different audience, different threshold." That was
+directionally right and **under-powered**. The real distinction is not audience, it is
+**direction in time**:
+
+| | SharedReport corridor map | Attendee map |
+|---|---|---|
+| Is | a **product OF** an event that happened | a **discovery surface** for events that have not |
+| Looks | backward — proof | forward — what's on |
+| Reader knows | the event occurred; they were part of it | nothing; they are deciding whether to go out |
+| One lit cell | meaningful evidence | not a product |
+
+Two different artifacts that happen to share a rendering technique. `corridor-map.ts`'s
+"honest at any density" is **correct for a retrospective proof surface** and needs no change to
+its behaviour — only an audience qualifier in its header so it is not read as a platform-wide
+rule. **H1 cleared.**
+
+### H3 — CLEARED: device geolocation, resolved to a cell
+
+Owner: *"it would use their geolocation… for their current res seven, or larger if they wanted
+to."* Plus the roaming cases — Blue Island, travelling for work, camping.
+
+**The privacy shape falls out of this and is strong:** geolocation resolves to an **H3 cell**,
+and the cell is the query key. Coordinates are a means, not a payload. This sits inside
+Invariant #1 rather than straining it — the platform learns *which ~5 km² tile*, not where
+someone is.
+
+**Zoom-out needs no migration.** `h3_res7` is stored; res6/res5 are `cellToParent` computations.
+"Or larger if they wanted to" is derivable from what exists.
+
+### New findings from the delta
+
+**6.1 · HIGH · The gate governs LAUNCH, not query results.** The roaming cases prove the map
+must answer for **any** location, including ones with zero events — *"what events are going on
+in this current location"* while camping. So:
+
+- **Density gate** → when is the surface worth shipping *for a founding corridor*? (one-time,
+  per area, ratified constant)
+- **Zero results for a cell** → a legitimate **answer**, not a failure state.
+
+Conflating them produces a map that refuses to answer for Blue Island because Blue Island is
+quiet. The VISION wording must not license that reading.
+
+**6.2 · MEDIUM · Coordinate handling is a real fork with a measured price.**
+
+| Option | Coordinates leave the device? | Cost |
+|---|---|---|
+| Resolve to cell **in the browser** (`h3-js`) | **no** | **94 KB gzipped** on a mobile-first public page |
+| Send lat/lng, resolve **server-side** | yes, transiently | free; but coordinates exist in the request, so log lines must carry the *cell*, never the input |
+
+Recommend client-side: the property "raw coordinates never leave the device" is worth stating
+publicly, and it is only true in option 1. But 94 KB is not free and this should be a decision,
+not a default. **Implementation choice for OSE-1242 — not a VISION blocker**, since the doctrine
+is "resolved to a cell" either way.
+
+**6.3 · LOW · The sponsor mechanic described is already built.** *"local sponsors in my
+geolocation… the event types they've signed up… I have a choice to associate them… they will
+randomly show up in my header"* is `sponsor_areas` + `sponsor_event_types` (**Invariant #2**)
+plus the seeded shuffle that keeps position unbuyable (**Invariant #25**, OSE-1138). Recorded so
+nobody rebuilds it.
+
+**6.4 · MEDIUM · "What's going on" implies a completeness the platform deliberately does not
+offer.** The map spans the clearance lattice — backyard (layer zero) through bars, rec centres,
+libraries. But `OCR_STANDARD_declinedRegimes` permanently excludes some regimes (hospital PII,
+under-13 parental-clearance). An attendee map is a listing of **what is cleared and listed**, not
+a census of everything happening in an area. Honest framing is cheap now and expensive later.
+
+### Revised confidence
+
+**96%.** H1 and H3 are answered by the owner, not inferred. 6.1 changed the wording rather than
+the doctrine. 6.2 is a priced implementation choice, not an open question. Residual 4% is 6.4 —
+a copy question that will be settled when the surface is designed.
+
+## Verdict: **PASS**
+
+Clear to write the VISION entry, with 6.1's launch-vs-answer distinction folded into the
+wording and 6.4 flagged to OSE-1242.

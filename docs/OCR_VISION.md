@@ -109,6 +109,26 @@ Four extensions: ALERT (Yellow `#B8960A`), STAFF (Red `#A00020`), CHECK-IN (Teal
 
 Blue is "the most valuable pixel in the system" — the sponsor revenue surface. The color IS the instruction.
 
+### 6.2b The Customer corner opens on evidence
+
+Each Triangle corner has a front-door perspective: a sponsor arrives to be listed, an organiser arrives to run something, a customer arrives to find something worth going to. The first two are answerable from an empty database. **The third is not.**
+
+A discovery surface with nothing on it does not read as *early* to someone who has never heard of us — it reads as abandoned. So the customer-facing perspective is **held closed until the area around that reader carries enough activity to be worth their attention**, and it opens **per area, not per launch**. Two people in the same city can correctly see different front doors.
+
+**Sufficiency is measured per corridor, and the threshold is not a new number.** OSE already ratified and enforces a corridor baseline minimum sample (`ourSharedEvents/src/lib/shared-report.ts` → `CORRIDOR_BASELINE_MIN_SAMPLE`, consumed by `shared-report-builder.ts`). The same bar that decides a corridor can be *reported* on decides it can be *shown*.
+
+**The gate governs launch, not answers.** Once the surface is open, it answers for *any* location a reader stands in — including quiet ones. "Nothing near you this week" is a legitimate answer, not a failure state; a reader travelling, visiting, or camping is asking a real question and deserves a real reply. Gating a *query result* on density would be a different and wrong rule.
+
+**This is not ring emergence.** A ring is a detected topology requiring bidirectional flow across multiple seasons (`ourSharedEvents/migrations/0012_ring_emergence_support.sql`). It is downstream of attendance, not a precondition for it. Gating the customer surface on ring emergence would hold it closed for a year by construction.
+
+**Location resolves to a cell, never to a person.** The reader's position is used to determine *which* cell they are standing in and is then discarded; the cell is the query key, and coarser views are the parent cell. What the platform learns is which tile, not where someone is — Invariant #1 holds by construction rather than by policy.
+
+**Density gates the surface, never the architecture, and never a tier.** The Customer corner is already enforced today — anonymous ID, scan, forms funnel. What waits on density is one *front door*, not the corner's existence. And an area's readiness is a fact about that area, not something a sponsor can buy: this surface is tier-blind (Invariant #5).
+
+**It is a listing, not a census.** The surface shows what is cleared and listed across the clearance lattice — from a backyard gathering to a library programme. It does not claim to show everything happening in an area, and it never will: [[OCR_STANDARD_declinedRegimes]] permanently excludes regimes the platform does not serve.
+
+> Surface: OSE-1242. Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (6 loops, PASS at 96%).
+
 ### 6.3 The four governance files per repo
 
 Every repo in the OCR line maintains exactly four governance files. Architectural invariant.
