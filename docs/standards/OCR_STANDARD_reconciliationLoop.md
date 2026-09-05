@@ -261,3 +261,21 @@ separates them, and it is checked *before* the write, not after.
 **Enforcement.** The clearance check is the reconciler's own gate; it is not delegable to the agent
 requesting the write. Where a run cannot establish clearance, it reports the blocker and stops —
 reporting a blocked write is a valid loop outcome. Writing anyway is not.
+
+**Doctrine vs. current-state — the tier applies to one, not both.** Clause 4 was ambiguous in its
+first real use (OSE-1236, 2026-09-05) and this settles it. A governance file holds two different
+kinds of claim, and the CCR tier protects only the first:
+
+| Kind | Example | Tier |
+|---|---|---|
+| **Doctrine** — what must be true | invariants, the Triangle, protocol, architecture, ADR decisions | CCR governance: 5+ loops, ≥95% |
+| **Current state** — where we are now | `CLAUDE.md` §3 role states, counts, gate lists, measured figures | Normal clearance (§9.5 1–3) |
+
+The reason is structural, not a convenience: the loop **defines** the current-state refresh as its
+own output — OSE's `CLAUDE.md` §5 mandates *"Update CLAUDE.md §3 → role current states"* at steps 8
+and 10, after each merged PR. Requiring five CCR loops to record a measured count would make the
+loop's own mandated step unperformable, and the predictable result is that it stops being performed
+— which is precisely the drift §9 exists to close.
+
+The distinction is about the CLAIM, not the file. A change that alters what must be true carries the
+governance tier wherever it lands, `CLAUDE.md` included.
