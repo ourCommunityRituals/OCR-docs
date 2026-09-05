@@ -1,6 +1,6 @@
 # OCR_STANDARD_reconciliationLoop
 
-**Status:** ACTIVE · **Owner:** platform · **Last updated:** 2026-09-03
+**Status:** ACTIVE · **Owner:** platform · **Last updated:** 2026-09-05
 
 > The **reconciliation loop** is the triggerable process that drives drift between the three
 > truth-surfaces — **Linear** (intent), **Code** (reality), **Brain + Memory** (doctrine) — to
@@ -224,3 +224,40 @@ Inherits §7. Additionally: the doc leg **rewrites the doc; it never rewrites th
 stale doc.** Code wins (`CLAUDE.md`: *"When code and docs disagree, code wins"*). Where a doc records a
 *decision* the code contradicts, that is an ADR question, not a doc edit — escalate, do not reconcile
 it away.
+
+### 9.5 Write clearance — the rubber stamp
+
+The doc leg is **not** an unconditional licence to write. Two failure modes sit on either side of it,
+and this rule is the line between them:
+
+| Failure mode | Cause | Cost |
+|---|---|---|
+| **Noise** | Documentation written from an unvetted finding | The brain now asserts something false, and every spoke inherits it (§5) |
+| **Drift** | Documentation *not* written when a change merges | The doc rots silently; `CLAUDE.md`'s *345 inline styles* is the worked example (§9) |
+
+**The rule.** A brain or doc write requires **write clearance**. Clearance is *earned*, never assumed:
+
+1. Every finding backing the write passes §9.2 (1)–(4) — verified, correctly homed, promotion-assessed,
+   brain-light.
+2. The §9.3 Definition of Done is satisfied for the change: code merged, tests named and passing,
+   §9.1 traversal complete, story reflects reality.
+3. The §9.1 traversal is **closed** — every artifact it enumerated is either updated in this run or
+   explicitly recorded as out-of-scope with a reason.
+4. Governance artifacts (`CLAUDE.md`, `docs/OCR_VISION.md`, standards, the invariant register)
+   additionally carry the CCR governance tier — 5+ loops, ≥95% confidence, human gate below that.
+
+**Absent clearance, no documentation is written.** Not a draft, not a placeholder, not a "TODO:
+verify." An unverified assertion parked in the brain is indistinguishable from doctrine by the next
+reader — that is precisely how noise enters.
+
+**Given clearance, documentation is written on merge.** Not filed as a follow-up, not deferred to a
+later pass. §9.3 already forbids treating docs as a separate ticket; this clause names the reason:
+the merge is the only moment at which the traversal is provably complete and the writer's context is
+whole. A doc deferred past merge is a doc written from memory.
+
+Restated as one line: **unvetted docs are noise; undocumented merges are drift.** Clearance is what
+separates them, and it is checked *before* the write, not after.
+
+**Enforcement.** The clearance check is the reconciler's own gate; it is not delegable to the agent
+requesting the write. Where a run cannot establish clearance, it reports the blocker and stops —
+reporting a blocked write is a valid loop outcome. Writing anyway is not.
