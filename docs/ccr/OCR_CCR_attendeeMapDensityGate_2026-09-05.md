@@ -315,3 +315,79 @@ a copy question that will be settled when the surface is designed.
 
 Clear to write the VISION entry, with 6.1's launch-vs-answer distinction folded into the
 wording and 6.4 flagged to OSE-1242.
+
+---
+
+## Loop 7 — Delta on the two-state landing page (owner refinement, same day)
+
+Scope: a **refinement of the entry this review just passed**, by its author, clarifying rather
+than reversing. A focused delta is proportionate; a second full six-loop pass is not, and saying
+so is part of the review rather than a shortcut around it.
+
+### What changed, and it corrects §6.2b as written
+
+The passed entry said the customer perspective is **"held closed"** below threshold. The owner's
+refinement: it is **always present**, and below the line it is an *invitation* —
+*"coming soon, fill this space with events for the map of your current location."* What changes
+with density is **rank and content**, not existence:
+
+| Area state | Order | Customer card |
+|---|---|---|
+| Below | create event · register sponsor · **attendee** | invitation |
+| At or above | **attendee** · create event · register sponsor | the map |
+
+**This is better than what passed.** Hiding the perspective teaches a reader nothing. An honest
+empty state teaches them what the place is for — and shows it to exactly the person who could
+make it true. Below the line the page asks for **supply**; above it, it serves **demand**.
+§6.2b amended.
+
+### 7.1 · HIGH · The threshold now drives ORDER, so it must latch
+
+`CORRIDOR_BASELINE_MIN_SAMPLE` is a **rolling 30-day window**. A corridor sitting near the line
+(9 events one week, 11 the next) would reorder the landing page's primary CTA between one visit
+and the next. Card order flapping is disorienting on its own; **demoting a reader's map because
+last month was quiet is worse than never having promoted it.**
+
+Not a problem when the threshold only governed visibility of a not-yet-built surface. It is a
+problem now that it governs rank. **Readiness must latch: once an area clears the bar, it stays
+cleared.** Written into §6.2b.
+
+### 7.2 · HIGH · "Under the amount of attendees" — the metric must be EVENTS, not attendees
+
+The owner said *"under the amount of attendees."* Almost certainly loose phrasing, but the
+distinction is load-bearing and gets the design wrong if taken literally:
+
+- **Attendee-count gate is circular.** No map → fewer people find events → fewer attendees →
+  the map never opens. The gate would prevent the thing that clears it.
+- **Attendee counts need scans**, which need events to have already run — so the metric cannot
+  exist before the surface it gates.
+- `CORRIDOR_BASELINE_MIN_SAMPLE` is **events per 30 days**, and is what the ratified constant
+  already measures.
+
+Recorded as: the gate counts **events**. Flagged to the owner rather than silently corrected.
+
+### 7.3 · MEDIUM · The public landing now disagrees with `/admin` on order
+
+`/admin` was flipped to **sponsor-first** earlier today, on the owner's reasoning that *"we
+always want the sponsors to sign up"* and that a front door ranking the two differently by
+entrance argues with itself. The below-threshold public order stated here is **event-first,
+sponsor-second**.
+
+Both are defensible — the surfaces have different readers, and an already-signed-in host is not
+a cold sponsor. But the earlier flip was justified *by consistency*, so this needs an explicit
+answer rather than drift: does `/admin` follow to event-first, or are the two deliberately
+different now? **Owner decision, tracked on OSE-1240 / OSE-1241.**
+
+### 7.4 · LOW · The invitation card is the attendee-becomes-host ladder
+
+*"Fill this space… so you can see the map"* asks a reader to become a creator — the ladder
+recorded earlier in this session. Worth naming so the copy is written as an on-ramp rather than
+as an error state.
+
+### Verdict on the delta: **PASS**, §6.2b amended
+
+Two findings landed in doctrine (7.1 latching, 7.2 the metric). 7.3 is an open owner decision
+that does not block the entry — it governs one surface's card order, not the doctrine.
+
+**Confidence 94%** on the amended entry — down from 96% only because 7.3 is unresolved, and the
+answer changes one shipped surface.

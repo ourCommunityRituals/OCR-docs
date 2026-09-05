@@ -113,7 +113,18 @@ Blue is "the most valuable pixel in the system" — the sponsor revenue surface.
 
 Each Triangle corner has a front-door perspective: a sponsor arrives to be listed, an organiser arrives to run something, a customer arrives to find something worth going to. The first two are answerable from an empty database. **The third is not.**
 
-A discovery surface with nothing on it does not read as *early* to someone who has never heard of us — it reads as abandoned. So the customer-facing perspective is **held closed until the area around that reader carries enough activity to be worth their attention**, and it opens **per area, not per launch**. Two people in the same city can correctly see different front doors.
+A discovery surface with nothing on it does not read as *early* to someone who has never heard of us — it reads as abandoned. But the answer is **not to hide it**: an absent perspective teaches a reader nothing, while an honest empty one teaches them what the place is for.
+
+So the customer perspective is **always present and changes rank with the area's maturity**:
+
+| Area state | Order | The customer card is |
+|---|---|---|
+| **Below threshold** | create event · register sponsor · **attendee** | an **invitation** — *this is the map of your area; fill it so you can see it* |
+| **At or above** | **attendee** · create event · register sponsor | the **map**, and the page's primary answer |
+
+Below the line the product is asking for **supply**; above it, it is serving **demand**. The same page states which it needs, and the reader's own area decides. Two people in the same city can correctly see different front doors.
+
+The below-threshold state is not an apology and not a waiting room — it is the clearest possible statement of what the platform does, shown to exactly the person who could make it true. It is also the top of the attendee-becomes-host ladder.
 
 **Sufficiency is measured per corridor, and the threshold is not a new number.** OSE already ratified and enforces a corridor baseline minimum sample (`ourSharedEvents/src/lib/shared-report.ts` → `CORRIDOR_BASELINE_MIN_SAMPLE`, consumed by `shared-report-builder.ts`). The same bar that decides a corridor can be *reported* on decides it can be *shown*.
 
@@ -123,7 +134,9 @@ A discovery surface with nothing on it does not read as *early* to someone who h
 
 **Location resolves to a cell, never to a person.** The reader's position is used to determine *which* cell they are standing in and is then discarded; the cell is the query key, and coarser views are the parent cell. What the platform learns is which tile, not where someone is — Invariant #1 holds by construction rather than by policy.
 
-**Density gates the surface, never the architecture, and never a tier.** The Customer corner is already enforced today — anonymous ID, scan, forms funnel. What waits on density is one *front door*, not the corner's existence. And an area's readiness is a fact about that area, not something a sponsor can buy: this surface is tier-blind (Invariant #5).
+**Density gates rank and content, never the architecture, and never a tier.** The Customer corner is already enforced today — anonymous ID, scan, forms funnel. What density changes is one *front door's* order and what its third card says, not the corner's existence. And an area's readiness is a fact about that area, not something a sponsor can buy: this surface is tier-blind (Invariant #5).
+
+**Readiness latches.** The threshold is a rolling window, so a corridor sitting near the line would otherwise reorder the landing page between one visit and the next. Once an area has cleared the bar it stays cleared: a front door that demotes a reader's map because last month was quiet is worse than one that never promoted it.
 
 **It is a listing, not a census.** The surface shows what is cleared and listed across the clearance lattice — from a backyard gathering to a library programme. It does not claim to show everything happening in an area, and it never will: [[OCR_STANDARD_declinedRegimes]] permanently excludes regimes the platform does not serve.
 
