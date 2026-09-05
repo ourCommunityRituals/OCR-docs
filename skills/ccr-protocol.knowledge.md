@@ -284,6 +284,37 @@ These behaviors indicate the protocol is being executed in form but not in subst
 | Running loops in parallel                           | The output of Loop N is the pressure input of Loop N+1. Parallel execution breaks the recursive design.                    |
 | Expanding scope without a named instruction         | Scope creep requires an explicit override. Silent expansion violates the default chunk rule.                               |
 | Being supportive instead of critical                | AI defaults to validation/confirmation bias. CCR requires engineering rigor — full-spectrum results, negative to positive. |
+| **Citing a comment as evidence of behavior**        | A comment is a claim, not the system. Behavioral findings cite the query, the expression, or the test that exercises it. |
+| **Correcting the owner from an unverified source**  | Overriding the person who knows the domain requires stronger evidence than agreeing with them, not weaker.                |
+
+#### 3.3.1 The evidence rule — what counts as "Verified"
+
+Added 2026-09-05 after a governance artifact was ratified on a false claim
+(`OCR_CCR_attendeeMapDensityGate_2026-09-05.md` Loop 9). The protocol already
+required *"citable evidence, not 'I looked at it'"*. The gap was that a citation
+to a **comment** satisfied it.
+
+**A behavioral claim must cite the thing that executes.** For a claim about what
+code does, that means the query, the expression, the schema, or a test that
+exercises it — not a comment above it, not a doc describing it, not the name of
+a constant.
+
+| Claim about | Admissible | Inadmissible |
+|---|---|---|
+| what a value *means* | the expression that computes it; the column comment in the migration that defines it | a comment near its declaration; its identifier |
+| what a gate *enforces* | the conditional, plus its call sites | a doc asserting the threshold |
+| what a surface *renders* | the served output, or a test asserting on it | the template source, if anything transforms it |
+| that something *is tested* | the spec **and** the workflow that runs it | the spec's existence |
+
+**A constant may be cited for its value. Never for its meaning.** Its meaning
+lives in what reads it.
+
+**The asymmetry rule.** Contradicting the owner on their own domain requires
+*more* evidence than agreeing, because agreement is checked by them and
+disagreement is not. In the Loop 9 case the owner's instinct matched the column
+and the reviewer's "correction" — scored HIGH — came from an unread line. If a
+loop is about to overturn an owner's stated understanding, that finding needs a
+citation from the admissible column before it is written down, not after.
 
 ---
 

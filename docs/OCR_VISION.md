@@ -136,7 +136,24 @@ The below-threshold state is not an apology and not a waiting room — it is the
 
 **Why the direction matters most.** The customer surface shows a **forward** window — what a reader can still attend. A **trailing** gate can disagree with it in both directions, and one of those failures is the exact thing this section exists to prevent: a corridor with a busy history clears the gate, the attendee card is promoted to first position, and **the map it opens on is empty** because nothing is scheduled ahead. The mechanism meant to stop the surface reading as abandoned would be the thing that made it read that way.
 
-**The standing recommendation** is therefore that readiness be a question the surface can answer about *itself* — the attendee card leads when the forward window it would open on holds at least N events in the reader's corridor. Self-consistent by construction, since the thing counted is the thing shown; non-circular, since events come from the corner the below-threshold page recruits; and it leaves `CORRIDOR_BASELINE_MIN_SAMPLE` doing its real job instead of being overloaded into a second, contradictory one. **N is a new number, openly.** Reusing a constant whose unit, grain and direction are all wrong is not thrift.
+**The gate, ratified 2026-09-05: readiness is a question the surface answers about itself.**
+
+> The customer card leads when the **forward window it would open on** holds at least **5 events** in the reader's corridor.
+
+| | |
+|---|---|
+| **Unit** | events — countable, and supplied by the corner the below-threshold page recruits |
+| **Grain** | the reader's corridor (H3 res7), whole — not a time-of-week cell |
+| **Direction** | **forward**: now through +90 days, the same window the map displays |
+| **Threshold** | **5**, a new number, stated openly |
+
+**Self-consistent by construction.** The thing counted is the thing shown, so the card can never be promoted onto an empty map. That property — not the number — is what makes this the right instrument.
+
+**Non-circular.** The Loop 7 objection is satisfied rather than sidestepped: an attendee-denominated gate could never be climbed out of, because no map means fewer attendees means the map never opens. Events can be added by anyone reading the below-threshold page, so the gate is something a reader can *act on from the page they are standing on*.
+
+**5 is deliberately low.** The below-threshold state is an honest invitation, not a punishment, so the bar to leave it should be reachable by one committed organiser over a season — not a wall that keeps a real corridor in the "asking for supply" state after it has supply. If it proves too low in practice the failure is visible and cheap (a thin map), and it is one number to move.
+
+**It is a new constant, not a reused one.** `CORRIDOR_BASELINE_MIN_SAMPLE` keeps its own job — suppressing an unpublishable density ratio — and is not overloaded into a second, contradictory role. Reusing a constant whose unit, grain and direction are all wrong would not have been thrift.
 
 **The gate governs launch, not answers.** Once the surface is open, it answers for *any* location a reader stands in — including quiet ones. "Nothing near you this week" is a legitimate answer, not a failure state; a reader travelling, visiting, or camping is asking a real question and deserves a real reply. Gating a *query result* on density would be a different and wrong rule.
 
@@ -150,7 +167,7 @@ The below-threshold state is not an apology and not a waiting room — it is the
 
 **It is a listing, not a census.** The surface shows what is cleared and listed across the clearance lattice — from a backyard gathering to a library programme. It does not claim to show everything happening in an area, and it never will: [[OCR_STANDARD_declinedRegimes]] permanently excludes regimes the platform does not serve.
 
-> Surface: OSE-1242 (carries the map interaction spec and the open decision on the gate instrument). Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (9 loops; **the metric claim was retracted in Loop 9** — the entry's rank-and-invitation design stands).
+> Surface: OSE-1242 (carries the map interaction spec). Governance review: `docs/ccr/OCR_CCR_attendeeMapDensityGate_2026-09-05.md` (10 loops; the metric claim was retracted in Loop 9 and **replaced by owner decision in Loop 10**). Constant: `ourSharedEvents/src/lib/corridor-readiness.ts` → `CORRIDOR_READY_MIN_EVENTS`.
 
 ### 6.3 The four governance files per repo
 

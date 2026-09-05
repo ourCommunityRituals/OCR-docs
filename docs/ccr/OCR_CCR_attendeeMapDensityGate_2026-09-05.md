@@ -555,3 +555,93 @@ OSE-1242 rather than settled doctrine.
 The design is better evidenced than it was; the gate is now honestly marked
 unresolved instead of falsely marked settled. A number that goes *down* after a
 loop that improved the document is the protocol working.
+
+---
+
+## Loop 10 — owner decision on the gate instrument
+
+Loop 9 retracted the metric and left the instrument open. The owner accepted the
+recommendation and set **N = 5**.
+
+### 10.1 · RESOLVED · The gate is the surface's own forward window
+
+> The customer card leads when the **forward window it would open on** holds at
+> least **5 events** in the reader's corridor.
+
+| | |
+|---|---|
+| Unit | events |
+| Grain | corridor (H3 res7), whole |
+| Direction | **forward**, now → +90 days — the same window the map displays |
+| Threshold | **5** |
+| Constant | `ourSharedEvents/src/lib/corridor-readiness.ts` → `CORRIDOR_READY_MIN_EVENTS` |
+
+### 10.2 · Why this closes Loops 7 and 9 together rather than splitting the difference
+
+Loop 7 objected that an attendee gate is **circular**. Loop 9 objected that a
+trailing gate is **misdirected**. A weaker resolution would have picked one. This
+instrument answers both from a single property:
+
+**The thing counted is the thing shown.**
+
+- *Circularity* dissolves because events are supplied by the corner the
+  below-threshold page recruits. A reader on that page can add one; they cannot
+  conjure attendees for a map they are not being shown.
+- *Misdirection* is impossible because the gate and the display read the **same
+  window**. The card cannot open onto an empty map — not as a matter of tuning,
+  but by construction.
+
+The number is the least important part of the decision and should be recorded as
+such. **5 could be wrong and the instrument would still be right.** If 5 proves
+too low the symptom is a thin map and the remedy is one constant; if the
+instrument were wrong, no value of N would fix it.
+
+### 10.3 · LOW · Justification for 5 specifically
+
+The below-threshold state is an **invitation**, not a punishment (§6.2b). The bar
+to leave it should therefore be reachable by one committed organiser over a
+season. A high bar would keep a corridor in the "asking for supply" state after
+it has supply — which is the same class of dishonesty as showing an empty map,
+pointed the other way. 5 is low deliberately, and the low side is the safe side
+here: its failure mode is visible to the reader and cheap to correct.
+
+### 10.4 · LOW · What the implementation carried that the doctrine did not
+
+Two decisions were made in code and are recorded here so they are not mistaken
+for accidents:
+
+1. **The past edge is decided by `phase`, never by a date comparison.**
+   `computeEventPhase` already accounts for `end_date` and `status`, so a
+   multi-day event that began yesterday is still `event`. A `start >= now`
+   filter would drop it from the map *while it is happening* — the exact
+   reader-facing failure the map exists to avoid. A test substitutes the naive
+   filter and asserts it goes red.
+2. **Latching is not approximated.** §6.2b requires readiness to stay cleared
+   once cleared. That is persistent state, and `isCorridorReady` deliberately
+   answers only "is the bar met right now". The doc comment says so, because the
+   tempting shortcut — widening the window until it feels sticky — would
+   reintroduce a trailing component into a gate whose whole point is that it has
+   none.
+
+### 10.5 · Protocol amendment applied
+
+The Loop 9.5 proposal is now in `skills/ccr-protocol.knowledge.md` §3.3.1 as two
+anti-patterns and an admissibility table:
+
+- **A citation to a comment, a doc, or a constant's name is not evidence of
+  runtime behaviour.** A constant may be cited for its value, never for its
+  meaning; its meaning lives in what reads it.
+- **The asymmetry rule.** Contradicting the owner on their own domain requires
+  *more* evidence than agreeing, because agreement gets checked by them and
+  disagreement does not.
+
+### Verdict on Loop 10: **PASS — the entry is complete**
+
+The gate is settled, its constant exists with unit, grain, direction and purpose
+stated at its definition, and the failure that produced Loop 9 has a mechanical
+guard (a test asserting the two constants remain distinct) plus a protocol rule
+against its cause.
+
+**Confidence 96%** — restored, and on a different footing than Loop 8's 96%. That
+score rested on an unread comment. This one rests on a query, a schema, an
+executing constant, and 16 tests including a negative control.
