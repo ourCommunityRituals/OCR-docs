@@ -71,6 +71,7 @@ Each **edge** has an owning executor:
 | Linear ⇄ Code | Is every "In Review/In Progress" ticket backed by merged code? Is every merge reflected on the board? | `board-reconciler` agent |
 | Code ⇄ Brain/Docs | Does the code match CLAUDE.md / STORIES.md / brain invariants — in both directions? | `drift-auditor` agent |
 | Brain/Memory ⇄ (all) | Do memory pointers + brain docs still name files/flags/tickets that exist? | manual sweep during the run |
+| **Code ⇄ Docs (write)** | **Every doc the merged change touches is updated in the same run** | **`doc-reconciler` (Technical Writer) — see §9** |
 
 The three repos in the code corner are not peers: **OCR-Docs is the shared brain**, **OSE is the
 anonymous base layer**, **OW is the named layer that completes the choice offering** (see
@@ -163,3 +164,63 @@ run it at each ↺.
 
 Health tie-in: brain **KB-per-repo** and **untracked-scratch count** are reconcile signals like any
 other ([[kaizen-reconciliation-health-doctrine]]) — trending them down is part of a healthy loop.
+
+---
+
+## 9. The documentation leg (Technical Writer)
+
+**The gap this closes.** `drift-auditor` is **read-only** — it *reports* code↔doc gaps and §4.4 *files a
+story*. Nothing writes the doc. A filed story is not a closed loop, and the doc stays wrong until
+someone picks the story up, which is how `CLAUDE.md` came to claim *345 admin inline styles* when the
+code had **17** (measured 2026-09-04): the drain work merged and the doc leg never ran.
+
+**Rule: a change is not reconciled until every artifact it touches is updated in the same run.**
+Detection files a story. **Reconciliation writes the doc.**
+
+### 9.1 Doc-impact traversal — the mini-audit
+
+For each merged change in the run, enumerate what it touches. Traverse, do not guess:
+
+| Step | Query |
+|---|---|
+| 1 | Symbols added/removed/renamed in the diff (`git diff --stat` + identifier extraction) |
+| 2 | `grep` each symbol across `docs/`, `CLAUDE.md`, `STORIES.md`, `.ocr-standards/`, brain YAML |
+| 3 | Tables of counts, sizes, or file lists that the change invalidates (**the class that rots silently**) |
+| 4 | ADRs whose Context or Decision the change contradicts |
+| 5 | The Linear story, and any story that cites the same symbol |
+
+Step 3 is the one that fails in practice. A renamed symbol is greppable; **"345 inline styles" is a
+number nobody re-derives.** Any doc asserting a count, size, or coverage figure carries an implicit
+staleness debt — prefer a derived figure or a pointer to the command that produces it.
+
+### 9.2 Validity assessment — the brain reads before it reacts
+
+Rung 8 (`↺ Shared Brain`) is not an inbox. Before acting on any finding the brain asks:
+
+1. **Is it verified?** Cited git fact / measured value / file:line — or it is a hypothesis, not a finding.
+2. **Whose home is it?** Fix drift at its home ([[OCR_STANDARD_knowledgeHomes]]); never patch the symptom
+   in a doc that only mirrors it.
+3. **Is it shared truth?** If it holds for more than one spoke, **promote to the brain first**, then
+   re-propagate — a spoke-local fix re-enters as drift through the other spokes (§5).
+4. **Does it survive brain-lightness?** (§8) A finding worth recording is not automatically worth a new file.
+
+A finding failing (1) is returned for verification, not filed. **This is the rung that stops an
+unverified assertion becoming doctrine.**
+
+### 9.3 Definition of Done, amended
+
+A reconciled change carries **all four**, or it is not done:
+
+- [ ] **Code** merged, with the citation block (§4.2)
+- [ ] **Tests** — the change is exercised by a named CI job, born-red where it fixes a defect
+- [ ] **Docs** — every artifact from the §9.1 traversal updated *in the same run*
+- [ ] **Story** — Linear reflects reality, citing the evidence
+
+Docs are not a follow-up ticket. **A story whose docs are unwritten is not Done — it is Merged.**
+
+### 9.4 Boundaries
+
+Inherits §7. Additionally: the doc leg **rewrites the doc; it never rewrites the code to match a
+stale doc.** Code wins (`CLAUDE.md`: *"When code and docs disagree, code wins"*). Where a doc records a
+*decision* the code contradicts, that is an ADR question, not a doc edit — escalate, do not reconcile
+it away.
