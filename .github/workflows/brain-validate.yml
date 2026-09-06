@@ -4,11 +4,21 @@ on:
     paths:
       - 'ocr-docs-brain/**'
       - '.github/workflows/brain-validate.yml'
+      # The propagate-standards dedup lock (test_propagate_standards_dedup.py)
+      # lives in ocr-docs-brain/tests, so run_script_tests picks it up here.
+      # Trigger on the workflow it guards too, so a regression to a per-run
+      # timestamped branch is caught even when no other brain file changes.
+      - '.github/workflows/propagate-standards.yml'
   push:
     branches: [main]
     paths:
       - 'ocr-docs-brain/**'
       - '.github/workflows/brain-validate.yml'
+      # The propagate-standards dedup lock (test_propagate_standards_dedup.py)
+      # lives in ocr-docs-brain/tests, so run_script_tests picks it up here.
+      # Trigger on the workflow it guards too, so a regression to a per-run
+      # timestamped branch is caught even when no other brain file changes.
+      - '.github/workflows/propagate-standards.yml'
   workflow_dispatch:
 
 concurrency:

@@ -36,6 +36,13 @@ permissions:
 
 env:
   ORG: ourCommunityRituals
+  # One STABLE propagation branch per spoke (no per-run timestamp). GitHub
+  # permits at most one open PR per head branch, so a stable name makes "two
+  # open propagation PRs per spoke" impossible by construction, and every run
+  # re-syncs the FULL brain state onto this one branch so its open PR always
+  # carries the complete cumulative delta — no sibling branch can strand a
+  # hunk (the delta-drop this workflow used to risk; OCR-129).
+  PROPAGATE_BRANCH: ocr-standards/propagate
   # All product repos that receive propagated standards
   ALL_REPOS: >-
     ourSharedEvents
@@ -193,6 +200,37 @@ jobs:
           # Write to file to avoid escaping issues
           echo -e "$SUMMARY" > /tmp/pr-body.md
 
+      - name: Select propagation branch (dedup open PRs)
+        if: steps.scope.outputs.in_scope == 'true'
+        working-directory: target
+        env:
+          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+        run: |
+          git config user.name "OCR Standards Bot"
+          git config user.email "noreply@ourcommunityrituals.com"
+
+          # Is there already an OPEN propagation PR for this spoke? If so we
+          # will APPEND this run's delta to that PR's branch instead of opening
+          # a second one — that is the dedup (OCR-129). GitHub allows one open
+          # PR per head, and $PROPAGATE_BRANCH is stable, so this is belt-and-
+          # suspenders on top of the by-construction guarantee.
+          OPEN_PR=$(gh pr list --repo "$ORG/${{ matrix.repo }}" \
+            --head "$PROPAGATE_BRANCH" --state open \
+            --json number --jq '.[0].number // ""')
+          echo "OPEN_PR=$OPEN_PR" >> "$GITHUB_ENV"
+
+          if [ -n "$OPEN_PR" ]; then
+            # Build ON TOP of the open PR's branch so its prior delta is kept
+            # and this run's delta is added — a fast-forward, no history rewrite.
+            echo "Open propagation PR #$OPEN_PR found — will append to $PROPAGATE_BRANCH."
+            git fetch origin "$PROPAGATE_BRANCH"
+            git checkout -B "$PROPAGATE_BRANCH" "origin/$PROPAGATE_BRANCH"
+          else
+            # No open PR: base a fresh branch on the just-checked-out main.
+            echo "No open propagation PR — will open one on $PROPAGATE_BRANCH."
+            git checkout -B "$PROPAGATE_BRANCH" origin/main
+          fi
+
       - name: Copy updated templates to target
         if: steps.scope.outputs.in_scope == 'true'
         run: |
@@ -240,7 +278,7 @@ jobs:
           echo "Changed files in OCR-docs: ${{ needs.detect-changes.outputs.changed_files }}"
           cd target && git diff --cached --stat
 
-      - name: Create branch and open PR
+      - name: Commit and open-or-append the propagation PR
         if: |
           steps.scope.outputs.in_scope == 'true'
           && steps.diff.outputs.has_changes == 'true'
@@ -249,10 +287,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.OCR_PROPAGATE_TOKEN }}
         run: |
-          BRANCH="ocr-standards/propagate-$(date +%Y%m%d-%H%M%S)"
-          git config user.name "OCR Standards Bot"
-          git config user.email "noreply@ourcommunityrituals.com"
-          git checkout -b "$BRANCH"
+          # The branch ($PROPAGATE_BRANCH) was already selected in the dedup
+          # step and staged in the diff step, so just commit the delta here.
           git commit -m "chore: propagate OCR-docs standards update
 
           Source: OCR-docs commit ${{ github.sha }}
@@ -260,14 +296,25 @@ jobs:
 
           Co-Authored-By: OCR Standards Bot <noreply@ourcommunityrituals.com>"
 
-          git push origin "$BRANCH"
-
-          gh pr create \
-            --repo "${{ env.ORG }}/${{ matrix.repo }}" \
-            --base main \
-            --head "$BRANCH" \
-            --title "chore: propagate OCR-docs standards update" \
-            --body-file /tmp/pr-body.md
+          if [ -n "$OPEN_PR" ]; then
+            # APPEND to the existing open PR — never open a second one. Push is
+            # a fast-forward onto the PR's own branch, so the PR now carries the
+            # cumulative delta (OCR-129 dedup: one PR per spoke, no dropped hunk).
+            git push origin "HEAD:$PROPAGATE_BRANCH"
+            gh pr comment "$OPEN_PR" --repo "$ORG/${{ matrix.repo }}" --body \
+              "Appended a newer OCR-docs standards delta (source \`${{ github.sha }}\`). This PR now carries the **cumulative** propagation delta; no separate PR was opened (OCR-129 dedup)."
+          else
+            # No open PR: drop any stale already-merged/closed branch ref (safe —
+            # there is no open PR on it), push fresh, and open exactly one PR.
+            git push origin --delete "$PROPAGATE_BRANCH" 2>/dev/null || true
+            git push origin "HEAD:$PROPAGATE_BRANCH"
+            gh pr create \
+              --repo "$ORG/${{ matrix.repo }}" \
+              --base main \
+              --head "$PROPAGATE_BRANCH" \
+              --title "chore: propagate OCR-docs standards update" \
+              --body-file /tmp/pr-body.md
+          fi
 
       - name: No changes needed
         if: |
