@@ -52,6 +52,10 @@ Architecture is the Triangle + 4 invariants + 4 governance files per repo. Sourc
 9. ⚙️ **Tenant Isolation** — dual-key (`id` + `brandId`) on multi-tenant tables; no cross-tenant leakage.
 10. ⚙️ **Deprecation Lock** — once a runtime is removed (GAS today; HTML/Phase-3 future), CI forbids its re-introduction. Generalizes `scripts/guard-no-gas.js`.
 
+**How an invariant is enforced is itself governed.** An invariant gate asserts a **property** over a derived subject list, or names **one artifact** deliberately — never a class-level rule enforced on a single member, which is the shape that stays green while the invariant is violated somewhere it does not look. Three such gates were found in one repo in one day, none of them by looking. Rewriting the first exposed a live cross-brand leak it had been green through for the leak's whole life.
+
+Full standard: `docs/standards/OCR_STANDARD_invariantGateShape.md` — read it **before writing or amending any gate**. It carries the three legitimate shapes (property-asserting, subject-naming, meta-gate), the two mandatory requirements for a derived gate (a negative control, and a reasoned exemption list), and the known cross-spoke exposure.
+
 **The four governance files per repo.** Every repo maintains `CLAUDE.md`, `docs/OCR_VISION.md`, `README.md`, `SKILL.md`.
 
 **Derived patterns Claude enforces:**

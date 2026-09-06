@@ -30,9 +30,23 @@ If `cwd` is outside a recognized product repo, report and stop.
 ## Step 2 — Run the check
 
 ```bash
-PYTHON_BIN=$(command -v python || command -v py || command -v python3)
-$PYTHON_BIN OCR-docs/ocr-docs-brain/scripts/check_brain_contract.py --product <inferred>
+PYTHON_BIN=$(command -v python3 || command -v python || command -v py)
+$PYTHON_BIN <path-to>/OCR-docs/ocr-docs-brain/scripts/check_brain_contract.py \
+  --brain <path-to>/OCR-docs/ocr-docs-brain \
+  --repo  <path-to-product-repo> \
+  --product-id <inferred>
 ```
+
+> **Corrected 2026-09-05.** This block previously read `--product <inferred>`,
+> which the script rejects: it requires `--brain`, `--repo` and `--product-id`.
+> Anyone following the skill literally got an argparse usage error rather than a
+> conformance report. Found by running it.
+>
+> The script also writes `conformance-report.json` into the **current working
+> directory** — so running it from a product repo drops an untracked file there.
+> OCR-docs gitignores it; ourSharedEvents did not until this reconciliation.
+> Either run it from OCR-docs, pass `--report-path`, or confirm the product
+> ignores the artifact.
 
 Capture stdout, stderr, exit code. If the script doesn't exist where expected, surface the path issue and stop.
 
