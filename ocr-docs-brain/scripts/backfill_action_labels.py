@@ -44,7 +44,7 @@ import urllib.request
 
 API = "https://api.linear.app/graphql"
 ACTIVE_TYPES = {"backlog", "unstarted", "started"}
-CLASS_LABELS = {"action", "spike", "field", "hybrid"}
+CLASS_LABELS = {"action", "spike", "field", "hybrid", "vision", "ops"}
 ACTION_LABEL = "action"
 
 Q_LABEL = 'query($n:String!){ issueLabels(filter:{name:{eq:$n}}){ nodes{ id name } } }'

@@ -4,7 +4,9 @@
 
 > Every story is classified by **what its deliverable IS**, before it is filed:
 > **Action** (a shipped change — right now) · **Spike** (a decision/answer from investigation —
-> future) · **Field** (a real-world outcome — sponsor, legal opinion, physical build, committee).
+> future) · **Field** (a real-world community/venue/campaign outcome) · **Ops** (a real-world
+> owner/infra act — billing, secrets, console, provisioning) · **Vision** (a doctrine/concept/
+> reference note, no shippable deliverable).
 > A ticket whose deliverable spans two of these is a **Hybrid** and MUST be split.
 >
 > This is the *first* cut on any story because it sets everything downstream: the shape of the
@@ -20,7 +22,9 @@
 |-------|---------------------|----------|-----------|
 | **Action** | a **shipped change** that lands (code · config · doc · infra · migration) | **now** — committed work | "X now does / fails / returns Y" |
 | **Spike** | a **decision or answer** produced by investigation | **future** — taken up when warranted | "the question is resolved + a recommendation recorded" (NOT code) |
-| **Field** | a **real-world outcome** the team causes off-keyboard | its own real-world / GTM calendar | "the outcome happened, evidence recorded" (a signed sponsor, a printed poster scanned, a formed committee) |
+| **Field** | a **real-world outcome** the team causes off-keyboard that is **community/venue/campaign** | its own real-world / GTM calendar | "the outcome happened, evidence recorded" (a signed sponsor, a printed poster scanned, a formed committee) |
+| **Ops** | a **real-world owner/infra act**, not code and not community: billing/plan, secret/key rotation, branch-protection, DNS, console/connector/runner provisioning | when the owner does it (often auth-boundary) | "the infra/account state changed" (a token rotated, a cap lifted, a namespace provisioned) |
+| **Vision** | a **doctrine/vision/concept/reference note** — no shippable change, no live question | none — a durable home, not sprint work | "the idea/reference is captured and findable" |
 
 The cut is **temporal as much as structural**: Action = *now*, Spike = *future*, Field = *real-world
 clock*. Classifying a story therefore also places it in time.
@@ -66,6 +70,8 @@ Classification is carried by a **committed label set**, so it is parseable, not 
 | `spike` | deliverable = decision/answer from investigation | lowercase |
 | `field` | deliverable = real-world outcome | lowercase |
 | `hybrid` | decision glued to a build/act — **transient**, clears when split | lowercase |
+| `ops` | deliverable = real-world owner/infra act (billing · secrets · console · DNS · provisioning) | lowercase |
+| `vision` | deliverable = doctrine/vision/concept/reference note (not sprint work) | lowercase |
 
 **Rules.**
 - **Every active story carries exactly one class label.** `UNLABELED = not yet classified` — never

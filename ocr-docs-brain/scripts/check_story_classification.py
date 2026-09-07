@@ -56,7 +56,7 @@ Exit non-zero if any violation is found.
 import json
 import sys
 
-CLASS_LABELS = {"action", "spike", "field", "hybrid"}
+CLASS_LABELS = {"action", "spike", "field", "hybrid", "vision", "ops"}
 ACTIVE = {"backlog", "unstarted", "started"}
 NOW_PRIORITIES = {1, 2}          # Urgent, High
 IN_FLIGHT = {"started"}          # In-Progress / In-Review
