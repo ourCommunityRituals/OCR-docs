@@ -139,6 +139,48 @@ while the pawl holds.
 
 ---
 
+## 6. Board hygiene — the queue vs the record (churn control)
+
+Linear does two jobs at once, and conflating them is the source of ticket churn:
+
+- **The work queue** — what is actively being done. It *should* churn (create → work → close).
+- **The durable record** — decisions, concepts, references, "why we didn't." It should be
+  *stable and findable*, and must **not** be managed as if it were the queue.
+
+The class labels separate the two so the record stops masquerading as work:
+
+| Surface | Classes | Linear state | Churns? |
+|---------|---------|--------------|---------|
+| **Work queue** | `action` · `field` · `ops` · live `spike` | Todo / In-Progress | yes — this is the only set you "manage" |
+| **Reservoir** | any class | Backlog | no — a holding pen, not active work |
+| **Record** | `vision`, decision-records, references | Backlog (or a parked/"Someday" state) | never — documented, filtered out of the queue |
+
+**The canonical work-queue filter** (save it as a Linear view — "Active Work"):
+
+```
+status:(Todo, In Progress)  AND  label:(action, field, ops, spike)  AND  -label:vision
+```
+
+**The record view** ("Concepts & Reference"): `label:vision`. It exists to be *read*, not triaged.
+
+The ~N-hundred Backlog items are a **reservoir, not a backlog crisis** — counting them as "active
+work to manage" is the illusion that creates triage overwhelm. Manage the queue view; let the
+reservoir sit.
+
+### What earns a *tracked* ticket (the reconcile-everything refinement)
+
+`OCR_STANDARD_reconciliationLoop` says *file a story for every inconsistency*. Unbounded, that rule
+IS a churn engine. Refined by this standard:
+
+- **Only `action` · `field` · `ops` · a live `spike` earns a tracked, churning ticket.**
+- **`vision`, decision records, and references are captured as a label + a brain-doc entry — NOT a
+  churning board item.** A concept with no live question does not get a ticket it will never close
+  (the "spike with no live question = a note" rule, §1 step 3, generalized).
+
+So the reconcile loop still drives drift to zero and records everything — but the *record* half lands
+in labels + the brain, and only genuine work lands in the churning queue. Zero-drift without
+zero-restraint.
+
 ## Provenance
 
 Authored under **OCR-145** from the 3-loop CCR of the 2026-09-06 story-classification session
