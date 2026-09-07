@@ -37,7 +37,7 @@ was changed by this exercise):
 | OSE-790 | hybrid | Dependabot *triage-decision* + remediation (the remediation half stays an Action) | Medium |
 | OW-129 | hybrid | pseudonymity *decision* (safety-relevant) then conditional build | Urgent |
 | OW-136 | hybrid | reconcile-which-is-canonical + one-line binding amendment | High |
-| OCR-138 | hybrid | invariant #27 numbering *decision* + ratify | High |
+| OCR-138 | hybrid | the #27 article-numbering *decision* + ratify (registry collision) | High |
 | OCR-18 · OSE-356/357 | field | external legal opinion (BIPA/HIPAA) — real-world engagement | Urgent/High |
 
 None is an enforcement gate; each keeps its urgency and `SEC` tag. A reader filtering `label:spike`

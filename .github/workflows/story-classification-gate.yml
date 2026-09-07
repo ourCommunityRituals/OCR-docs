@@ -75,14 +75,38 @@ jobs:
           echo "OK: gate bites violations (rc=$bite_rc) and passes clean (rc=$clean_rc)."
 
       # 2. Live gate — real board. Runs only when the owner has wired the secret.
-      - name: Live gate — real active board
+      #
+      #    ARMED, SAFETIED. It always *reports* the real violation count (an
+      #    andon that can't be ignored), but only *blocks* when the owner sets
+      #    the repo variable STORY_GATE_ENFORCE=true. Rationale: the board is
+      #    ~96% unclassified today (the `action`-label backfill is OCR-145's
+      #    pending SHOULD-FIX); you cannot fail-closed on "unclassified" before
+      #    you have classified. Flip STORY_GATE_ENFORCE once the backfill lands
+      #    and the count is near zero — then re-drift files a story on every red.
+      - name: Live gate — real active board (report; blocks when STORY_GATE_ENFORCE=true)
         env:
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          STORY_GATE_ENFORCE: ${{ vars.STORY_GATE_ENFORCE }}
         run: |
           if [ -z "${LINEAR_API_KEY}" ]; then
             echo "::notice::LINEAR_API_KEY not set — live gate skipped. Self-test proved the logic."
-            echo "Wire LINEAR_API_KEY (repo secret) to enforce against the live board."
+            echo "Wire LINEAR_API_KEY (repo secret) to report against the live board."
             exit 0
           fi
           python ocr-docs-brain/scripts/fetch_active_stories.py > _active_stories.json
-          python ocr-docs-brain/scripts/check_story_classification.py _active_stories.json
+          set +e
+          out="$(python ocr-docs-brain/scripts/check_story_classification.py _active_stories.json)"
+          rc=$?
+          set -e
+          echo "$out"
+          if [ "$rc" -eq 0 ]; then
+            echo "OK: live board clean."
+            exit 0
+          fi
+          count="$(printf '%s' "$out" | grep -oE '[0-9]+ classification violation' | grep -oE '^[0-9]+' || echo '?')"
+          if [ "${STORY_GATE_ENFORCE}" = "true" ]; then
+            echo "::error::live board has ${count} classification violation(s) and STORY_GATE_ENFORCE=true"
+            exit 1
+          fi
+          echo "::warning::live board has ${count} classification violation(s) — report-only (STORY_GATE_ENFORCE unset). Backfill the class labels, then set STORY_GATE_ENFORCE=true to enforce."
+          exit 0
