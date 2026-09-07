@@ -1,0 +1,112 @@
+# story-classification-gate.yml
+# ----------------------------------------------------------------------------
+# OCR-145 — the mislabel tripwire (the pawl for OCR_STANDARD_storyClassification).
+#
+# The Action/Spike/Field classification is only true while something keeps it
+# true; a one-time board sweep decays the moment the next ticket is filed
+# ("green is rented"). This gate fails closed on the drift shapes the 2026-09-06
+# audit had to clean by hand — an unclassified active story, a spike drawing
+# now-urgency with nothing it feeds, a spike/field occupying an active slot, an
+# unsplit hybrid in a sprint — so they cannot silently return.
+#
+# Two halves, mirroring the OCR-130 secret-scan pattern:
+#   1. BORN-RED SELF-TEST (always, no token) — run the checker against a fixture
+#      that plants one of every violation and assert it FAILS, and against a
+#      clean fixture and assert it PASSES. A gate never observed red is taken on
+#      faith; this observes it every run.
+#   2. LIVE GATE (only when LINEAR_API_KEY is wired) — export the real active
+#      board and run the checker against it. Skipped-with-notice when the secret
+#      is absent, so the self-test still proves the logic on every PR.
+# ----------------------------------------------------------------------------
+name: Story-classification gate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Daily drift sweep of the live board (only bites if LINEAR_API_KEY is set).
+    - cron: "17 13 * * *"
+
+concurrency:
+  group: story-classification-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  gate:
+    name: story-classification (mislabel tripwire)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # 1. Born-red self-test — the checker MUST bite the planted violations and
+      #    MUST pass the clean fixture. If either flips, the gate is vacuous and
+      #    this step goes red before the live gate can hand out a false pass.
+      - name: Self-test — gate must bite planted violations, pass clean
+        run: |
+          set +e
+          python ocr-docs-brain/scripts/check_story_classification.py \
+            ocr-docs-brain/scripts/fixtures/story_classification_violations.json
+          bite_rc=$?
+          python ocr-docs-brain/scripts/check_story_classification.py \
+            ocr-docs-brain/scripts/fixtures/story_classification_clean.json
+          clean_rc=$?
+          set -e
+          if [ "$bite_rc" -eq 0 ]; then
+            echo "::error::tripwire did NOT flag the planted violations — the gate is vacuous"
+            exit 1
+          fi
+          if [ "$clean_rc" -ne 0 ]; then
+            echo "::error::tripwire flagged the clean fixture — false positive, gate is miscalibrated"
+            exit 1
+          fi
+          echo "OK: gate bites violations (rc=$bite_rc) and passes clean (rc=$clean_rc)."
+
+      # 2. Live gate — real board. Runs only when the owner has wired the secret.
+      #
+      #    ARMED, SAFETIED. It always *reports* the real violation count (an
+      #    andon that can't be ignored), but only *blocks* when the owner sets
+      #    the repo variable STORY_GATE_ENFORCE=true. Rationale: the board is
+      #    ~96% unclassified today (the `action`-label backfill is OCR-145's
+      #    pending SHOULD-FIX); you cannot fail-closed on "unclassified" before
+      #    you have classified. Flip STORY_GATE_ENFORCE once the backfill lands
+      #    and the count is near zero — then re-drift files a story on every red.
+      - name: Live gate — real active board (report; blocks when STORY_GATE_ENFORCE=true)
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          STORY_GATE_ENFORCE: ${{ vars.STORY_GATE_ENFORCE }}
+        run: |
+          if [ -z "${LINEAR_API_KEY}" ]; then
+            echo "::notice::LINEAR_API_KEY not set — live gate skipped. Self-test proved the logic."
+            echo "Wire LINEAR_API_KEY (repo secret) to report against the live board."
+            exit 0
+          fi
+          python ocr-docs-brain/scripts/fetch_active_stories.py > _active_stories.json
+          set +e
+          out="$(python ocr-docs-brain/scripts/check_story_classification.py _active_stories.json)"
+          rc=$?
+          set -e
+          echo "$out"
+          if [ "$rc" -eq 0 ]; then
+            echo "OK: live board clean."
+            exit 0
+          fi
+          count="$(printf '%s' "$out" | grep -oE '[0-9]+ classification violation' | grep -oE '^[0-9]+' || echo '?')"
+          if [ "${STORY_GATE_ENFORCE}" = "true" ]; then
+            echo "::error::live board has ${count} classification violation(s) and STORY_GATE_ENFORCE=true"
+            exit 1
+          fi
+          echo "::warning::live board has ${count} classification violation(s) — report-only (STORY_GATE_ENFORCE unset). Backfill the class labels, then set STORY_GATE_ENFORCE=true to enforce."
+          exit 0

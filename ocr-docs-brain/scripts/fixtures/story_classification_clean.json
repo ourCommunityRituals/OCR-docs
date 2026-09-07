@@ -1,0 +1,16 @@
+[
+  {"id": "CLEAN-1", "priority": 4, "statusType": "backlog", "labels": ["action"], "has_linked_action": false,
+   "_why": "an Action, explicitly classed"},
+  {"id": "CLEAN-2", "priority": 4, "statusType": "backlog", "labels": ["spike"], "has_linked_action": false,
+   "_why": "a spike parked at Low in backlog — future work behaving as future work"},
+  {"id": "CLEAN-3", "priority": 1, "statusType": "backlog", "labels": ["spike"], "has_linked_action": true,
+   "_why": "an Urgent spike that FEEDS a linked Action — legitimate, not flagged"},
+  {"id": "CLEAN-4", "priority": 1, "statusType": "backlog", "labels": ["field"], "has_linked_action": false,
+   "_why": "an Urgent field ask — field runs its own real-world calendar; priority alone does not flag it"},
+  {"id": "CLEAN-5", "priority": 3, "statusType": "started", "labels": ["action"], "has_linked_action": false,
+   "_why": "an Action in progress — normal"},
+  {"id": "CLEAN-6", "priority": 3, "statusType": "backlog", "labels": ["hybrid"], "has_linked_action": false,
+   "_why": "a hybrid still in backlog (not yet worked) — flagged only once it enters a sprint"},
+  {"id": "CLEAN-7", "priority": 2, "statusType": "completed", "labels": [], "has_linked_action": false,
+   "_why": "completed story — out of scope, never checked even though unlabeled"}
+]

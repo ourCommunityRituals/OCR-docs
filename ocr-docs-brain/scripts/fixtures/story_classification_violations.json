@@ -1,0 +1,12 @@
+[
+  {"id": "FIX-V1", "priority": 3, "statusType": "backlog", "labels": ["SEC"], "has_linked_action": false,
+   "_why": "V1 — active, no class label"},
+  {"id": "FIX-V2", "priority": 1, "statusType": "backlog", "labels": ["spike"], "has_linked_action": false,
+   "_why": "V2 — spike at Urgent with no linked Action"},
+  {"id": "FIX-V3", "priority": 4, "statusType": "started", "labels": ["field"], "has_linked_action": false,
+   "_why": "V3 — field In-Progress with no linked Action"},
+  {"id": "FIX-V4", "priority": 3, "statusType": "started", "labels": ["hybrid"], "has_linked_action": false,
+   "_why": "V4 — hybrid entered a sprint unsplit"},
+  {"id": "FIX-OK", "priority": 4, "statusType": "backlog", "labels": ["action"], "has_linked_action": false,
+   "_why": "clean control — must NOT be flagged"}
+]
