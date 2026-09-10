@@ -33,6 +33,11 @@ def load_brain(brain_dir: Path) -> dict[str, Any]:
             'corridors': yaml.safe_load((brain_dir / 'corridor-definitions.yaml').read_text(encoding='utf-8')),
             'taxonomy': yaml.safe_load((brain_dir / 'event-taxonomy.yaml').read_text(encoding='utf-8')),
             'invariants': yaml.safe_load((brain_dir / 'architectural-invariants.yaml').read_text(encoding='utf-8')),
+            # Invariant #22's live-read enforcement SoT (OSE-1288 / F13). Holds the
+            # per-product enforcement_mode plane consumed by the brain_script wiring
+            # gate below; read from the checked-out brain (which OSE CI pins to
+            # OCR-docs/main) so one reviewed brain edit re-arms/disarms the fleet.
+            'cross_repo_patterns': json.loads((brain_dir / 'scripts' / 'cross_repo_patterns.json').read_text(encoding='utf-8')),
             'bq_general': json.loads((brain_dir / 'bigquery-schemas/general.json').read_text(encoding='utf-8')),
             'bq_hipaa':   json.loads((brain_dir / 'bigquery-schemas/hipaa.json').read_text(encoding='utf-8')),
             'bq_coppa':   json.loads((brain_dir / 'bigquery-schemas/coppa.json').read_text(encoding='utf-8')),
@@ -260,6 +265,7 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
 
     missing_live = []
     missing_partial = []
+    warn_unwired = []
     for inv in applicable:
         tf = inv.get('test_file')
         # Retired invariants (OSE-1194, 2026-09-02: the subject no longer exists,
@@ -275,8 +281,21 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
                 else 'check_cross_repo_imports.py'
             wired, why = _guard_step_wired(repo, script_name)
             if not wired:
+                # Per-product enforcement_mode plane (OSE-1288 / F13, live-read
+                # from #22's SoT cross_repo_patterns.json → brain['cross_repo_patterns']).
+                # A spoke that #22 PROTECTS but whose own side of the seam is not
+                # built yet (WKRP OW-112, OAW deferred) runs in `warn`: its missing
+                # wiring is surfaced as a loud fleet signal but does NOT block, so
+                # arming #22 fleet-wide never born-reds a spoke. `block` (the fleet
+                # default) hard-fails a live invariant exactly as before. Flip a
+                # spoke to `block` the day its gate lands — one reviewed brain edit.
+                crp = brain.get('cross_repo_patterns') or {}
+                default_mode = crp.get('enforcement_mode', 'block')
+                eff_mode = (crp.get('enforcement_mode_overrides') or {}).get(product_id, default_mode)
                 label = f"{inv.get('name', inv.get('id'))} gate not wired ({why})"
-                if inv.get('status') == 'live':
+                if eff_mode != 'block':
+                    warn_unwired.append(f'{label} [enforcement_mode={eff_mode}]')
+                elif inv.get('status') == 'live':
                     missing_live.append(label)
                 elif inv.get('status') == 'partial':
                     missing_partial.append(label)
@@ -298,10 +317,16 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
         return ('invariant_test_files', FAIL,
                 f'live invariant tests missing: {missing_live} '
                 f'(partial also missing: {missing_partial})')
-    if missing_partial:
-        return ('invariant_test_files', PASS,
-                f'all live tests present; {len(missing_partial)} partial tests '
-                f'not yet implemented (acceptable): {missing_partial[:3]}')
+    if missing_partial or warn_unwired:
+        notes = []
+        if missing_partial:
+            notes.append(f'{len(missing_partial)} partial tests not yet '
+                         f'implemented (acceptable): {missing_partial[:3]}')
+        if warn_unwired:
+            notes.append(f'*** FLEET SIGNAL: {len(warn_unwired)} brain_script '
+                         f'gate(s) protected but not yet wired, running in WARN '
+                         f'mode (not blocking): {warn_unwired[:3]} ***')
+        return ('invariant_test_files', PASS, '; '.join(notes))
     return ('invariant_test_files', PASS,
             f'all {len(applicable)} applicable invariant tests present')
 

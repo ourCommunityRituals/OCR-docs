@@ -14,7 +14,7 @@ Validates these brain artifacts:
   - event-phase-contract.yaml (optional)
   - uec-codes.yaml (added 2026-05-17 with OSE-319 / OSE-318 brain artifact)
 """
-import sys, re, yaml
+import sys, re, json, yaml
 from pathlib import Path
 
 BRAIN = Path(__file__).parent.parent if (Path(__file__).parent.parent / 'product-registry.yaml').exists() \
@@ -148,6 +148,7 @@ INV_REQUIRED_PLANNED = [f for f in INV_REQUIRED if f != 'test_file']
 # even though the spec is gone from the substrate — check_brain_contract.py does
 # not require the file for retired entries.
 INV_STATUS_ENUM = ['live', 'partial', 'planned', 'retired']
+INV_ENFORCEMENT_KIND_ENUM = ['brain_script']  # extend as new kinds are added
 for i in inv.get('invariants', []):
     iid = i.get('id', '?')
     req = INV_REQUIRED_PLANNED if i.get('status') == 'planned' else INV_REQUIRED
@@ -157,6 +158,13 @@ for i in inv.get('invariants', []):
     status = i.get('status')
     check(f'invariant_status_enum:#{iid}', status in INV_STATUS_ENUM,
           f'{status} not in {INV_STATUS_ENUM}' if status not in INV_STATUS_ENUM else f'{status}')
+    # enforcement_kind (OSE-1288 / F13): optional; when present must be a known
+    # kind. `brain_script` = enforced by a WIRED brain-resident live-read guard
+    # (verified by check_brain_contract._guard_step_wired), not a repo-local file.
+    if 'enforcement_kind' in i:
+        ek = i['enforcement_kind']
+        check(f'invariant_enforcement_kind_enum:#{iid}', ek in INV_ENFORCEMENT_KIND_ENUM,
+              f'{ek} not in {INV_ENFORCEMENT_KIND_ENUM}' if ek not in INV_ENFORCEMENT_KIND_ENUM else f'{ek}')
 
 # ---------------------------------------------------------------------------
 # 1.5a — Invariant records: RICH form optional field validation (added 2026-05-17)
@@ -901,6 +909,36 @@ if STANDARDS_INDEX.exists():
         f'live invariant IDs missing from standards-index.md: {_missing_from_index}'
         if _missing_from_index else f'{len(_live_ids)} live invariant(s) all present'
     )
+
+# ---------------------------------------------------------------------------
+# 1.12 — Invariant #22 enforcement_mode plane (OSE-1288 / F13, added 2026-09-10)
+# scripts/cross_repo_patterns.json is #22's live-read SoT. Validate:
+#   - enforcement_mode (fleet default) ∈ {block, warn}
+#   - enforcement_mode_overrides (optional) is a dict; each value ∈ {block, warn}
+#     and each key is a subset of #22's applies_to (an override for a product #22
+#     does not protect is a silent no-op and almost certainly a typo).
+# ---------------------------------------------------------------------------
+CRP_FILE = BRAIN / 'scripts' / 'cross_repo_patterns.json'
+if CRP_FILE.exists():
+    crp = json.loads(CRP_FILE.read_text(encoding='utf-8'))
+    MODE_ENUM = ['block', 'warn']
+    mode = crp.get('enforcement_mode')
+    check('cross_repo_enforcement_mode_enum', mode in MODE_ENUM,
+          f'enforcement_mode = {mode!r} (expected one of {MODE_ENUM})')
+    ov = crp.get('enforcement_mode_overrides', {})
+    check('cross_repo_overrides_is_dict', isinstance(ov, dict),
+          f'expected dict, got {type(ov).__name__}' if not isinstance(ov, dict)
+          else f'{len(ov)} override(s)')
+    if isinstance(ov, dict):
+        for k, v in ov.items():
+            check(f'cross_repo_override_mode_enum:{k}', v in MODE_ENUM,
+                  f'{v!r} not in {MODE_ENUM}' if v not in MODE_ENUM else f'{v}')
+            check(f'cross_repo_override_in_applies22:{k}', k in _applies22,
+                  f'{k!r} not in #22 applies_to {_applies22} (override would be a no-op)'
+                  if k not in _applies22 else 'in applies_to')
+else:
+    check('cross_repo_patterns_present', True,
+          'cross_repo_patterns.json not present (soft-pass; brain_script guard not armed)')
 
 # ---------------------------------------------------------------------------
 # REPORT
