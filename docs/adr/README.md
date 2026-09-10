@@ -28,6 +28,7 @@ ADRs and Brain invariants are complementary, not redundant:
 | [ADR-006](ADR-006-cost-sustainability-free-forever-guardrails.md) | Free-forever as a structural property — cost-sustainability guardrails | Accepted | 2026-08-16 |
 | [ADR-007](ADR-007-demo-reference-installation.md) | Demo sites are a permanent reference installation — three-site trio, `demo` data class, break-demo-break-build | Accepted | 2026-08-25 |
 | [ADR-008](ADR-008-consolidate-spoke-workers-into-hub-monorepo.md) | Consolidate the OSE and OW workers into the hub monorepo after the launch window — databases, workers and the identity boundary stay separate | Proposed | 2026-09-04 |
+| [ADR-009](ADR-009-hybrid-is-a-composition-plane.md) | The hybrid OSE+OW product is a composition plane (OurAirwaves + OurSharedMagnets), not a fused product — co-locate freely, never fuse invariant regimes | Proposed | 2026-09-09 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):
