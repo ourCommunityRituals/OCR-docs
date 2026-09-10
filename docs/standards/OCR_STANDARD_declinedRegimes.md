@@ -35,6 +35,21 @@ marked `"status": "declined"`) so the refusal is documented, not silently
 deleted. **SOPPA is declined without ever being modeled** — there is no SOPPA
 pool, dataset, or schema, and none is to be created. Declining is not modeling.
 
+### HIPAA: hospital business is allowed; HIPAA participation is not
+
+Declining HIPAA is **not** declining hospital business. OCR may do business in
+and with hospitals and other health-adjacent venues — served in the `general`
+pool by item-tracking, exactly as any other venue is. What is refused is
+**participation in the HIPAA regime itself**: OCR handles no PHI, and **OCR signs
+no Business Associate Agreement (BAA)**.
+
+The consequence is a hard engagement rule: **if an engagement requires HIPAA
+compliance or a BAA, there is no business** — OCR declines the engagement rather
+than entering the regime. A hospital that wants item-level scan analytics with no
+PHI and no BAA is a customer; a hospital that requires a BAA or PHI handling is
+not. The refusal is at the point where PHI/BAA becomes required, never at the
+hospital's door.
+
 ## Why item-tracking makes this safe, not limiting
 
 A library summer-reading programme, a rec-centre youth league, and a school
