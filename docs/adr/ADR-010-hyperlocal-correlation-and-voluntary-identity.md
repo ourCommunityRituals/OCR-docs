@@ -150,3 +150,48 @@ The same covenant that keeps the attendee anonymous lets the artist prove their
 draw: an anonymized, K-floored SharedReport shows the crowd a night pulled, so a
 sponsor or venue can back the artist — value flowing into the corridor, honestly,
 because the proof layer never sells out the attendee.
+
+## Worked example — sports (why the covenant *endures*)
+
+Sports is the archetype of the recurring, team-based gathering — the founding
+case is the Thursday bocce league. On the map it is a league at a venue in a
+corridor; in the profile, *"my team / my league"* is a self-declaration that is
+often **collective**, not just individual. Sports is where the platform proves
+*belonging over time*: the same crew back every week, measured by the corridor
+density and return-rate baselines (`refreshCorridorBaselines`, the 30d/90d
+windows). And it is the youth-protection proof — a rec-centre youth league is
+served in the `general` pool by tracking the league, never the child, so SOPPA
+and COPPA stay declined while the community is still served (OSE-1220).
+
+## Worked example — academic (why the covenant is *legible*)
+
+Academic gatherings — lectures, workshops, study groups, the library
+summer-reading programme — make the corridor's learning life visible. In the
+profile, *"what I study / teach"* is the declared facet. Academic is the
+cleanest case for the item-tracking principle: the **institution holds the
+roster and the consent**; OCR holds only the programme's scans by week. That is
+how student-adjacent contexts are served while **SOPPA stays declined** — the
+same refusal `phaseToPool` enforces. It also closes the loop to the endgame: the
+de-identified aggregate the RAG reads is a community learning *about itself*.
+
+## Worked example — volunteer (why the covenant is *self-sustaining*)
+
+Service days, food drives, cleanups, mutual aid — the community taking care of
+itself, often organised by the same institutions that host worship. In the
+profile, *"how I serve"* is the give-back facet, and it is the thread that runs
+*through* the others: the artist who teaches a free workshop, the athlete who
+coaches youth, the academic who tutors. Volunteer is what keeps the map a
+**commons** and not merely a marketplace — people replenish the corridor they
+draw from. Like worship it is never metered (ADR-006); a sponsor backing a
+cleanup is pure local investment, the covenant at its most honest.
+
+## Worked example — hobbyist (why the covenant is *inclusive*)
+
+The model-rail club, the bonsai society, the board-game night, the birders —
+the long tail of community passion. On the map, every niche is a first-class,
+joinable event type; in the profile, *"what I make / play / collect"* is a
+declared facet like any other. Hobbyist is the proof of breadth: it is why
+**templates never gate** (OSE-local ADR-010 — Templates = Breadth). A new kind
+of gathering is a new type under an existing base template, never a new regime
+and never a code branch — so the map has room for every passion, not only the
+marquee ones.
