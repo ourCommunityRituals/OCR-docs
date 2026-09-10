@@ -122,11 +122,16 @@ else:
           f'actual={len(levels)}' if levels else 'levels key missing')
 
 # ---------------------------------------------------------------------------
-# 3.12 — OSE must have all three regulatory pools
+# 3.12 — OSE routes to 'general' ONLY; HIPAA/COPPA/SOPPA are declined regimes
+#        (OCR_STANDARD_declinedRegimes.md; OSE-1220). The governance layer must
+#        not include a declined regime as an active pool.
 # ---------------------------------------------------------------------------
 ose_pools = set(ose.get('regulatory_pools', []))
-check('ose_three_pools', ose_pools == {'general', 'hipaa', 'coppa'},
+check('ose_general_pool_only', ose_pools == {'general'},
       f'actual={ose_pools}')
+DECLINED_REGIMES = {'hipaa', 'coppa', 'soppa'}
+check('ose_declines_regulated_regimes', ose_pools.isdisjoint(DECLINED_REGIMES),
+      f'declined regime present as active OSE pool: {sorted(ose_pools & DECLINED_REGIMES)}')
 
 # ---------------------------------------------------------------------------
 # 3.13 — OurEventRing must be the aggregate layer (top-level key, not a product)
