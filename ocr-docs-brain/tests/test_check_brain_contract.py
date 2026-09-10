@@ -324,6 +324,148 @@ def test_code_present_product_runs_checks_and_fails_on_empty_repo():
     return 'code-present product → checks run, empty repo FAILs'
 
 
+# ─── enforcement_kind: brain_script — workflow-wiring verification ───────────
+# A brain-resident guard (Invariant #22's check_cross_repo_imports.py) is not a
+# repo-local file to glob; conformance must verify a PR-blocking workflow step
+# actually INVOKES it and is not neutered. Presence != enforcement.
+
+_GUARD = 'check_cross_repo_imports.py'
+
+def _brain_script_brain(status='live', applies_to=('ose', 'wkrp')):
+    return {'invariants': {'invariants': [{
+        'id': 22, 'name': 'cross_repo_import_isolation',
+        'applies_to': list(applies_to), 'status': status,
+        'enforcement_kind': 'brain_script',
+        'test_file': 'ocr-docs-brain/scripts/check_cross_repo_imports.py',
+    }]}}
+
+
+def _brain_script_brain_with_modes(overrides, status='live',
+                                   applies_to=('ose', 'wkrp', 'oaw'), default='block'):
+    """#22 brain declaring the live-read per-product enforcement_mode plane
+    (OSE-1288 / F13 PR-1b part 2). `overrides` maps product_id -> block|warn."""
+    b = _brain_script_brain(status=status, applies_to=applies_to)
+    b['cross_repo_patterns'] = {
+        'enforcement_mode': default,
+        'enforcement_mode_overrides': dict(overrides),
+    }
+    return b
+
+
+_UNWIRED_WF = ("name: CI\non:\n  pull_request:\njobs:\n  sec:\n    steps:\n"
+               "      - run: npm test\n")
+
+
+def _repo_with_workflow(td, yaml_text):
+    repo = Path(td)
+    wf = repo / '.github' / 'workflows' / 'ci.yml'
+    wf.parent.mkdir(parents=True, exist_ok=True)
+    wf.write_text(yaml_text, encoding='utf-8')
+    return repo
+
+
+def test_brain_script_wired_step_passes():
+    wf = ("name: CI\non:\n  pull_request:\n    branches: [main]\njobs:\n"
+          "  sec:\n    runs-on: ubuntu-latest\n    steps:\n"
+          "      - run: python scripts/check_cross_repo_imports.py --repo . "
+          "--product-id ose --brain b\n")
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, wf), _brain_script_brain(), 'ose')
+        assert status == cbc.PASS, f'wired guard should PASS: {detail}'
+    return 'brain_script: wired PR step -> PASS'
+
+
+def test_brain_script_missing_step_fails_live():
+    wf = ("name: CI\non:\n  pull_request:\njobs:\n  sec:\n    steps:\n"
+          "      - run: npm test\n")
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, wf), _brain_script_brain(), 'ose')
+        assert status == cbc.FAIL, f'missing guard step should FAIL: {detail}'
+    return 'brain_script: no wired step -> FAIL (live)'
+
+
+def test_brain_script_continue_on_error_is_neutered():
+    wf = ("name: CI\non:\n  pull_request:\njobs:\n  sec:\n    steps:\n"
+          "      - run: python scripts/check_cross_repo_imports.py --repo .\n"
+          "        continue-on-error: true\n")
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, wf), _brain_script_brain(), 'ose')
+        assert status == cbc.FAIL, f'continue-on-error step is neutered: {detail}'
+    return 'brain_script: continue-on-error step -> FAIL'
+
+
+def test_brain_script_swallowed_exit_is_neutered():
+    wf = ("name: CI\non:\n  pull_request:\njobs:\n  sec:\n    steps:\n"
+          "      - run: python scripts/check_cross_repo_imports.py --repo . || true\n")
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, wf), _brain_script_brain(), 'ose')
+        assert status == cbc.FAIL, f'|| true swallows exit: {detail}'
+    return 'brain_script: run with || true -> FAIL'
+
+
+def test_brain_script_non_pr_trigger_is_not_wired():
+    wf = ("name: CI\non:\n  push:\n    branches: [main]\njobs:\n  sec:\n    steps:\n"
+          "      - run: python scripts/check_cross_repo_imports.py --repo .\n")
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, wf), _brain_script_brain(), 'ose')
+        assert status == cbc.FAIL, f'push-only trigger is not PR-blocking: {detail}'
+    return 'brain_script: non-PR trigger -> FAIL'
+
+
+def test_brain_script_not_applicable_product_passes():
+    """osm is not in #22 applies_to → no wiring demanded even with no workflow."""
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            Path(td), _brain_script_brain(applies_to=('ose', 'wkrp')), 'osm')
+        assert status == cbc.PASS, f'non-applicable product should PASS: {detail}'
+    return 'brain_script: product not in applies_to -> PASS'
+
+
+# ─── enforcement_mode plane (live-read per-product block/warn) ───────────────
+# OSE-1288 / F13 PR-1b part 2. A spoke #22 protects but that hasn't built its
+# own gate yet runs in WARN: unwired is surfaced loudly but does not block, so
+# arming #22 fleet-wide never born-reds a spoke. `block` (default) still fails.
+
+def test_brain_script_warn_override_unwired_passes():
+    """wkrp is protected by #22 but in WARN mode with no wired step → PASS,
+    and the WARN state is surfaced loudly (born-red vs the pre-plane checker,
+    which appended wkrp/live to missing_live and FAILed)."""
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, _UNWIRED_WF),
+            _brain_script_brain_with_modes({'wkrp': 'warn'}), 'wkrp')
+        assert status == cbc.PASS, f'warn-mode spoke unwired should PASS: {detail}'
+        assert 'WARN' in detail, f'warn PASS must surface loudly: {detail}'
+    return 'brain_script: warn-mode spoke unwired -> PASS (loud signal)'
+
+
+def test_brain_script_block_override_unwired_fails():
+    """A spoke explicitly flipped to `block` in the plane and left unwired must
+    FAIL — the plane can arm a spoke, not only relax it."""
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, _UNWIRED_WF),
+            _brain_script_brain_with_modes({'wkrp': 'block'}), 'wkrp')
+        assert status == cbc.FAIL, f'block-mode spoke unwired should FAIL: {detail}'
+    return 'brain_script: block-mode spoke unwired -> FAIL'
+
+
+def test_brain_script_default_block_unwired_fails():
+    """Default fleet mode is `block`: an unwired live product with no override
+    FAILs. Locks that the plane defaults closed, not open."""
+    with tempfile.TemporaryDirectory() as td:
+        _, status, detail = cbc.check_invariant_test_files(
+            _repo_with_workflow(td, _UNWIRED_WF),
+            _brain_script_brain_with_modes({}), 'ose')
+        assert status == cbc.FAIL, f'default-block unwired should FAIL: {detail}'
+    return 'brain_script: default block unwired -> FAIL'
+
+
 # ─── Run all contracts ───────────────────────────────────────────────────────
 
 CONTRACTS = [
@@ -346,6 +488,15 @@ CONTRACTS = [
     ('tags.fail_lists_missing', test_required_tags_fail_lists_missing),
     ('stub.code_present_false_exits_zero', test_stub_repo_code_present_false_exits_zero),
     ('stub.code_present_product_still_runs', test_code_present_product_runs_checks_and_fails_on_empty_repo),
+    ('brain_script.wired_step_passes', test_brain_script_wired_step_passes),
+    ('brain_script.missing_step_fails_live', test_brain_script_missing_step_fails_live),
+    ('brain_script.continue_on_error_neutered', test_brain_script_continue_on_error_is_neutered),
+    ('brain_script.swallowed_exit_neutered', test_brain_script_swallowed_exit_is_neutered),
+    ('brain_script.non_pr_trigger_not_wired', test_brain_script_non_pr_trigger_is_not_wired),
+    ('brain_script.not_applicable_passes', test_brain_script_not_applicable_product_passes),
+    ('brain_script.warn_override_unwired_passes', test_brain_script_warn_override_unwired_passes),
+    ('brain_script.block_override_unwired_fails', test_brain_script_block_override_unwired_fails),
+    ('brain_script.default_block_unwired_fails', test_brain_script_default_block_unwired_fails),
 ]
 
 for name, fn in CONTRACTS:

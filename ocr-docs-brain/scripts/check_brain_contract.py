@@ -33,6 +33,11 @@ def load_brain(brain_dir: Path) -> dict[str, Any]:
             'corridors': yaml.safe_load((brain_dir / 'corridor-definitions.yaml').read_text(encoding='utf-8')),
             'taxonomy': yaml.safe_load((brain_dir / 'event-taxonomy.yaml').read_text(encoding='utf-8')),
             'invariants': yaml.safe_load((brain_dir / 'architectural-invariants.yaml').read_text(encoding='utf-8')),
+            # Invariant #22's live-read enforcement SoT (OSE-1288 / F13). Holds the
+            # per-product enforcement_mode plane consumed by the brain_script wiring
+            # gate below; read from the checked-out brain (which OSE CI pins to
+            # OCR-docs/main) so one reviewed brain edit re-arms/disarms the fleet.
+            'cross_repo_patterns': json.loads((brain_dir / 'scripts' / 'cross_repo_patterns.json').read_text(encoding='utf-8')),
             'bq_general': json.loads((brain_dir / 'bigquery-schemas/general.json').read_text(encoding='utf-8')),
             'bq_hipaa':   json.loads((brain_dir / 'bigquery-schemas/hipaa.json').read_text(encoding='utf-8')),
             'bq_coppa':   json.loads((brain_dir / 'bigquery-schemas/coppa.json').read_text(encoding='utf-8')),
@@ -185,20 +190,82 @@ def _requires_local_artifact(inv: dict, product_id: str) -> bool:
     return product_id in owners
 
 
+def _guard_step_wired(repo: Path, script_name: str) -> tuple[bool, str]:
+    """For an `enforcement_kind: brain_script` invariant, verify a PR-triggered
+    workflow actually INVOKES `script_name` in a step that is not neutered.
+
+    This is a static YAML-OBJECT parse, not a string grep: a step that is
+    present but `continue-on-error: true`, or whose `run` swallows the exit
+    code (`|| true`, `; true`), or that runs on a non-PR trigger, is NOT
+    counted as wired. Presence != enforcement.
+    """
+    wf_dir = repo / '.github' / 'workflows'
+    if not wf_dir.is_dir():
+        return (False, 'no .github/workflows directory')
+    neutered: list[str] = []
+    for wf in sorted(list(wf_dir.glob('*.yml')) + list(wf_dir.glob('*.yaml'))):
+        try:
+            doc = yaml.safe_load(wf.read_text(encoding='utf-8')) or {}
+        except Exception:
+            continue
+        if not isinstance(doc, dict):
+            continue
+        # PyYAML parses a bare `on:` key as the boolean True, not the string 'on'.
+        on = doc.get('on', doc.get(True))
+        if isinstance(on, dict):
+            triggers = set(on.keys())
+        elif isinstance(on, list):
+            triggers = set(on)
+        elif on is not None:
+            triggers = {on}
+        else:
+            triggers = set()
+        pr_triggered = bool(triggers & {'pull_request', 'pull_request_target'})
+        for job in (doc.get('jobs') or {}).values():
+            if not isinstance(job, dict):
+                continue
+            for step in (job.get('steps') or []):
+                if not isinstance(step, dict):
+                    continue
+                run = step.get('run') or ''
+                if script_name not in run:
+                    continue
+                if step.get('continue-on-error') is True:
+                    neutered.append(f'{wf.name}: step has continue-on-error')
+                    continue
+                if re.search(r'\|\|\s*(true|:)\b|;\s*true\b', run):
+                    neutered.append(f'{wf.name}: run swallows exit (|| true)')
+                    continue
+                if not pr_triggered:
+                    neutered.append(f'{wf.name}: not triggered on pull_request')
+                    continue
+                return (True, wf.name)
+    if neutered:
+        return (False, '; '.join(neutered))
+    return (False, f'no workflow step invokes {script_name}')
+
+
 def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tuple[str, str, str]:
     """Every invariant whose artifact is owned *by this product's repo* must have
     its test file present — status live/partial/planned determines severity.
     Whether a repo owns the artifact depends on the invariant's `lives_in` field
     (OCR-41 ownership axis); see `_requires_local_artifact`. A fleet-wide
     invariant protects a product without demanding the artifact live inside it."""
-    applicable = [i for i in brain['invariants']['invariants']
-                  if _requires_local_artifact(i, product_id)]
+    def _is_applicable(i: dict) -> bool:
+        # brain_script invariants live in the brain and are enforced by a WIRED
+        # workflow step in every product they apply to (not a repo-local file).
+        if i.get('enforcement_kind') == 'brain_script':
+            return product_id in (i.get('applies_to') or [])
+        return _requires_local_artifact(i, product_id)
+
+    applicable = [i for i in brain['invariants']['invariants'] if _is_applicable(i)]
     if not applicable:
         return ('invariant_test_files', PASS,
                 f'no invariant artifacts are enforced in {product_id}')
 
     missing_live = []
     missing_partial = []
+    warn_unwired = []
     for inv in applicable:
         tf = inv.get('test_file')
         # Retired invariants (OSE-1194, 2026-09-02: the subject no longer exists,
@@ -206,6 +273,32 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
         # name for traceability, but the spec is gone from the substrate by design
         # — never required.
         if inv.get('status') == 'retired':
+            continue
+        # brain_script: verify the guard is WIRED into a PR-blocking workflow
+        # step (not present-but-neutered), instead of globbing a repo-local file.
+        if inv.get('enforcement_kind') == 'brain_script':
+            script_name = Path(_resolve_test_file(tf)).name if tf \
+                else 'check_cross_repo_imports.py'
+            wired, why = _guard_step_wired(repo, script_name)
+            if not wired:
+                # Per-product enforcement_mode plane (OSE-1288 / F13, live-read
+                # from #22's SoT cross_repo_patterns.json → brain['cross_repo_patterns']).
+                # A spoke that #22 PROTECTS but whose own side of the seam is not
+                # built yet (WKRP OW-112, OAW deferred) runs in `warn`: its missing
+                # wiring is surfaced as a loud fleet signal but does NOT block, so
+                # arming #22 fleet-wide never born-reds a spoke. `block` (the fleet
+                # default) hard-fails a live invariant exactly as before. Flip a
+                # spoke to `block` the day its gate lands — one reviewed brain edit.
+                crp = brain.get('cross_repo_patterns') or {}
+                default_mode = crp.get('enforcement_mode', 'block')
+                eff_mode = (crp.get('enforcement_mode_overrides') or {}).get(product_id, default_mode)
+                label = f"{inv.get('name', inv.get('id'))} gate not wired ({why})"
+                if eff_mode != 'block':
+                    warn_unwired.append(f'{label} [enforcement_mode={eff_mode}]')
+                elif inv.get('status') == 'live':
+                    missing_live.append(label)
+                elif inv.get('status') == 'partial':
+                    missing_partial.append(label)
             continue
         if not tf:
             continue
@@ -224,10 +317,16 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
         return ('invariant_test_files', FAIL,
                 f'live invariant tests missing: {missing_live} '
                 f'(partial also missing: {missing_partial})')
-    if missing_partial:
-        return ('invariant_test_files', PASS,
-                f'all live tests present; {len(missing_partial)} partial tests '
-                f'not yet implemented (acceptable): {missing_partial[:3]}')
+    if missing_partial or warn_unwired:
+        notes = []
+        if missing_partial:
+            notes.append(f'{len(missing_partial)} partial tests not yet '
+                         f'implemented (acceptable): {missing_partial[:3]}')
+        if warn_unwired:
+            notes.append(f'*** FLEET SIGNAL: {len(warn_unwired)} brain_script '
+                         f'gate(s) protected but not yet wired, running in WARN '
+                         f'mode (not blocking): {warn_unwired[:3]} ***')
+        return ('invariant_test_files', PASS, '; '.join(notes))
     return ('invariant_test_files', PASS,
             f'all {len(applicable)} applicable invariant tests present')
 

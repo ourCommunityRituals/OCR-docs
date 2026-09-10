@@ -1994,7 +1994,17 @@ invariants:
     group_order: 6
     title: Cross-Repo Import Isolation
     status: live
-    test_file: scripts/check-cross-repo-imports.sh (OSE repo)
+    enforcement_kind: brain_script
+    # brain_script (OSE-1288 / F13 PR-1b part 2): the canonical enforcing guard
+    # is the brain-resident, live-read check_cross_repo_imports.py — NOT a
+    # repo-local file. Conformance (check_brain_contract._guard_step_wired)
+    # verifies each applies_to product WIRES a PR-blocking, un-neutered workflow
+    # step invoking it; presence of a file is no longer the test. Per-product
+    # severity is the live-read enforcement_mode plane in
+    # scripts/cross_repo_patterns.json: default `block` hard-fails (OSE, wired
+    # today); a spoke whose own side of the seam is not built yet (WKRP OW-112,
+    # OAW deferred) runs in `warn` — surfaced as a loud fleet signal, not a block.
+    test_file: ocr-docs-brain/scripts/check_cross_repo_imports.py (OCR-docs brain — live-read canonical guard)
     # COMPOSITION invariant: the OSE×OW forbidden-join boundary only exists at
     # the SEAM between products — it is meaningless for either repo in isolation
     # (a standalone repo has no sibling to import). Each participating repo
@@ -2041,13 +2051,22 @@ invariants:
       they are the expected HTTP API seam surface.
       Audit 2026-08-02: zero violations in OSE + WKRP source.
       OAW audit (OCR-ENF-22) deferred until OAW is active.
+      UPDATE (OSE-1288 / F13): the canonical enforcing guard is now the
+      brain-resident, live-read check_cross_repo_imports.py; OSE's
+      brain-contract-check.yml invokes it and conformance verifies the wiring
+      per enforcement_kind: brain_script. The OSE-local check-cross-repo-imports.sh
+      is superseded (retirement tracked as a follow-up).
     references:
-      enforcement_script: scripts/check-cross-repo-imports.sh (OSE repo)
-      ci_workflow: .github/workflows/brain-contract-check.yml (OSE repo)
+      enforcement_script: ocr-docs-brain/scripts/check_cross_repo_imports.py (OCR-docs brain — canonical, live-read)
+      enforcement_mode_plane: ocr-docs-brain/scripts/cross_repo_patterns.json (per-product block/warn; read live from OCR-docs/main)
+      wiring_gate: ocr-docs-brain/scripts/check_brain_contract.py::_guard_step_wired (verifies each applies_to product wires a PR-blocking step)
+      ci_workflow: .github/workflows/brain-contract-check.yml (OSE repo — step invokes the live-read brain guard)
+      legacy_local_script: scripts/check-cross-repo-imports.sh (OSE repo — superseded by the live-read brain guard; retirement tracked as follow-up)
       audit_doc: docs/security/INVARIANT_22_CROSS_REPO_IMPORT_ISOLATION.md (OSE repo)
       permitted_seam: "GET /api/events/:id/music — WKRP exposes, OSE calls via HTTP"
       pact_coverage: "OSE-423 F2.3 — Pact at the frozen music seam"
       activation_pr: "OSE PR #291 — feat(security): Invariant #22 cross-repo isolation audit + CI gate (OSE-388, OSE-389)"
+      brain_script_pr: "OSE-1288 / F13 — PR-1a (canonical brain guard), PR-1b (conformance wiring + enforcement_kind flip + live-read mode plane)"
 
   # ── #23 RED TEAM COVERAGE ────────────────────────────────────────────────────
   - id: 23
@@ -3343,6 +3362,36 @@ enrichment_history:
       #12 would leave a live invariant whose spec fails on every PR. Both
       retire in the same landing. The PR #159 incident record and the
       janitor design stay in enrichment_history and git history.
+
+  - invariant_id: 22
+    invariant_name: cross_repo_import_isolation
+    from_state: >-
+      rich live, repo-local enforcement (test_file globbed a single OSE-owned
+      script check-cross-repo-imports.sh; conformance verified a FILE existed,
+      never that applies_to spokes actually RAN a gate; enforcement mode was a
+      single global block in cross_repo_patterns.json)
+    to_state: >-
+      rich live, brain_script enforcement (enforcement_kind: brain_script — the
+      canonical guard is the brain-resident live-read check_cross_repo_imports.py;
+      conformance verifies each applies_to product WIRES a PR-blocking, un-neutered
+      step invoking it via _guard_step_wired; severity is the per-product live-read
+      enforcement_mode plane: ose=block, wkrp/oaw=warn until their gates land)
+    date: "2026-09-10"
+    pr_refs:
+      - "Linear OSE-1288 / F13 — Cross-repo guard: canonical brain enforcement"
+      - "OCR-docs — PR-1a (canonical brain guard) + PR-1b (conformance wiring, this edit)"
+      - "OSE — paired PR (brain-contract-check.yml step invokes the live-read brain guard)"
+    rationale: >
+      PR-1a moved the guard into the brain as a live-read script so one reviewed
+      brain edit re-arms/disarms the fleet; PR-1b part 1 taught conformance to
+      verify WIRING (not a file glob) but left it dormant (no invariant declared
+      enforcement_kind). This flip arms it on #22. Because brain_script keys
+      applicability off applies_to (ose, wkrp, oaw) — not lives_in (ose) — a
+      naive flip would born-red wkrp/oaw, which are protected but have not built
+      their side of the seam (OW-112, OAW deferred). The live-read enforcement_mode
+      plane resolves this: block for the owner, warn for the not-yet-built spokes,
+      surfaced loudly. Form is unchanged (still rich; #22 already carried an
+      enforcement_statement), so status_summary counts are unaffected.
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
