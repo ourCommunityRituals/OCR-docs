@@ -77,6 +77,7 @@ products:
   product_name: ourSharedEvents
   layer: anonymous
   repo: OurCommunityRituals/ourSharedEvents
+  npm_scope: '@oursharedevents'   # Invariant #22 sibling-scope source (check_cross_repo_imports.py)
   repo_status: active
   identity_layer: anonymous
   description: 'Default app. Backend architecture + frontend triangle. Whitelabel-capable via OSM combinations.
@@ -130,6 +131,7 @@ products:
   product_name: ourSharedMagnets
   layer: anonymous
   repo: OurCommunityRituals/ourSharedMagnets
+  npm_scope: '@oursharedmagnets'
   repo_status: active
   # OSM is a stub repo today — receives propagation, but has no application
   # code that would reference dataset names, required tags, or invariant
@@ -185,6 +187,7 @@ products:
   product_name: OurSharedPulse
   layer: pre-tech
   repo: OurCommunityRituals/ourSharedPulse
+  npm_scope: '@oursharedpulse'
   repo_status: pre-tech
   identity_layer: pre-tech
   # OSP is a stub repo today — receives propagation, but has no application
@@ -234,6 +237,7 @@ products:
   product_name: OurSharedRecords
   layer: pre-tech
   repo: OurCommunityRituals/ourSharedRecords
+  npm_scope: '@oursharedrecords'
   repo_status: pre-tech
   identity_layer: pre-tech
   # OSR is a stub repo today — receives propagation, but has no application
@@ -281,6 +285,7 @@ products:
   product_name: OurSharedGames
   layer: pre-tech
   repo: OurCommunityRituals/ourSharedGames
+  npm_scope: '@oursharedgames'
   repo_status: pre-tech
   identity_layer: pre-tech
   # OSG is a stub repo today — receives propagation, but has no application
@@ -329,6 +334,7 @@ products:
   product_name: OurWKRP
   layer: non-anonymous
   repo: OurCommunityRituals/ourWKRP
+  npm_scope: '@ourwkrp'
   repo_status: planned
   # ourWKRP has application code but has not built its OCR data pipeline yet
   # (see pipeline_activation_phase: 2 below). The brain conformance check
@@ -379,6 +385,7 @@ products:
   product_name: OAW (OurAirwaves)
   layer: non-anonymous
   repo: OurCommunityRituals/ourAirwaves
+  npm_scope: '@ourairwaves'
   repo_status: planned
   identity_layer: non-anonymous
   # OAW is a stub repo today — receives propagation, but has no application

@@ -94,6 +94,27 @@ for p in pr.get('products', []):
               f'expected dict, got {type(val).__name__}' if val is not None and not isinstance(val, dict) else 'ok')
 
 # ---------------------------------------------------------------------------
+# 1.2b — npm_scope present for every product in Invariant #22's applies_to.
+# The cross-repo import guard (scripts/check_cross_repo_imports.py) derives the
+# prohibited sibling scopes from product-registry `npm_scope`. A product that
+# #22 applies to MUST carry a scope or the guard silently under-enforces.
+# Scoped to applies_to (not all products) so governance/planned products that
+# are not npm packages (ocr-docs, oot) do not fail.
+# ---------------------------------------------------------------------------
+_inv = load('architectural-invariants.yaml')
+_invs = _inv.get('invariants', []) if isinstance(_inv, dict) else []
+if isinstance(_invs, dict):
+    _invs = _invs.get('invariants', [])
+_applies22 = next((i.get('applies_to', []) for i in _invs
+                   if isinstance(i, dict) and i.get('id') == 22), [])
+for p in pr.get('products', []):
+    if p.get('product_id') in _applies22:
+        scope = p.get('npm_scope')
+        check(f'npm_scope:{p.get("product_id")}',
+              isinstance(scope, str) and scope.startswith('@'),
+              'Invariant #22 applies_to product must carry npm_scope (starts with @)')
+
+# ---------------------------------------------------------------------------
 # 1.3 — Event taxonomy: required fields per event type
 # ---------------------------------------------------------------------------
 EVENT_REQUIRED = ['type_id', 'type_name', 'uec_code', 'product_origin']
