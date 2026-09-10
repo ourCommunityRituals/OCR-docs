@@ -795,17 +795,19 @@ invariants:
         Invariant #7 aggregate_only_reporting — SharedReport must remain
         aggregate-only; #21 locks the fields that carry those aggregates.
     activation_note: >
-      Status PARTIAL (honest) — 2026-07-27. The structural spec and snapshot
-      are designed and correct, but the spec (shared-report-schema.invariant.spec.ts)
-      and snapshot (shared-report.snapshot.json) cannot be committed without
-      the campaigns feature TS changes (shared-report-builder.ts campaign_id/
-      campaign_title/campaign_summary additions + report-depth.ts campaign_summary
-      in DEPTH_SECTIONS mid/premium) and the campaigns migrations (0039, 0040).
-      These form an inseparable unit and are deferred to a follow-up campaigns PR.
-      The invariant is authored in the brain (canonical, with full rich-form
-      enforcement statement) but not yet wired to CI. partial→live criterion:
-      campaigns PR merges — shared-report-schema.invariant.spec.ts and
-      shared-report.snapshot.json committed and wired to the T0 invariants shard.
+      RESOLVED to live — 2026-09-10 (OSE-1286). The partial→live criterion stated
+      below is now met: the campaigns feature merged, so
+      shared-report-schema.invariant.spec.ts and shared-report.snapshot.json (v1.0.0)
+      are committed and wired to the OSE T0 Gate invariants shard
+      (workers/oursharedevents/.github/workflows... → oursharedevents-ci.yml, the
+      invariants shard that runs on every PR/push); the six-case structural gate now
+      bites for real. Status has been `live` throughout — this note previously read
+      "Status PARTIAL (honest) — 2026-07-27" because the spec and snapshot could not
+      land without the campaigns feature TS changes (shared-report-builder.ts
+      campaign_id/campaign_title/campaign_summary + report-depth.ts campaign_summary
+      in DEPTH_SECTIONS mid/premium) and the campaigns migrations (0039, 0040), which
+      formed an inseparable unit deferred to a follow-up PR. That PR shipped, closing
+      the gap. See enrichment_history (invariant_id 21, entry dated 2026-09-10).
 
   # ── #14 MOBILE WORKABILITY ────────────────────────────────────────────────
   # Added 2026-06-01 to resolve a second phantom (same failure mode as #13):
@@ -3018,6 +3020,33 @@ enrichment_history:
       visible in the PR diff. Invariant #21 is the output-side complement to
       #16 (public events API); #7 (aggregate-only reporting) is the constraint
       that governs what #21's locked fields may contain.
+
+  - invariant_id: 21
+    invariant_name: shared_report_schema_stability
+    from_state: >-
+      live, activation_note stale (status: live since 2026-07-26, but the
+      activation_note read "PARTIAL / not yet wired to CI" per the honesty
+      correction of 2026-07-27 — the spec + snapshot were blocked on the
+      campaigns feature and could not be committed)
+    to_state: >-
+      live, activation_note reconciled (2026-09-10 — campaigns feature merged;
+      shared-report-schema.invariant.spec.ts + shared-report.snapshot.json v1.0.0
+      committed and wired to the OSE T0 Gate invariants shard, oursharedevents-ci.yml;
+      the six-case structural gate runs on every PR/push)
+    date: "2026-09-10"
+    pr_refs: []
+    rationale: >
+      CCR continuity finding F16 (OSE-1286): #21's header was status: live while its
+      own activation_note (2026-07-27) still read PARTIAL / "not yet wired to CI" —
+      a doc↔code drift within a single invariant entry. The blocking dependency (the
+      campaigns TS changes + migrations 0039/0040) has since shipped, so the spec and
+      snapshot are committed and the invariant genuinely gates. This is a
+      documentation-only reconciliation: status is unchanged (live throughout); the
+      activation_note is corrected to record the resolution; and this append-only
+      entry preserves the partial→live trace per the file's own rule (never renumber,
+      never delete a past entry). Corroborated by the spec's presence in the
+      oursharedevents-ci.yml invariants shard and the committed snapshot v1.0.0 —
+      code authoritative, doc reconciled after review.
 
   - invariant_id: 17
     invariant_name: oer_emission_boundary
