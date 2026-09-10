@@ -82,6 +82,46 @@ def hipaa_declined_not_routed():
 check('hipaa_declined_not_routed', hipaa_declined_not_routed)
 
 # ---------------------------------------------------------------------------
+# 5.2b — Declined regimes are refused FLEET-WIDE, not just for OSE (OSE-1296).
+#        OCR_STANDARD_declinedRegimes.md is fleet-scoped, but #122 narrowed only
+#        the OSE product block; OSM carried stranded hipaa/coppa pools+datasets
+#        and the warehouse aggregate layer listed them as source pools. These
+#        checks guard the back-propagation: (a) no product may carry a declined
+#        regime as an active pool or dataset; (b) the aggregate warehouse layer
+#        must list no declined source pool; (c) declined warehouse pool entries
+#        are retained ONLY as status=declined records (mark, don't erase — ADR-018).
+# ---------------------------------------------------------------------------
+DECLINED_REGIMES = {'hipaa', 'coppa', 'soppa'}
+
+def no_product_carries_declined_regime():
+    offenders = {}
+    for pid, prod in products.items():
+        active = set(prod.get('regulatory_pools') or []) | set(prod.get('bigquery_datasets') or {})
+        bad = active & DECLINED_REGIMES
+        if bad:
+            offenders[pid] = sorted(bad)
+    assert not offenders, f'declined regime as active pool/dataset in products: {offenders}'
+    return f'no product carries a declined regime ({len(products)} products checked)'
+
+check('no_product_carries_declined_regime', no_product_carries_declined_regime)
+
+def aggregate_excludes_declined_source_pools():
+    agg = pr.get('oureventring', {}).get('pools', {}).get('aggregate', {})
+    bad = set(agg.get('source_pools') or []) & DECLINED_REGIMES
+    assert not bad, f'aggregate.source_pools lists declined regime(s): {sorted(bad)}'
+    return f'aggregate source_pools active-only: {sorted(agg.get("source_pools") or [])}'
+
+check('aggregate_excludes_declined_source_pools', aggregate_excludes_declined_source_pools)
+
+def warehouse_declined_pools_are_marked():
+    pools = pr.get('oureventring', {}).get('pools', {})
+    unmarked = [n for n in ('hipaa', 'coppa') if n in pools and pools[n].get('status') != 'declined']
+    assert not unmarked, f'warehouse pool(s) present but not marked status=declined: {unmarked}'
+    return 'warehouse hipaa/coppa retained only as status=declined records'
+
+check('warehouse_declined_pools_are_marked', warehouse_declined_pools_are_marked)
+
+# ---------------------------------------------------------------------------
 # 5.3 — COPPA routing chain
 # ---------------------------------------------------------------------------
 def coppa_chain():

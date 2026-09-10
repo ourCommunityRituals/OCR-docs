@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "OurEventRing Aggregate Intelligence Layer Schema",
-  "description": "The fourth layer. De-identified, aggregated contributions from ALL THREE raw pools flow here. This is what the RAG reads. This is where cross-pool community intelligence lives. No PII, no PHI, no individual minor data. Corridor-level behavioral density only.",
+  "description": "The fourth layer. De-identified, aggregated contributions flow here from the active source pools. This is what the RAG reads. This is where cross-pool community intelligence lives. No PII, no PHI, no individual minor data. Corridor-level behavioral density only. NOTE: HIPAA and COPPA are declined regimes (OCR_STANDARD_declinedRegimes.md, ratified 2026-09-04; OSE-1220) — only the 'general' pool is an active contributor. The hipaa/coppa source_pool entries and the de_identification_audit table are retained as records of refusal, not active pipelines.",
   "version": "1.0.0",
   "dataset": "oureventring_aggregate",
   "classification": "CONFIDENTIAL — TRADE SECRET",
@@ -13,13 +13,17 @@
       "description": "Anonymous data is already de-identified at collection. No transformation required. Flows directly to aggregate tables."
     },
     "hipaa": {
+      "status": "declined",
+      "declined_by": "OCR_STANDARD_declinedRegimes.md (ratified 2026-09-04). HIPAA is a declined regime — no OCR product writes to oureventring_hipaa, so no HIPAA data ever contributes to the aggregate layer. Retained as a record of what is refused, NOT an active contribution path (OSE-1220).",
       "contribution_method": "safe_harbor_18",
-      "description": "All 18 Safe Harbor identifiers stripped. Only corridor-level behavioral signal remains. Minimum group size 5.",
+      "description": "Inactive — never runs because HIPAA is declined. Would have stripped all 18 Safe Harbor identifiers, leaving only corridor-level behavioral signal, minimum group size 5.",
       "legal_review_required": true
     },
     "coppa": {
+      "status": "declined",
+      "declined_by": "OCR_STANDARD_declinedRegimes.md (ratified 2026-09-04). COPPA under-13 child data is a declined regime — no OCR product writes to oureventring_coppa, so no COPPA data ever contributes to the aggregate layer. Retained as a record of what is refused, NOT an active contribution path (OSE-1220).",
       "contribution_method": "coppa_aggregation",
-      "description": "No individual minor identifiable. Minimum group size 10. Events below threshold suppressed entirely.",
+      "description": "Inactive — never runs because COPPA is declined. Would have required no individual minor identifiable, minimum group size 10, sub-threshold events suppressed entirely.",
       "legal_review_required": true
     }
   },
@@ -36,7 +40,7 @@
         { "name": "unique_event_types", "type": "INTEGER", "mode": "REQUIRED" },
         { "name": "category_distribution", "type": "JSON", "mode": "REQUIRED", "description": "Event count by category_id. Cross-pool aggregate." },
         { "name": "product_distribution", "type": "JSON", "mode": "REQUIRED", "description": "Event count by product_id." },
-        { "name": "pool_contribution_flags", "type": "JSON", "mode": "REQUIRED", "description": "Which pools contributed data for this corridor on this date. Example: {general: true, hipaa: true, coppa: false}. Does NOT reveal counts per pool — only presence." },
+        { "name": "pool_contribution_flags", "type": "JSON", "mode": "REQUIRED", "description": "Which pools contributed data for this corridor on this date. Only 'general' is an active pool; HIPAA and COPPA are declined regimes (OSE-1220) and never contribute. Example: {general: true}. Does NOT reveal counts per pool — only presence." },
         { "name": "day_of_week", "type": "STRING", "mode": "REQUIRED", "description": "For weekly pattern detection (Thursday density, weekend patterns)." },
         { "name": "is_recurring_dominant", "type": "BOOLEAN", "mode": "REQUIRED", "description": "Whether >50% of events were recurring instances." },
         { "name": "sponsor_presence", "type": "BOOLEAN", "mode": "REQUIRED", "description": "Whether any sponsored events occurred. No sponsor identity." },
@@ -79,10 +83,12 @@
     },
 
     "de_identification_audit": {
-      "description": "Audit trail for de-identification pipeline. Proves that data flowing from HIPAA and COPPA pools was properly stripped before entering aggregate layer.",
+      "status": "declined",
+      "declined_by": "OCR_STANDARD_declinedRegimes.md (ratified 2026-09-04). This audit table exists only for the HIPAA/COPPA de-identification pipeline. Both are declined regimes — no data ever flows from those pools, so no audit rows are ever written. Retained as a record of the refused pipeline, not an active table (OSE-1220).",
+      "description": "INACTIVE. Would have been the audit trail proving that data flowing from the HIPAA and COPPA pools was properly stripped before entering the aggregate layer. Since HIPAA and COPPA are declined (OSE-1220), no such data flows and this table is never populated.",
       "fields": [
         { "name": "audit_id", "type": "STRING", "mode": "REQUIRED" },
-        { "name": "source_pool", "type": "STRING", "mode": "REQUIRED", "description": "hipaa or coppa." },
+        { "name": "source_pool", "type": "STRING", "mode": "REQUIRED", "description": "Would be 'hipaa' or 'coppa'. Both are declined regimes (OSE-1220); no rows are ever written." },
         { "name": "source_record_count", "type": "INTEGER", "mode": "REQUIRED", "description": "Records processed in this batch." },
         { "name": "records_contributed", "type": "INTEGER", "mode": "REQUIRED", "description": "Records that passed de-identification and threshold checks." },
         { "name": "records_suppressed", "type": "INTEGER", "mode": "REQUIRED", "description": "Records suppressed due to group size threshold." },

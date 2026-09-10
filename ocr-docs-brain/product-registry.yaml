@@ -18,7 +18,14 @@ oureventring:
       encryption: platform_default
       audit_logging: standard
       aggregate_contribution_method: passthrough
+    # HIPAA and COPPA are DECLINED regimes (OCR_STANDARD_declinedRegimes.md,
+    # ratified 2026-09-04; OSE-1220). No OCR product writes to these datasets;
+    # they are retained as records of what is refused, NOT active pools. See the
+    # declined leaf schemas bigquery-schemas/{hipaa,coppa}.json. SOPPA (student
+    # data) is declined without ever being modeled — no pool entry exists.
     hipaa:
+      status: declined
+      declined_by: OCR_STANDARD_declinedRegimes.md (ratified 2026-09-04; OSE-1220)
       dataset: oureventring_hipaa
       regulatory_constraint: HIPAA — Health Insurance Portability and Accountability Act
       access_control: baa_required
@@ -26,6 +33,8 @@ oureventring:
       audit_logging: mandatory_full
       aggregate_contribution_method: safe_harbor_18
     coppa:
+      status: declined
+      declined_by: OCR_STANDARD_declinedRegimes.md (ratified 2026-09-04; OSE-1220)
       dataset: oureventring_coppa
       regulatory_constraint: COPPA — Children's Online Privacy Protection Act
       access_control: parental_consent_framework
@@ -34,15 +43,17 @@ oureventring:
       aggregate_contribution_method: coppa_aggregation
     aggregate:
       dataset: oureventring_aggregate
-      description: 'Fourth layer. De-identified, aggregated contributions from ALL THREE raw pools flow
-        here. This is what the RAG reads. This is where cross-pool community intelligence lives. No PII,
-        no PHI, no individual minor data. Corridor-level behavioral density only.
+      description: 'Fourth layer. De-identified, aggregated contributions flow here from the active
+        source pools. This is what the RAG reads. This is where cross-pool community intelligence lives.
+        No PII, no PHI, no individual minor data. Corridor-level behavioral density only. HIPAA and COPPA
+        are declined regimes (OSE-1220) and contribute nothing — only ''general'' is an active source.
 
         '
+      # Only 'general' is an active source. HIPAA and COPPA are declined regimes
+      # (OCR_STANDARD_declinedRegimes.md, OSE-1220) — they contribute no data and
+      # are deliberately absent from this list. See bigquery-schemas/aggregate.json.
       source_pools:
       - general
-      - hipaa
-      - coppa
       access_control: standard_rbac
       encryption: platform_default
       audit_logging: standard
@@ -145,10 +156,14 @@ products:
     becomes many products without forking.
 
     '
+  # OSE-1220 (OCR_STANDARD_declinedRegimes.md, ratified 2026-09-04; SOPPA added
+  # 2026-09-10): HIPAA, COPPA and SOPPA are DECLINED regimes fleet-wide, not
+  # tiers any product matures into. OSM (like every OCR product) routes to
+  # 'general' only; the hipaa/coppa pools + datasets are declined records, not
+  # active contribution paths. SOPPA (student data) is declined without ever
+  # being modeled — no pool, no dataset, no schema.
   regulatory_pools:
   - general
-  - hipaa
-  - coppa
   data_contributor: true
   anonymization_method: full
   aggregate_contribution_method: passthrough
@@ -163,8 +178,6 @@ products:
   pipeline_activation_phase: 1
   bigquery_datasets:
     general: oureventring_general
-    hipaa: oureventring_hipaa
-    coppa: oureventring_coppa
   funnels_to:
   - oureventring
   tier_availability:
