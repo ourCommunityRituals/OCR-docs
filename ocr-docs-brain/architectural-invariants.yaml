@@ -472,6 +472,7 @@ invariants:
       to the San Juan Mountains, Colorado (~1,500 km outside Blue Island).
     references:
       resolver: workers/oursharedevents/src/lib/sponsor-resolver.ts
+      adr: docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md
       invariant_test: tests/e2e/0-architecture/geo-resolution.invariant.spec.ts
       migration_event_types: workers/oursharedevents/migrations/0019_create_sponsor_event_types.sql
       migration_service_areas: workers/oursharedevents/migrations/0020_create_sponsor_areas.sql
@@ -580,6 +581,7 @@ invariants:
       migration adding a raw identity column would fail that gate.
     references:
       invariant_test: tests/e2e/0-architecture/ncr-accumulation.invariant.spec.ts
+      adr: docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md
       pii_gate: workers/oursharedevents/tests/pii-invariant.spec.ts
       companion_invariant: "Invariant #7 aggregate_only_reporting — SharedReport reads from scan_aggregates"
       companion_invariant_8: "Invariant #8 bounded_pii_retention — TTL applies to FORMS_DB only; NCR has no TTL by design"
@@ -708,6 +710,7 @@ invariants:
       CI until the snapshot is explicitly updated and the version is bumped.
     references:
       snapshot: workers/oursharedevents/src/api-schema-snapshots/public-events.snapshot.json
+      adr: docs/adr/ADR-016-api-v2-response-contract.md
       handler: workers/oursharedevents/src/handlers/events.ts
       structural_gate: >
         tests/e2e/0-architecture/api-response-schema.invariant.spec.ts
@@ -1077,6 +1080,8 @@ invariants:
       brand_positioning: "false-market framing (per founder operating-system message 2026-05-17 — anonymous-but-aggregated as third option vs personal-data tracking OR no tracking)"
       template_pattern: "invariant #1 anonymous_id (rich-form template) + #10 deprecation_lock (rich live activation pattern)"
       adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md"
+      adr_tier_axis: "docs/adr/ADR-010-templates-breadth-tiers-depth.md — tiers=depth axis; #5's tier-equity guarantee sits on it (templates never gate, tiers gate)"
+      adr_depth_enforcement: "docs/adr/ADR-017-sharedreport-depth-enforcement.md — server-side SharedReport depth enforcement; explicitly cites Invariant #5 (pricing governs display depth, never data collection)"
       activation_pr_substrate: "OSE PR #249 (L0 structural + L1 worker HTTP integration); OSE PR #251 (T3 network-staging Newman)"
       activation_pr_brain: "OCR-docs#57 (partial → live + rich enrichment v2, merged 2026-05-19); OCR-docs#60 (honest revert live → partial while T3 layer (f) is red on OSE-349)"
       current_blocker: "OSE-349 — CF Access service token rotated in Cloudflare without updating the CI CF_ACCESS_CLIENT_ID / CF_ACCESS_CLIENT_SECRET repo secrets; T3 layer (f) red on OSE main since 2026-05-19. Re-flip criterion: T3 Contract green on OSE main after the token rotation."
@@ -1246,6 +1251,7 @@ invariants:
       unguessable UUIDs). T4 spec should verify response includes brand_id
       so consumers can reject off-brand payloads.
     references:
+      adr_table_source: "docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md — introduced node_hierarchy + corridors (migration 0010); #9 isolates those multi-tenant tables per brand_id"
       schema_migrations: >
         workers/oursharedevents/migrations/0001_create_events.sql
         (brand_id TEXT NOT NULL on events);
@@ -3392,6 +3398,105 @@ enrichment_history:
       plane resolves this: block for the owner, warn for the not-yet-built spokes,
       surfaced loudly. Form is unchanged (still rich; #22 already carried an
       enforcement_statement), so status_summary counts are unaffected.
+
+  - invariant_id: 2
+    invariant_name: hyperlocal_geo_resolution
+    from_state: >-
+      rich live, no ADR back-reference (ADR-orphan — one of 22/25 invariants with
+      no references.adr despite a governing ADR existing)
+    to_state: >-
+      rich live + references.adr → ADR-009 (NCR v2 geographic hierarchy & corridor
+      model — the decision this invariant enforces resolution over)
+    date: "2026-09-10"
+    pr_refs:
+      - "Linear OSE-1291 / F3 — ADR↔invariant back-references (traceability at 12%)"
+      - "OCR-docs — this PR (invariant-side adr back-refs)"
+      - "OSE — paired ADR PR (ADR-009 'Enforced by invariants' cross-ref)"
+    rationale: >
+      CCR continuity finding F3 (OSE-1291): only 3/25 invariants cited an ADR;
+      the ADR↔invariant traceability graph was one-directional and ~12% complete.
+      ADR-009 defines the 7-level node hierarchy + corridor model; #2 enforces
+      geo-resolution over exactly that structure, so the governing back-link is
+      added here and the reciprocal "Enforced by invariant #2" lands in ADR-009.
+      Documentation-only; status unchanged (live).
+
+  - invariant_id: 4
+    invariant_name: ncr_data_accumulation
+    from_state: >-
+      rich live, no ADR back-reference (ADR-orphan)
+    to_state: >-
+      rich live + references.adr → ADR-009 (the NCR corridor accumulation model
+      #4 enforces)
+    date: "2026-09-10"
+    pr_refs:
+      - "Linear OSE-1291 / F3 — ADR↔invariant back-references"
+      - "OCR-docs — this PR (invariant-side adr back-refs)"
+      - "OSE — paired ADR PR (ADR-009 'Enforced by invariants' cross-ref)"
+    rationale: >
+      CCR finding F3. ADR-009's corridor/signal model (SIGNAL_PRESENCE →
+      SIGNAL_BEHAVIORAL, reverb accumulation) is the architectural decision #4
+      enforces; bidirectional link added. Documentation-only; status unchanged.
+
+  - invariant_id: 5
+    invariant_name: tier_equity
+    from_state: >-
+      rich, references.adr → ADR-013 only (local sponsor covenant), though the
+      tier-equity axis is also governed by ADR-010 and ADR-017
+    to_state: >-
+      rich + references.adr_tier_axis → ADR-010 (templates=breadth / tiers=depth)
+      and references.adr_depth_enforcement → ADR-017 (server-side SharedReport
+      depth enforcement, which explicitly cites Invariant #5)
+    date: "2026-09-10"
+    pr_refs:
+      - "Linear OSE-1291 / F3 — ADR↔invariant back-references"
+      - "OCR-docs — this PR (invariant-side adr back-refs)"
+      - "OSE — paired ADR PR (ADR-010 + ADR-017 'Enforced by invariants' cross-refs)"
+    rationale: >
+      CCR finding F3. #5 already cited ADR-013 (covenant); its tier-equity
+      guarantee also sits on ADR-010's tiers=depth axis and is the invariant
+      ADR-017 names when enforcing SharedReport depth server-side ("pricing
+      governs display depth, never data collection"). Added as distinct
+      descriptive keys (matching the #14 adr_coordination/doctrine_link
+      precedent) rather than mutating the scalar `adr:`. Documentation-only.
+
+  - invariant_id: 9
+    invariant_name: tenant_isolation
+    from_state: >-
+      rich (partial — T4 seeding pending), no ADR back-reference
+    to_state: >-
+      rich + references.adr_table_source → ADR-009 (introduced node_hierarchy +
+      corridors, migration 0010 — the multi-tenant tables #9 isolates per brand_id)
+    date: "2026-09-10"
+    pr_refs:
+      - "Linear OSE-1291 / F3 — ADR↔invariant back-references"
+      - "OCR-docs — this PR (invariant-side adr back-refs)"
+      - "OSE — paired ADR PR (ADR-009 'Enforced by invariants' cross-ref)"
+    rationale: >
+      CCR finding F3. Precise link: ADR-009 does not GOVERN tenant isolation as a
+      concept (isolation is cross-cutting, predating NCR), but it created the
+      node_hierarchy/corridors tables #9's references already cite as an isolation
+      surface. Recorded as adr_table_source (not the governing `adr:` key) to
+      avoid asserting a governance relationship the ADR text does not support.
+      Documentation-only; status unchanged.
+
+  - invariant_id: 16
+    invariant_name: api_response_schema_stability
+    from_state: >-
+      rich live, no ADR back-reference (ADR-orphan)
+    to_state: >-
+      rich live + references.adr → ADR-016 (the /api/v2 response contract — the
+      envelope + field-name decision #16 locks)
+    date: "2026-09-10"
+    pr_refs:
+      - "Linear OSE-1291 / F3 — ADR↔invariant back-references"
+      - "OCR-docs — this PR (invariant-side adr back-refs)"
+      - "OSE — paired ADR PR (ADR-016 'Enforced by invariants' cross-ref)"
+    rationale: >
+      CCR finding F3. Strong governing pair: ADR-016 IS the /api/v2 response
+      contract, and its own header already declares "#16 api_response_schema_
+      stability (live)". The F3 proposed mapping also listed ADR-016 → #21, but
+      ADR-016 explicitly leaves #21 "untouched … left to the OSE-842 residual",
+      so no #21 back-link was added (verified against ADR text). Documentation-only.
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
