@@ -48,8 +48,14 @@ LEVELS = [
 def run_level(num, script, label, gate=False):
     path = TESTS_DIR / script
     if not path.exists():
-        print(f'  SKIP  Level {num} — {label}  ({script} not found)')
-        return None
+        # OSE-1293 F12: every entry in LEVELS is a CANONICAL, expected level.
+        # A missing script is drift (a level silently vanished), not a benign
+        # skip — treat it as a hard failure so the pyramid cannot pass with a
+        # layer amputated. (If a level is ever legitimately optional, add an
+        # explicit allowlist here rather than reviving the silent-skip.)
+        print(f'  MISSING  Level {num} — {label}  ({script} not found — '
+              f'expected canonical level, drift)')
+        return 'MISSING'
 
     start = time.time()
     result = subprocess.run(
@@ -132,8 +138,13 @@ def main():
             continue
 
         rc = run_level(num, script, label, gate)
-        if rc is None:
-            level_results[num] = 'SKIP'
+        if rc == 'MISSING':
+            # OSE-1293 F12: a missing canonical level is a failure, and if it is
+            # a gate level its absence blocks the rest (a vanished gate must not
+            # silently open the door).
+            level_results[num] = 'MISSING'
+            if gate:
+                gate_failed = True
         elif rc == 0:
             level_results[num] = 'PASS'
         else:
@@ -143,7 +154,11 @@ def main():
 
     elapsed = time.time() - total_start
     passed = sum(1 for v in level_results.values() if v == 'PASS')
-    failed = sum(1 for v in level_results.values() if v == 'FAIL')
+    # OSE-1293 F12: MISSING (a canonical level script that vanished) counts as a
+    # failure, not a skip — so drift cannot masquerade as a clean run. SKIP is
+    # reserved for levels legitimately not run (blocked by an upstream gate).
+    missing = sum(1 for v in level_results.values() if v == 'MISSING')
+    failed = sum(1 for v in level_results.values() if v == 'FAIL') + missing
     skipped = sum(1 for v in level_results.values() if v == 'SKIP')
 
     print()
@@ -151,7 +166,8 @@ def main():
     print(f'  PYRAMID SUMMARY: {passed} pass / {failed} fail / {skipped} skip  ({elapsed:.1f}s)')
 
     if failed:
-        failing = [f'Level {k}' for k, v in level_results.items() if v == 'FAIL']
+        failing = [f'Level {k}' + ('(MISSING)' if v == 'MISSING' else '')
+                   for k, v in level_results.items() if v in ('FAIL', 'MISSING')]
         print(f'  Failures: {", ".join(failing)}')
 
     print(f'{"-"*76}')
