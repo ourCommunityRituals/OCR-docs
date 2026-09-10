@@ -29,6 +29,7 @@ ADRs and Brain invariants are complementary, not redundant:
 | [ADR-007](ADR-007-demo-reference-installation.md) | Demo sites are a permanent reference installation — three-site trio, `demo` data class, break-demo-break-build | Accepted | 2026-08-25 |
 | [ADR-008](ADR-008-consolidate-spoke-workers-into-hub-monorepo.md) | Consolidate the OSE and OW workers into the hub monorepo after the launch window — databases, workers and the identity boundary stay separate | Proposed | 2026-09-04 |
 | [ADR-009](ADR-009-hybrid-is-a-composition-plane.md) | The hybrid OSE+OW product is a composition plane (OurAirwaves + OurSharedMagnets), not a fused product — co-locate freely, never fuse invariant regimes | Proposed | 2026-09-09 |
+| [ADR-010](ADR-010-hyperlocal-correlation-and-voluntary-identity.md) | The hyperlocal map — cross-product correlation as a write-time shared-key contract (corridor→venue→event_type→event) under a voluntary-identity covenant; six base templates (worship/arts/sports/academic/volunteer/hobbyist) | Proposed | 2026-09-10 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):
