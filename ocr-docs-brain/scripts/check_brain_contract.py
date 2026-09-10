@@ -26,6 +26,16 @@ PASS = 'PASS'
 
 def load_brain(brain_dir: Path) -> dict[str, Any]:
     """Load all brain artifacts into a single dict."""
+    def _opt_json(rel: str) -> Any:
+        # Declined-regime schemas (hipaa/coppa) are retained today as records of
+        # refusal (OCR_STANDARD_declinedRegimes.md, OSE-1220), but a future edit
+        # may remove one. An unconditional json.loads of a declined schema is a
+        # fleet-wide crash vector: a missing file would sys.exit(2) every repo's
+        # brain conformance run. These loads are optional — absent → None — so the
+        # decline is un-makeable without also touching a hard-required artifact.
+        p = brain_dir / rel
+        return json.loads(p.read_text(encoding='utf-8')) if p.exists() else None
+
     try:
         return {
             'products': yaml.safe_load((brain_dir / 'product-registry.yaml').read_text(encoding='utf-8')),
@@ -39,8 +49,9 @@ def load_brain(brain_dir: Path) -> dict[str, Any]:
             # OCR-docs/main) so one reviewed brain edit re-arms/disarms the fleet.
             'cross_repo_patterns': json.loads((brain_dir / 'scripts' / 'cross_repo_patterns.json').read_text(encoding='utf-8')),
             'bq_general': json.loads((brain_dir / 'bigquery-schemas/general.json').read_text(encoding='utf-8')),
-            'bq_hipaa':   json.loads((brain_dir / 'bigquery-schemas/hipaa.json').read_text(encoding='utf-8')),
-            'bq_coppa':   json.loads((brain_dir / 'bigquery-schemas/coppa.json').read_text(encoding='utf-8')),
+            # Declined-regime schemas — optional (see _opt_json). Absent → None.
+            'bq_hipaa':   _opt_json('bigquery-schemas/hipaa.json'),
+            'bq_coppa':   _opt_json('bigquery-schemas/coppa.json'),
             'bq_agg':     json.loads((brain_dir / 'bigquery-schemas/aggregate.json').read_text(encoding='utf-8')),
         }
     except Exception as e:
