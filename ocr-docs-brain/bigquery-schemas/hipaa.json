@@ -5,7 +5,9 @@
   "version": "1.0.0",
   "dataset": "oureventring_hipaa",
   "classification": "CONFIDENTIAL — TRADE SECRET — HIPAA REGULATED",
-  "updated": "2026-04-15",
+  "updated": "2026-09-10",
+  "status": "declined",
+  "declined_by": "OCR_STANDARD_declinedRegimes.md (ratified 2026-09-04). Hospital/PHI data is off the books — a declined regime, not a tier OCR matures into. This schema is retained as a record of what is refused, NOT a roadmap commitment. No OCR product routes writes to oureventring_hipaa; OSE phaseToPool() refuses legal_clearance_tier 4 (OSE-1220).",
   "legal_requirements": {
     "baa_required": true,
     "encryption": "separate_keys",

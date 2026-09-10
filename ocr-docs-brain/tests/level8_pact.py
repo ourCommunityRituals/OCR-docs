@@ -52,21 +52,25 @@ def ose_pacts():
          p.get('identity_layer') == 'anonymous',
          f'actual={p.get("identity_layer")}')
 
-    pact('ose', 'has_three_pools',
-         set(p.get('regulatory_pools', [])) == {'general', 'hipaa', 'coppa'},
+    # OSE-1220: HIPAA/COPPA/SOPPA are declined regimes — OSE carries the
+    # 'general' pool only. The consumer contract now pins the REFUSAL: general
+    # present, declined regimes absent from both pools and datasets.
+    pact('ose', 'general_pool_only',
+         set(p.get('regulatory_pools', [])) == {'general'},
          f'actual={p.get("regulatory_pools")}')
 
     pact('ose', 'has_general_dataset',
          'general' in (p.get('bigquery_datasets') or {}),
          p.get('bigquery_datasets', {}).get('general', 'MISSING'))
 
-    pact('ose', 'has_hipaa_dataset',
-         'hipaa' in (p.get('bigquery_datasets') or {}),
-         p.get('bigquery_datasets', {}).get('hipaa', 'MISSING'))
+    _declined = {'hipaa', 'coppa', 'soppa'}
+    pact('ose', 'declines_regulated_pools',
+         set(p.get('regulatory_pools', [])).isdisjoint(_declined),
+         f'declined regime present as active pool: {sorted(set(p.get("regulatory_pools", [])) & _declined)}')
 
-    pact('ose', 'has_coppa_dataset',
-         'coppa' in (p.get('bigquery_datasets') or {}),
-         p.get('bigquery_datasets', {}).get('coppa', 'MISSING'))
+    pact('ose', 'no_declined_datasets',
+         set(p.get('bigquery_datasets') or {}).isdisjoint(_declined),
+         f'declined regime present as active dataset: {sorted(set(p.get("bigquery_datasets") or {}) & _declined)}')
 
     pact('ose', 'free_in_phase1',
          'free' in (p.get('tier_availability', {}).get('phase1', [])),

@@ -66,18 +66,20 @@ def scan_event_chain():
 check('scan_event_full_chain', scan_event_chain)
 
 # ---------------------------------------------------------------------------
-# 5.2 — HIPAA routing chain
+# 5.2 — HIPAA is a DECLINED regime for OSE — it must NOT route there.
+#       (OCR_STANDARD_declinedRegimes.md; OSE-1220.) The governance layer must
+#       not carry hipaa/coppa/soppa as an active OSE pool or dataset.
 # ---------------------------------------------------------------------------
-def hipaa_chain():
-    et_entry = event_types.get('health_screening')
-    assert et_entry, 'health_screening not in taxonomy'
-    assert et_entry.get('regulatory_override') == 'hipaa'
+def hipaa_declined_not_routed():
     prod = products.get('ose')
-    assert 'hipaa' in prod.get('regulatory_pools', [])
-    assert 'hipaa' in prod.get('bigquery_datasets', {})
-    return f'health_screening → hipaa → {prod["bigquery_datasets"]["hipaa"]}'
+    declined = {'hipaa', 'coppa', 'soppa'}
+    pools = set(prod.get('regulatory_pools', []))
+    datasets = set(prod.get('bigquery_datasets', {}))
+    assert pools.isdisjoint(declined), f'declined regime in OSE pools: {sorted(pools & declined)}'
+    assert datasets.isdisjoint(declined), f'declined regime in OSE datasets: {sorted(datasets & declined)}'
+    return 'OSE declines hipaa/coppa/soppa — general pool only'
 
-check('hipaa_routing_chain', hipaa_chain)
+check('hipaa_declined_not_routed', hipaa_declined_not_routed)
 
 # ---------------------------------------------------------------------------
 # 5.3 — COPPA routing chain

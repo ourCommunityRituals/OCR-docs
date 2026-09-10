@@ -83,10 +83,15 @@ products:
     The primary data collection surface.
 
     '
+  # OSE-1220 (OCR_STANDARD_declinedRegimes.md, ratified 2026-09-04; SOPPA added
+  # 2026-09-10): HIPAA, COPPA and SOPPA are DECLINED regimes for OSE, not tiers
+  # it matures into — there is no roadmap on which OSE acquires them. Item-
+  # tracking serves health-/child-/student-adjacent contexts in the 'general'
+  # pool without entering a declined regime. OSE routes to 'general' only;
+  # phaseToPool(4|5) refuses in code. SOPPA (student data) is declined without
+  # ever being modeled — no pool, no dataset, no schema.
   regulatory_pools:
   - general
-  - hipaa
-  - coppa
   data_contributor: true
   anonymization_method: full
   aggregate_contribution_method: passthrough
@@ -101,8 +106,6 @@ products:
   pipeline_activation_phase: 1
   bigquery_datasets:
     general: oureventring_general
-    hipaa: oureventring_hipaa
-    coppa: oureventring_coppa
   funnels_to:
   - oureventring
   tier_availability:
