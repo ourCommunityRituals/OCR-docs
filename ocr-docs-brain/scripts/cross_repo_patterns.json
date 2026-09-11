@@ -1,9 +1,13 @@
 {
   "_comment": "SINGLE SOURCE of truth for Invariant #22 (Cross-Repo Import Isolation). Consumed by check_cross_repo_imports.py (the guard) AND check_brain_contract.py (the brain_script wiring gate). Prohibited sibling scopes/dirs are DERIVED from product-registry.yaml (npm_scope + repo), NOT hardcoded here. This file holds the enforcement MODE and the permitted-pattern allowlist only. It is read LIVE from OCR-docs/main (not SHA-pinned) so one reviewed brain edit re-arms / disarms the fleet; its integrity comes from CODEOWNERS + branch protection on this path, and any repo running in 'warn' emits a loud fleet-level signal.",
-  "_comment_enforcement_mode": "enforcement_mode is the FLEET DEFAULT (block|warn). enforcement_mode_overrides is the per-product plane (OSE-1288 / F13): a product #22 protects but whose own side of the seam is not built yet runs in 'warn' — the brain_script wiring gate surfaces its missing wiring loudly but does not born-red the fleet. Flip a spoke to 'block' the day its gate lands (remove it from the overrides so the fleet default applies). Keys MUST be a subset of #22's applies_to. OSE=block (default, wired). WKRP graduated warn→block 2026-09-10 once ourWKRP#59 wired its gate. OAW stays warn until OAW is active.",
+  "_comment_enforcement_mode": "enforcement_mode is the FLEET DEFAULT (block|warn). enforcement_mode_overrides is the per-product plane (OSE-1288 / F13): a product #22 protects but whose own side of the seam is not built yet runs in 'warn' — the brain_script wiring gate surfaces its missing wiring loudly but does not born-red the fleet. Flip a spoke to 'block' the day its gate lands (remove it from the overrides so the fleet default applies). Keys MUST be a subset of #22's applies_to. OSE=block (default, wired). WKRP graduated warn→block 2026-09-10 once ourWKRP#59 wired its gate. OAW/OSM/OSP/OSR/OSG stay warn until they are active: they are docs/stub repos with zero TS/JS today; their guard steps are wired (OSE-1294 PR-A) and born-ready, so they graduate to 'block' the day they onboard code (remove from overrides).",
   "enforcement_mode": "block",
   "enforcement_mode_overrides": {
-    "oaw": "warn"
+    "oaw": "warn",
+    "osm": "warn",
+    "osp": "warn",
+    "osr": "warn",
+    "osg": "warn"
   },
   "permitted_scopes": [
     "@ocr/"
