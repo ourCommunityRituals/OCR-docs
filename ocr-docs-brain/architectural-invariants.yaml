@@ -2034,6 +2034,10 @@ invariants:
       - ose
       - wkrp
       - oaw
+      - osm
+      - osp
+      - osr
+      - osg
     protective_statement: >
       OSE and WKRP carry opposite identity invariants — OSE is anonymous
       by construction; WKRP is named with voluntary attribution. A
@@ -3497,6 +3501,34 @@ enrichment_history:
       stability (live)". The F3 proposed mapping also listed ADR-016 → #21, but
       ADR-016 explicitly leaves #21 "untouched … left to the OSE-842 residual",
       so no #21 back-link was added (verified against ADR text). Documentation-only.
+
+  - invariant_id: 22
+    invariant_name: cross_repo_import_isolation
+    from_state: >-
+      live, applies_to: [ose, wkrp, oaw] — the docs/stub repos (osm/osp/osr/osg)
+      were protected in principle but not in the invariant's applies_to, so the
+      brain guard treated them as "nothing to enforce"
+    to_state: >-
+      live, applies_to: [ose, wkrp, oaw, osm, osp, osr, osg] — the F13-wide
+      rollout (OSE-1294 Increment 2). Each new spoke enters at enforcement_mode
+      warn (cross_repo_patterns.json), matching the oaw precedent: docs/stub repos
+      with zero TS/JS today, guard steps wired + born-ready (PR-A), graduating to
+      block the day they onboard code
+    date: "2026-09-11"
+    pr_refs:
+      - "Linear OSE-1294 (F13-wide, [T-ROLLOUT]) — Increment 2, PR-B"
+      - "OSE-1294 PR-A (5 repo-CI PRs, merged): ourAirwaves#31, ourSharedMagnets#31, ourSharedPulse#28, ourSharedRecords#29, ourSharedGames#29"
+      - "This PR (brain: applies_to expansion + warn overrides)"
+    rationale: >
+      Increment 1 (OSE-1288) proved the canonical-guard pattern on brain+OSE+OW.
+      Increment 2 extends #22 to the remaining OCR products from the single
+      canonical source (no per-repo copies — the drift pattern #22 condemns).
+      PR-A (merged first) wired the guard step into each repo's
+      brain-contract-check so the brain's _guard_step_wired conformance sees a
+      wired step once applies_to includes them. Each spoke enters at warn because
+      it has no code yet: the guard is fail-closed on "active-but-no-source", and
+      warn keeps that advisory (loudly surfaced, not born-red) — the same reason
+      oaw has been warn. Append-only; no renumber; status unchanged (live).
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
