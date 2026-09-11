@@ -441,7 +441,8 @@ invariants:
       value only when their local footprint maps to real events in their
       geography.
     enforcement_statement: >
-      Two-layer enforcement at live status:
+      Enforced at live status by four layers — note (a) is runtime and runs
+      T4-only (it SKIPS on PRs), so (d) is the on-every-PR structural gate:
       (a) L1 INTEGRATION TEST SUITE — tests/e2e/0-architecture/
       geo-resolution.invariant.spec.ts (10 cases, runtime: uses page
       fixture against deployed worker) asserts: direct-path resolution,
@@ -470,8 +471,21 @@ invariants:
       (@brain-conformance 2), which decodes every demo cell and asserts it
       falls in the corridor bbox. Born-red against the RIPH cell that resolved
       to the San Juan Mountains, Colorado (~1,500 km outside Blue Island).
+      (d) L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      geo-resolution.structural.invariant.spec.ts (9 cases, T0 Gate invariants
+      shard, added OSE-1298) asserts the resolver's load-bearing shape via
+      readFileSync with NO deployed worker, so unlike (a) it runs on EVERY PR +
+      push: migrations 0019/0020/0021 shape; Path 1 direct-bind on sp.event_id
+      + both-sides is_active; two-sided acceptance (an unanswered placement
+      must NOT hide — COALESCE(...accepted, 1) = 1); Path 2 template+geo
+      (sponsor_event_types join + template_id gate + zip equality OR haversine
+      radius); dedup by sponsor id. Classified structural + wired into the T0
+      shard is asserted by the infra-consistency placement guard. Born-red
+      verified. This closes the gap where (a) — the only prior enforcement —
+      never ran on a PR.
     references:
       resolver: workers/oursharedevents/src/lib/sponsor-resolver.ts
+      structural_gate: tests/e2e/0-architecture/geo-resolution.structural.invariant.spec.ts
       adr: docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md
       invariant_test: tests/e2e/0-architecture/geo-resolution.invariant.spec.ts
       migration_event_types: workers/oursharedevents/migrations/0019_create_sponsor_event_types.sql
@@ -566,7 +580,8 @@ invariants:
       zero PII in the accumulation schema; any PII addition must trigger
       a retention policy and a brain invariant update.
     enforcement_statement: >
-      Two-layer enforcement at live status:
+      Enforced at live status by three layers — note (a) is runtime and runs
+      T4-only (it SKIPS on PRs), so (c) is the on-every-PR structural gate:
       (a) L1 INTEGRATION TEST SUITE — tests/e2e/0-architecture/
       ncr-accumulation.invariant.spec.ts (runtime: uses page fixture
       against deployed worker) asserts: poster_deployments endpoint
@@ -579,8 +594,21 @@ invariants:
       tests/workers/oursharedevents/tests/pii-invariant.spec.ts asserts
       no PII column names appear in these tables' column lists. Any
       migration adding a raw identity column would fail that gate.
+      (c) L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
+      ncr-accumulation.structural.invariant.spec.ts (9 cases, T0 Gate
+      invariants shard, added OSE-1298) asserts the accumulation pipeline's
+      load-bearing shape via readFileSync with NO deployed worker, so unlike
+      (a) it runs on EVERY PR + push: poster lat/lng; hour-bucketed scans (the
+      ':00' floor — no exact-time column); scan_aggregates written by EXACTLY
+      one file (write-site locality property = "scheduled worker only");
+      scheduled() wiring of the materialization run; no-TTL permanence;
+      impression surface + placement. Classified structural + wired into the T0
+      shard is asserted by the infra-consistency placement guard. Born-red
+      verified. This closes the gap where (a) — the only behavioral
+      enforcement — never ran on a PR.
     references:
       invariant_test: tests/e2e/0-architecture/ncr-accumulation.invariant.spec.ts
+      structural_gate: tests/e2e/0-architecture/ncr-accumulation.structural.invariant.spec.ts
       adr: docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md
       pii_gate: workers/oursharedevents/tests/pii-invariant.spec.ts
       companion_invariant: "Invariant #7 aggregate_only_reporting — SharedReport reads from scan_aggregates"
@@ -3529,6 +3557,53 @@ enrichment_history:
       it has no code yet: the guard is fail-closed on "active-but-no-source", and
       warn keeps that advisory (loudly surfaced, not born-red) — the same reason
       oaw has been warn. Append-only; no renumber; status unchanged (live).
+
+  - invariant_id: 2
+    invariant_name: hyperlocal_geo_resolution
+    from_state: >-
+      rich live; enforcement was runtime-only (geo-resolution.invariant.spec.ts,
+      T4 Functional) which SKIPS on PRs — no PR-gating structural enforcement of
+      the resolver's code shape
+    to_state: >-
+      rich live + a 4th enforcement layer (d): L0 structural gate
+      geo-resolution.structural.invariant.spec.ts (9 cases, T0 invariants shard);
+      references.structural_gate added
+    date: "2026-09-11"
+    pr_refs:
+      - "Linear OSE-1298 / F9 build (follow-on to the OSE-1289 spike)"
+      - "OSE#525 — the structural specs + T0 wiring (must merge first)"
+      - "OCR-docs — this PR (brain enforcement_statement + reference)"
+    rationale: >
+      F9 (OSE-1289) found #2 was status live but enforced only by a runtime
+      spec that skips on PRs, so a resolver refactor could break corridor
+      matching with every PR check green until deploy. F9 chose to ADD a
+      PR-gating structural spec (not weaken the status). This entry records the
+      brain catching up to that reality: the enforcement_statement now names the
+      L0 layer and the reference points at it. Documentation-only; status
+      unchanged (live). Mark-don't-erase: the runtime layer (a) is retained.
+
+  - invariant_id: 4
+    invariant_name: ncr_data_accumulation
+    from_state: >-
+      rich live; enforcement was runtime-only (ncr-accumulation.invariant.spec.ts,
+      T4 Functional, skips on PRs) plus the PII column gate — no PR-gating
+      structural enforcement of the accumulation pipeline's code shape
+    to_state: >-
+      rich live + a 3rd enforcement layer (c): L0 structural gate
+      ncr-accumulation.structural.invariant.spec.ts (9 cases, T0 invariants
+      shard); references.structural_gate added
+    date: "2026-09-11"
+    pr_refs:
+      - "Linear OSE-1298 / F9 build (follow-on to the OSE-1289 spike)"
+      - "OSE#525 — the structural specs + T0 wiring (must merge first)"
+      - "OCR-docs — this PR (brain enforcement_statement + reference)"
+    rationale: >
+      Same F9 finding as #2: #4 was live but its only behavioral enforcement
+      (the runtime suite) skipped on PRs. The added L0 structural spec locks the
+      pipeline shape on every PR — poster lat/lng, hour-bucketed scans, a single
+      scheduled scan_aggregates writer, no-TTL permanence, impression
+      surface+placement. Documentation-only; status unchanged (live).
+      Mark-don't-erase: the runtime layer (a) + PII gate (b) are retained.
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
