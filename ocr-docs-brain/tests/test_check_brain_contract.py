@@ -143,6 +143,32 @@ def test_annotated_live_invariant_still_fails_when_file_absent():
     return 'genuinely missing live file still FAILs (no false pass)'
 
 
+def test_partial_invariant_absent_test_file_is_gap():
+    """A `partial` invariant whose declared test_file is ABSENT must render as a
+    GAP — visible but non-failing — NOT a silent PASS. This is the de-vacuum fix
+    (the #24 auditability phantom): before it, a missing partial test was
+    laundered into PASS ('… not yet implemented (acceptable)'), so a phantom
+    could never be detected. Honors #23: a gap renders as a gap, not a silent pass."""
+    with tempfile.TemporaryDirectory() as td:
+        repo = Path(td)  # empty repo — the partial test file is absent
+        brain = {
+            'invariants': {
+                'invariants': [
+                    {
+                        'id': 24,
+                        'applies_to': ['ose'],
+                        'status': 'partial',
+                        'test_file': 'tests/audit-layer.spec.ts (OSE repo — in construction, OSE-560)',
+                    },
+                ]
+            }
+        }
+        _, status, detail = cbc.check_invariant_test_files(repo, brain, 'ose')
+        assert status == cbc.GAP, f'expected GAP for absent partial test, got {status}: {detail}'
+        assert status != cbc.PASS, 'absent partial test must not be a silent PASS'
+    return 'absent partial test file -> GAP (not silent PASS)'
+
+
 # ─── lives_in ownership axis (OCR-41) ────────────────────────────────────────
 # `applies_to` = which products an invariant PROTECTS; that is not the same as
 # where the enforcing artifact must physically LIVE. A fleet-wide invariant
@@ -432,16 +458,18 @@ def test_brain_script_not_applicable_product_passes():
 # arming #22 fleet-wide never born-reds a spoke. `block` (default) still fails.
 
 def test_brain_script_warn_override_unwired_passes():
-    """wkrp is protected by #22 but in WARN mode with no wired step → PASS,
-    and the WARN state is surfaced loudly (born-red vs the pre-plane checker,
-    which appended wkrp/live to missing_live and FAILed)."""
+    """wkrp is protected by #22 but in WARN mode with no wired step → GAP
+    (does NOT fail the build — exit stays 0), and the WARN state is surfaced
+    loudly. Before the de-vacuum change this was laundered into PASS; it is now
+    a visible GAP, honoring #23's "a gap renders as a gap, not a silent pass"."""
     with tempfile.TemporaryDirectory() as td:
         _, status, detail = cbc.check_invariant_test_files(
             _repo_with_workflow(td, _UNWIRED_WF),
             _brain_script_brain_with_modes({'wkrp': 'warn'}), 'wkrp')
-        assert status == cbc.PASS, f'warn-mode spoke unwired should PASS: {detail}'
-        assert 'WARN' in detail, f'warn PASS must surface loudly: {detail}'
-    return 'brain_script: warn-mode spoke unwired -> PASS (loud signal)'
+        assert status == cbc.GAP, f'warn-mode spoke unwired should be a GAP: {status} {detail}'
+        assert status != cbc.FAIL, 'warn-mode gap must not fail the build'
+        assert 'WARN' in detail, f'warn GAP must surface loudly: {detail}'
+    return 'brain_script: warn-mode spoke unwired -> GAP (visible, non-blocking)'
 
 
 def test_brain_script_block_override_unwired_fails():
@@ -476,6 +504,8 @@ CONTRACTS = [
      test_annotated_live_invariant_matches_when_file_exists),
     ('invariant.annotated_live_missing_still_fails',
      test_annotated_live_invariant_still_fails_when_file_absent),
+    ('invariant.partial_absent_test_is_gap',
+     test_partial_invariant_absent_test_file_is_gap),
     ('lives_in.not_required_in_protected_only_repo',
      test_lives_in_not_required_in_protected_only_repo),
     ('lives_in.required_in_owner_repo',
