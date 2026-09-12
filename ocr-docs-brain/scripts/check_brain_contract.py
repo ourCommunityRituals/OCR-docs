@@ -22,6 +22,13 @@ from typing import Any
 
 FAIL = 'FAIL'
 PASS = 'PASS'
+# GAP — a real, visible hole that is NOT a build-breaking failure: an invariant
+# whose declared enforcement artifact is absent (a `partial`/in-construction spec
+# not yet written) or a brain_script gate that is protected-but-not-wired in a
+# warn-mode spoke. Per Invariant #23's doctrine ("a gap renders as a gap in the
+# conformance report, not a silent pass"), these must NOT be laundered into PASS.
+# GAP does not fail the build (exit stays 0) — it surfaces the hole honestly.
+GAP = 'GAP'
 
 
 def load_brain(brain_dir: Path) -> dict[str, Any]:
@@ -331,13 +338,17 @@ def check_invariant_test_files(repo: Path, brain: dict, product_id: str) -> tupl
     if missing_partial or warn_unwired:
         notes = []
         if missing_partial:
-            notes.append(f'{len(missing_partial)} partial tests not yet '
-                         f'implemented (acceptable): {missing_partial[:3]}')
+            notes.append(f'{len(missing_partial)} partial invariant test(s) declared '
+                         f'but ABSENT (in construction — surfaced as a gap, not a '
+                         f'silent pass): {missing_partial[:3]}')
         if warn_unwired:
             notes.append(f'*** FLEET SIGNAL: {len(warn_unwired)} brain_script '
                          f'gate(s) protected but not yet wired, running in WARN '
                          f'mode (not blocking): {warn_unwired[:3]} ***')
-        return ('invariant_test_files', PASS, '; '.join(notes))
+        # GAP, not PASS: an absent partial test file / unwired warn-mode gate is a
+        # real hole. It renders visibly in the conformance report (Invariant #23)
+        # but does not fail the build — exit code is unchanged.
+        return ('invariant_test_files', GAP, '; '.join(notes))
     return ('invariant_test_files', PASS,
             f'all {len(applicable)} applicable invariant tests present')
 
@@ -552,24 +563,26 @@ def main():
 
     passed = [c for c in checks if c[1] == PASS]
     failed = [c for c in checks if c[1] == FAIL]
+    gaps = [c for c in checks if c[1] == GAP]
 
     print('=' * 76)
     print(f'  CONFORMANCE REPORT — {args.product_id}')
     print('=' * 76)
     for name, status, detail in checks:
-        marker = '[PASS]' if status == PASS else '[FAIL]'
+        marker = {PASS: '[PASS]', FAIL: '[FAIL]', GAP: '[GAP]'}.get(status, '[FAIL]')
         print(f'  {marker}  {name:35} {detail}')
     print('-' * 76)
-    print(f'  {len(passed)} pass / {len(failed)} fail  (total {len(checks)})')
+    print(f'  {len(passed)} pass / {len(failed)} fail / {len(gaps)} gap  (total {len(checks)})')
     print('-' * 76)
 
     report = {
         'product_id': args.product_id,
         'brain_path': str(brain_dir),
         'repo_path': str(repo),
-        'summary': {'passed': len(passed), 'failed': len(failed), 'total': len(checks)},
+        'summary': {'passed': len(passed), 'failed': len(failed), 'gaps': len(gaps), 'total': len(checks)},
         'passes':  [{'check': n, 'detail': d} for n, s, d in checks if s == PASS],
         'failures': [{'check': n, 'detail': d} for n, s, d in checks if s == FAIL],
+        'gaps':     [{'check': n, 'detail': d} for n, s, d in checks if s == GAP],
     }
     Path(args.report_path).write_text(json.dumps(report, indent=2))
     print(f'Report: {args.report_path}')
