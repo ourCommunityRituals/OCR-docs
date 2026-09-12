@@ -20,7 +20,7 @@ identity_mode: named        ← OW (playlists, profiles, stories)
 identity_mode: both         ← OurAirwaves (white-label, supports The Choice)
 ```
 
-The brain contract reads this declaration and runs the matching checks. If the code doesn't match the declaration, CI fails.
+The brain contract reads this declaration and runs the matching checks. Where a check is wired to a required gate, a mismatch fails CI; checks that are advisory or dispatch-only report but do not yet block a merge (see the `status` field per invariant in `ocr-docs-brain/architectural-invariants.yaml`).
 
 ---
 
@@ -116,4 +116,4 @@ If the answer to #4 is no, the feature is wrong. Redesign it.
 
 ---
 
-*The Choice is not a policy. It's architecture. The brain contract enforces it. CI validates it. Every commit, every product, every time.*
+*The Choice is not a policy — it's architecture. The brain contract encodes it, and CI enforces it where it is wired to a required gate: the cross-repo import-isolation gate (#22) blocks merges fleet-wide, on every commit. Not every rule is PR-blocking yet — the runtime invariants (#1–#4) and the named-pole Identity contract (I-1..I-8) are validated advisory-only or in dispatch runs today, and `architectural-invariants.yaml` carries the `live`/`partial` status per rule. We state what actually gates, not what we wish gated.*
