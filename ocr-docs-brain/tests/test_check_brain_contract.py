@@ -494,6 +494,97 @@ def test_brain_script_default_block_unwired_fails():
     return 'brain_script: default block unwired -> FAIL'
 
 
+# ─── check_identity_layer_contract (#26 explicit_identity) unit contracts ─────
+# Behavioral coverage for the 104-line identity checker #26 added. Before this,
+# the function ran in CI (Levels 6/7 execute it) but no test asserted its
+# per-verdict logic — so a bad edit/merge could pass silently.
+
+def _identity_tmp_repo():
+    return Path(tempfile.mkdtemp(prefix='cbc-identity-'))
+
+
+def test_identity_anonymous_clean_passes():
+    """anonymous product with no named-identity leakage -> PASS."""
+    _, verdict, _ = cbc.check_identity_layer_contract(
+        _identity_tmp_repo(), {'identity_layer': 'anonymous'})
+    assert verdict == cbc.PASS, verdict
+    return verdict
+
+
+def test_identity_anonymous_leak_fails():
+    """anonymous product containing a named-identity term -> FAIL."""
+    repo = _identity_tmp_repo()
+    (repo / 'leak.ts').write_text('const x = firebase_auth_user_id;\n', encoding='utf-8')
+    _, verdict, _ = cbc.check_identity_layer_contract(repo, {'identity_layer': 'anonymous'})
+    assert verdict == cbc.FAIL, verdict
+    return verdict
+
+
+def test_identity_non_anon_no_code_is_gap_not_pass():
+    """#134 doctrine: non-anonymous product with code_present=false -> GAP, not silent PASS."""
+    _, verdict, _ = cbc.check_identity_layer_contract(
+        _identity_tmp_repo(), {'identity_layer': 'non-anonymous', 'code_present': False})
+    assert verdict == cbc.GAP, f'expected GAP (de-vacuum #134), got {verdict}'
+    assert verdict != cbc.PASS, 'no-code explicit-identity contract must not be a silent PASS'
+    return verdict
+
+
+def test_identity_non_anon_missing_contract_fails():
+    """non-anonymous product WITH code but no identity_contract block -> FAIL (drift)."""
+    _, verdict, _ = cbc.check_identity_layer_contract(
+        _identity_tmp_repo(), {'identity_layer': 'non-anonymous', 'code_present': True})
+    assert verdict == cbc.FAIL, verdict
+    return verdict
+
+
+def test_identity_non_anon_valid_contract_passes():
+    """non-anonymous product with a fully-satisfied identity_contract -> PASS."""
+    repo = _identity_tmp_repo()
+    (repo / 'anon_rung.spec').write_text('anon rung\n', encoding='utf-8')
+    (repo / 'boundary.ts').write_text('export function stripPII() {}\n', encoding='utf-8')
+    (repo / 'erasure.ts').write_text('tombstone-not-delete\n', encoding='utf-8')
+    (repo / 'invariant.spec').write_text('spec\n', encoding='utf-8')
+    (repo / 'consent.ts').write_text('registering is the consent\n', encoding='utf-8')
+    contract = {
+        'anonymous_rung_spec': 'anon_rung.spec',
+        'boundary_module': 'boundary.ts',
+        'erasure_module': 'erasure.ts',
+        'invariant_spec': 'invariant.spec',
+        'consent_entrypoints': ['consent.ts'],
+        'strip_symbols': ['stripPII'],
+    }
+    _, verdict, _ = cbc.check_identity_layer_contract(
+        repo, {'identity_layer': 'non-anonymous', 'code_present': True,
+               'identity_contract': contract})
+    assert verdict == cbc.PASS, verdict
+    return verdict
+
+
+def test_identity_non_anon_contract_missing_file_fails():
+    """non-anonymous product whose declared contract files are absent -> FAIL (drift)."""
+    contract = {
+        'anonymous_rung_spec': 'anon_rung.spec',
+        'boundary_module': 'boundary.ts',
+        'erasure_module': 'erasure.ts',
+        'invariant_spec': 'invariant.spec',
+        'consent_entrypoints': ['consent.ts'],
+        'strip_symbols': ['stripPII'],
+    }  # none of the declared files created
+    _, verdict, _ = cbc.check_identity_layer_contract(
+        _identity_tmp_repo(), {'identity_layer': 'non-anonymous', 'code_present': True,
+                               'identity_contract': contract})
+    assert verdict == cbc.FAIL, verdict
+    return verdict
+
+
+def test_identity_unknown_layer_passes():
+    """a layer that is neither anonymous nor non-anonymous carries no contract -> PASS."""
+    _, verdict, _ = cbc.check_identity_layer_contract(
+        _identity_tmp_repo(), {'identity_layer': 'named'})
+    assert verdict == cbc.PASS, verdict
+    return verdict
+
+
 # ─── Run all contracts ───────────────────────────────────────────────────────
 
 CONTRACTS = [
@@ -527,6 +618,13 @@ CONTRACTS = [
     ('brain_script.warn_override_unwired_passes', test_brain_script_warn_override_unwired_passes),
     ('brain_script.block_override_unwired_fails', test_brain_script_block_override_unwired_fails),
     ('brain_script.default_block_unwired_fails', test_brain_script_default_block_unwired_fails),
+    ('identity.anonymous_clean_passes', test_identity_anonymous_clean_passes),
+    ('identity.anonymous_leak_fails', test_identity_anonymous_leak_fails),
+    ('identity.non_anon_no_code_is_gap', test_identity_non_anon_no_code_is_gap_not_pass),
+    ('identity.non_anon_missing_contract_fails', test_identity_non_anon_missing_contract_fails),
+    ('identity.non_anon_valid_contract_passes', test_identity_non_anon_valid_contract_passes),
+    ('identity.non_anon_contract_missing_file_fails', test_identity_non_anon_contract_missing_file_fails),
+    ('identity.unknown_layer_passes', test_identity_unknown_layer_passes),
 ]
 
 for name, fn in CONTRACTS:

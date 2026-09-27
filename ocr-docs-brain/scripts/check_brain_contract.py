@@ -500,12 +500,15 @@ def check_identity_layer_contract(repo: Path, product: dict) -> tuple[str, str, 
                 'no named-identity leakage in anonymous product')
 
     if layer == 'non-anonymous':
-        # Same escape hatch the other checks honor: a docs-only repo has no
-        # code to bind the contract to (e.g. oaw today).
+        # A docs-only repo has no code to bind the contract to (e.g. oaw today).
+        # Per #134 (de-vacuum: GAP, not silent PASS), an explicit-identity
+        # contract that cannot yet be validated is a visible GAP — not a PASS
+        # that would let a non-anonymous product conform by definition until
+        # code lands. GAP is non-build-breaking; it surfaces the hole honestly.
         if product.get('code_present') is False:
-            return ('identity_layer_contract', PASS,
+            return ('identity_layer_contract', GAP,
                     'no application code yet (code_present=false) — explicit-identity '
-                    'contract validated when code lands')
+                    'contract cannot be validated until code lands (GAP, not PASS: #134)')
 
         contract = product.get('identity_contract')
         if not contract:
