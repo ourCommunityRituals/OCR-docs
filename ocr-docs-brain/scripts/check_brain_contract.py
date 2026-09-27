@@ -471,21 +471,100 @@ def check_demo_geo_in_corridor(repo: Path, brain: dict, product_id: str) -> tupl
 
 
 def check_identity_layer_contract(repo: Path, product: dict) -> tuple[str, str, str]:
-    """Anonymous products must not introduce named-identity coupling."""
-    if product.get('identity_layer') != 'anonymous':
-        return ('identity_layer_contract', PASS,
-                f'product layer is {product.get("identity_layer")}, skipping anon check')
+    """Both halves of the choice contract, dispatched on identity_layer.
 
-    forbidden = ['firebase_auth_user_id', 'spotify_user_id', 'named_contributor']
-    leaks = []
-    for term in forbidden:
-        hits = scan_repo_for_string(repo, term)
-        if hits:
-            leaks.append(f'{term}: {hits[:2]}')
-    if leaks:
-        return ('identity_layer_contract', FAIL,
-                f'anonymous product contains named-identity references: {leaks}')
-    return ('identity_layer_contract', PASS, 'no named-identity leakage in anonymous product')
+    `anonymous` (invariant #1 anonymous_id): the product must not introduce
+    named-identity coupling.
+
+    `non-anonymous` (invariant #26 explicit_identity): the product must
+    declare an `identity_contract` block in product-registry.yaml and every
+    artifact it names must actually exist in the repo. This branch used to
+    return an unconditional PASS ("skipping anon check"), which meant the
+    flag-in-the-sand half of the platform conformed by definition — no
+    matter what its code did. A non-anonymous product WITH code that
+    declares no identity_contract is drift, not an opt-out.
+    """
+    layer = product.get('identity_layer')
+
+    if layer == 'anonymous':
+        forbidden = ['firebase_auth_user_id', 'spotify_user_id', 'named_contributor']
+        leaks = []
+        for term in forbidden:
+            hits = scan_repo_for_string(repo, term)
+            if hits:
+                leaks.append(f'{term}: {hits[:2]}')
+        if leaks:
+            return ('identity_layer_contract', FAIL,
+                    f'anonymous product contains named-identity references: {leaks}')
+        return ('identity_layer_contract', PASS,
+                'no named-identity leakage in anonymous product')
+
+    if layer == 'non-anonymous':
+        # A docs-only repo has no code to bind the contract to (e.g. oaw today).
+        # Per #134 (de-vacuum: GAP, not silent PASS), an explicit-identity
+        # contract that cannot yet be validated is a visible GAP — not a PASS
+        # that would let a non-anonymous product conform by definition until
+        # code lands. GAP is non-build-breaking; it surfaces the hole honestly.
+        if product.get('code_present') is False:
+            return ('identity_layer_contract', GAP,
+                    'no application code yet (code_present=false) — explicit-identity '
+                    'contract cannot be validated until code lands (GAP, not PASS: #134)')
+
+        contract = product.get('identity_contract')
+        if not contract:
+            return ('identity_layer_contract', FAIL,
+                    'non-anonymous product declares no identity_contract block in '
+                    'product-registry.yaml — invariant #26 explicit_identity requires '
+                    'consent_entrypoints, anonymous_rung_spec, boundary_module, '
+                    'strip_symbols, erasure_module, invariant_spec')
+
+        problems = []
+
+        # Walls (a)-(d) + the repo-side spec: every declared path must exist.
+        path_fields = {
+            'anonymous_rung_spec': 'wall (b) intact anonymous rung',
+            'boundary_module': 'wall (c) stripped egress',
+            'erasure_module': 'wall (d) revocable flag',
+            'invariant_spec': 'repo-side structural gate',
+        }
+        for field, wall in path_fields.items():
+            declared = contract.get(field)
+            if not declared:
+                problems.append(f'{field} not declared ({wall})')
+            elif not (repo / declared).is_file():
+                problems.append(f'{field}: "{declared}" missing from repo ({wall})')
+
+        entrypoints = contract.get('consent_entrypoints') or []
+        if not entrypoints:
+            problems.append('consent_entrypoints not declared (wall (a) affirmative birth)')
+        for ep in entrypoints:
+            if not (repo / ep).is_file():
+                problems.append(f'consent_entrypoint "{ep}" missing from repo '
+                                f'(wall (a) affirmative birth)')
+
+        # Wall (c) has a second half: the boundary module must actually
+        # define the stripping symbols, not merely exist.
+        strip_symbols = contract.get('strip_symbols') or []
+        boundary = contract.get('boundary_module')
+        if not strip_symbols:
+            problems.append('strip_symbols not declared (wall (c) stripped egress)')
+        elif boundary and (repo / boundary).is_file():
+            text = (repo / boundary).read_text(encoding='utf-8', errors='ignore')
+            missing_syms = [s for s in strip_symbols if s not in text]
+            if missing_syms:
+                problems.append(f'boundary_module "{boundary}" does not define '
+                                f'{missing_syms} (wall (c) stripped egress)')
+
+        if problems:
+            return ('identity_layer_contract', FAIL,
+                    'explicit-identity contract (#26) drift: ' + '; '.join(problems))
+        return ('identity_layer_contract', PASS,
+                f'explicit-identity contract (#26) intact — {len(entrypoints)} consent '
+                f'entrypoint(s), anonymous rung spec, boundary module defining '
+                f'{len(strip_symbols)} strip symbol(s), erasure module, repo-side spec')
+
+    return ('identity_layer_contract', PASS,
+            f'identity_layer "{layer}" carries no identity contract')
 
 
 # ---------------------------------------------------------------------------
