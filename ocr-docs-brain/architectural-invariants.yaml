@@ -2650,17 +2650,21 @@ invariants:
       reasons, not one: (1) THREAT — the protective goal (no secret exfiltration on
       an agent PR) is only fully met on the Copilot path, where the ADR-020
       approval break is the tamper-proof backstop; on the ungated Claude/auto-run
-      path the in-workflow guard is best-effort and the PR-reachable surface is
-      bounded-but-NONZERO today (OCR_PROPAGATE_TOKEN, ANTHROPIC_API_KEY,
-      LINEAR_API_KEY, …), so a workflow-editing PR could still exfiltrate. That
-      residual closes only when ADR-020 Alternative B drives the reported surface
-      to ZERO. (2) FLEET — a floor in one repo of a multi-site fleet is not a
-      fleet floor; it travels via the OA (ourAirwaves) client-fork template, and
-      applies_to expands to oaw (and wkrp/osm) as they adopt. Promotes to LIVE
-      when BOTH hold: the ungated-path surface is zero AND the guard is fleet-borne.
-      Numbers 26 (explicit_identity) and 27 (no_biometric_identifiers) were
-      reserved by in-flight proposals when this was minted, so it takes 28 per the
-      naming spine.
+      path the in-workflow guard + Alt-B are best-effort and NECESSARY-NOT-
+      SUFFICIENT — a trusted-user auto-run PR can reference ANY repo-level secret,
+      not just the wired set, so zeroing the reported surface does not by itself
+      stop a workflow-editing PR. The tamper-proof close for the ungated path is a
+      GitHub-level control (chosen 2026-09-26): sensitive secrets moved to
+      staging/production ENVIRONMENT secrets protected with required reviewers.
+      Verified gap (2026-09-26): those secrets are all repo-level and the
+      environments carry zero protection rules. (2) FLEET — a floor in one repo of
+      a multi-site fleet is not a fleet floor; it travels via the OA (ourAirwaves)
+      client-fork template, and applies_to expands to oaw (and wkrp/osm) as they
+      adopt. Promotes to LIVE when BOTH hold: the ungated path is closed by
+      Environment protection (guard + Alt-B as defense-in-depth) AND the guard is
+      fleet-borne. Numbers 26 (explicit_identity) and 27 (no_biometric_identifiers)
+      were reserved by in-flight proposals when this was minted, so it takes 28 per
+      the naming spine.
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
