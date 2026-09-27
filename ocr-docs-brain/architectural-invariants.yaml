@@ -528,6 +528,132 @@ invariants:
         stripped-egress asserted against a deployed worker, and the
         anonymous-rung spec running in the staging smoke gate.
 
+  # ── #27 NO BIOMETRIC IDENTIFIERS ──────────────────────────────────────────
+  - id: 27
+    name: no_biometric_identifiers
+    label: "#27 — No Biometric Identifiers"
+    group: privacy_identity
+    group_order: 5
+    title: No Biometric Identifiers
+    status: partial
+    test_file: no-biometrics.invariant.test.ts
+    enforces: >
+      No OCR product collects, captures, stores, or transmits a biometric
+      identifier as defined by the Illinois Biometric Information Privacy Act
+      (740 ILCS 14) — retina or iris scan, fingerprint, voiceprint, or a scan
+      of hand or face geometry — nor any biometric information derived from
+      one. Audience and attendance measurement is QR-scan and anonymous-cookie
+      ONLY. Specifically forbidden on every surface, including the venue
+      Display/TV: camera-based audience measurement, face detection or
+      counting, demographic inference from imagery, voice capture or voice
+      analytics, and any dependency or API that acquires a camera or
+      microphone stream (getUserMedia, MediaDevices, MediaRecorder, and vendor
+      vision/speech SDKs). The prohibition is absolute rather than
+      consent-gated: OCR does not build the consent apparatus that would make
+      biometric collection lawful, because it does not collect biometrics.
+    applies_to:
+      - ose
+      - osm
+      - wkrp
+      - oaw
+      - osr
+      - osg
+    depends_on:
+      - anonymous_id
+    protective_statement: >
+      This invariant protects a structural market position, not merely a
+      compliance posture. Every camera-based hyperlocal measurement product
+      operating in Illinois is collecting face geometry, which BIPA attaches a
+      private right of action and statutory damages to — $1,000 for a
+      negligent violation and $5,000 for an intentional or reckless one, with
+      no proof of actual harm required. OCR has no BIPA surface at all: not
+      because the exposure was mitigated, but because it was never built. A QR
+      scan is not a biometric identifier; an anonymous cookie is not a
+      biometric identifier; a k-floored aggregate contains none.
+      The danger is not that someone decides to collect biometrics. It is that
+      an obvious-looking feature does it as a side effect. A camera on the
+      venue Display for "audience measurement", a microphone for ambient
+      analytics, a vendor SDK that ships face detection inside a people-counter
+      — any one of these converts a clean product into a defendant, and does so
+      through a change that reads like an improvement in a sprint review.
+      There is a second, methodological reason. Surveillance-based measurement
+      changes the behaviour it measures: identity-disclosure research finds
+      participation falls and becomes more guarded once people are observably
+      identified. An instrument that alters its subject produces worse data,
+      not just less ethical data. Refusing biometrics is what lets OCR claim
+      its aggregates are honest — the sponsor-facing argument is not "we are
+      the ethical option" but "nobody modified their behaviour for our sensor."
+    enforcement_statement: >
+      PARTIAL (2026-08-30) — the rule holds today by construction across every
+      product; the gates that keep it holding are landing per-repo.
+      (a) STATIC ABSENCE GATE — a per-repo structural spec
+      (tests/security/no-biometrics.invariant.test.ts) scans the worker source,
+      the served templates, and the runtime dependency list for camera and
+      microphone acquisition (getUserMedia, MediaDevices, MediaRecorder,
+      <input capture>, <video>/<audio> capture attributes), for biometric
+      vendor SDKs and endpoints (face/vision/speech/voiceprint services), and
+      for the BIPA-enumerated terms used as data fields. An absence gate is
+      only meaningful if it proves it actually scanned, so the spec asserts a
+      non-empty file set and named anchor files — a scan over zero files
+      passes vacuously and is therefore itself a failure mode.
+      (b) BINDING SURFACE GATE — wrangler configuration is checked for media
+      or AI bindings that could reach an inference service.
+      (c) BORN RED — each scanner is exercised against deliberately-broken
+      fixtures at the unit level (a getUserMedia call, a vision SDK import, a
+      face-geometry field name) and MUST report, so the gate cannot silently
+      declaw itself the way a pass-only absence check can.
+      partial→live criterion: the static gate is present and green in BOTH
+      workers (ourSharedEvents and ourWKRP), not only in the product that
+      minted it. A privacy floor enforced in one repo of a two-plane
+      architecture is not a floor.
+    references:
+      statute: "740 ILCS 14 — Illinois Biometric Information Privacy Act. Enumerated identifiers: retina/iris scan, fingerprint, voiceprint, scan of hand or face geometry. Private right of action; statutory damages $1,000 negligent / $5,000 intentional-or-reckless; no actual harm required (Rosenbach)."
+      amendment: >
+        SB 2979, effective 2024-08-02 — repeated collection of the same
+        identifier from the same person by the same method is a SINGLE
+        violation with one recovery, reversing the per-scan accrual of Cothron
+        v. White Castle (2023). Electronic written release is valid. The
+        Seventh Circuit held in April 2026 that the amendment applies
+        retroactively to pending cases. Exposure is materially narrower than
+        it was in 2023 — the private right of action and statutory damages
+        remain, so this invariant is not softened by the amendment.
+      governed_surfaces: >
+        Every customer-facing surface across the fleet, and explicitly the
+        venue Display/TV, which is the surface most likely to attract a
+        camera-based "audience measurement" proposal. Also the QR poster
+        funnel, the public event and profile pages, and any future kiosk.
+      sanctioned_measurement: >
+        QR scan + anonymous cookie ONLY. OSE: ose_anon (HttpOnly, Secure,
+        SameSite=Lax), hour-bucketed timestamps, the migration-0062 where/who
+        split, K>=5 aggregation floors. The permitted instrument is the poster
+        itself — the funnel and the meter are the same artifact, which is also
+        why it is affordable at hyperlocal scale.
+      companion_invariants: >
+        #1 anonymous_id — the base layer this depends on; a biometric
+        identifier would defeat anonymity at its root, so #27 is the outer wall
+        of the same commitment. #7 aggregate_only_reporting — what may leave.
+        #8 bounded_pii_retention — how long anything may be held; a biometric
+        identifier is the one class OCR never holds for any duration.
+        #26 explicit_identity — a person may choose to be named; that consent
+        never extends to biometric collection, which no rung of the choice
+        ladder offers.
+      commercial_rationale: >
+        Three claims the covenant can make, each with a citation rather than an
+        assertion: we measure without surveilling (and the numbers are better
+        for it); we do not run an auction, so the local keeps its floor; we
+        hold no biometrics, so the competitor's measurement stack is a
+        liability where ours has no surface. See sponsor-allocation.yaml for
+        the covenant params and the anonymous-pricing bound.
+      legal_note: >
+        Recorded by engineering as a design constraint, not as legal advice.
+        The statutory reading here should be confirmed by counsel before it is
+        used in commercial claims, and re-checked when Illinois amends BIPA
+        again.
+      activation_criterion: >
+        Promote to live when the static absence gate is present and green in
+        both ourSharedEvents and ourWKRP, with born-red unit coverage for each
+        scanner in both repos.
+
   # ══ GROUP 2: PRODUCT & EXPERIENCE ═══════════════════════════════════════════
   # What the platform does — built on the privacy foundation above.
 
@@ -3494,6 +3620,33 @@ enrichment_history:
 # ═════════════════════════════════════════════════════════════════════════════
 # Status summary — counts may include lean and rich forms; the form is
 # orthogonal to status. Counts are hand-maintained on every material change
+  - invariant_id: 27
+    invariant_name: no_biometric_identifiers
+    from_state: absent
+    to_state: partial
+    date: '2026-08-30'
+    pr_refs:
+      - 'OCR-docs — feat(brain): invariant #27 no_biometric_identifiers'
+    rationale: >
+      Minted to convert an accident into a moat. Every OCR product already
+      satisfies this rule by construction — a QR scan is not a biometric
+      identifier, an anonymous cookie is not, and a k-floored aggregate
+      contains none — but nothing written down prevented the obvious-looking
+      feature that would break it. The specific hazard is a camera on the
+      venue Display for "audience measurement", or a vendor people-counter
+      SDK shipping face detection inside it: a change that reads like an
+      improvement in a sprint review and converts a clean product into a BIPA
+      defendant with a private right of action attached.
+      The prohibition is deliberately absolute rather than consent-gated. OCR
+      does not build the notice-and-written-release apparatus that would make
+      biometric collection lawful, because it collects no biometrics — and a
+      consent-gated rule invites the apparatus. There is also a methodological
+      reason recorded in the protective statement: surveillance-based
+      measurement changes the behaviour it measures, so refusing biometrics is
+      part of why the aggregates can be claimed as honest.
+      Lands partial: the rule holds fleet-wide today, but a privacy floor
+      enforced in one repo of a two-plane architecture is not a floor. Promotes
+      to live when the static absence gate is green in both OSE and OW.
 # AND validated against the invariant records by level2_schema.py check 1.5d
 # on every brain CI run — a stale or miscounted summary fails the pyramid.
 # ═════════════════════════════════════════════════════════════════════════════
@@ -3757,9 +3910,9 @@ enrichment_history:
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
-  partial: 8  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion)
+  partial: 9  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW)
   planned: 0
   retired: 2  # #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe (retired 2026-09-02, OSE-1194 — self-hosted runner fleet decommissioned; CI on GitHub-hosted ubuntu-latest)
-  total: 26
-  rich_form: 25 # #1-#19, #21-#26 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
+  total: 27
+  rich_form: 26 # #1-#19, #21-#27 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
   lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)
