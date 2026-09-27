@@ -2592,13 +2592,20 @@ invariants:
       workflow could therefore exfiltrate any PR-reachable secret before a human
       ever sees it — the exact agentic-swarm threat the platform is built to
       resist (the prize is secret theft; doctrine
-      feedback_agentic_swarm_threat_model). Bounding the PR-reachable secret
-      surface to a reviewed minimum, and forbidding pull_request_target, makes
-      agent-authored CI safe: the ADR-020 human approval break is retained
-      deliberately, and the day it is dropped for velocity, no crown-jewel secret
-      is exposed. The property generalizes to every OCR site that runs CI with
-      secrets — a niche vertical forked from the OA (ourAirwaves) client-fork
-      template must inherit it rather than re-derive (and re-forget) it.
+      feedback_agentic_swarm_threat_model). Two agent authors already open PRs
+      into OSE and are gated OPPOSITELY: GitHub Copilot (app/copilot-swe-agent)
+      is held for human "Approve and run" (ADR-020's tamper-proof backstop),
+      while Claude / Claude Code commits as the human operator and its PRs
+      AUTO-RUN CI with no approval gate. So on the Copilot path this guard is
+      defense-in-depth behind the approval break; on the ungated Claude path it
+      is the SOLE defense — and, running from PR-head content with no human in
+      the loop, it is best-effort, not tamper-proof. Bounding the PR-reachable
+      secret surface to a reviewed minimum, and forbidding pull_request_target,
+      is what makes agent-authored CI safe on BOTH paths; the robust close on the
+      ungated path is to drive that surface to zero (ADR-020 Alternative B). The
+      property generalizes to every OCR site that runs CI with secrets — a niche
+      vertical forked from the OA (ourAirwaves) client-fork template must inherit
+      it rather than re-derive (and re-forget) it.
     enforcement_statement: >
       Meta-gate on the #10 deprecation_lock pattern, wired into CI on every PR +
       push:
@@ -2637,15 +2644,23 @@ invariants:
       template_pattern: "invariant #10 deprecation_lock (meta-gate rich-form template)"
       doctrine: "feedback_agentic_swarm_threat_model; feedback_infra_wide_by_default"
     activation_criterion: >
-      LIVE in OSE today — scanner + self-tests + the structural invariant spec are
-      green in the T0 lint/invariants shards, and the guard already surfaced and
-      fixed a real CF_ACCESS-on-PR exposure. Status is PARTIAL as a FLEET
-      contract: a secret-exposure floor enforced in one repo of a multi-site fleet
-      is not a fleet floor. Promotes to LIVE when the guard travels with the OA
-      (ourAirwaves) client-fork template so a new site inherits it; applies_to
-      expands to oaw (and wkrp/osm) as they adopt. Numbers 26 (explicit_identity)
-      and 27 (no_biometric_identifiers) were reserved by in-flight proposals when
-      this was minted, so it takes 28 per the naming spine.
+      ENFORCED in OSE today — scanner + self-tests + the structural invariant spec
+      are green in the T0 lint/invariants shards, and the guard already surfaced
+      and fixed a real CF_ACCESS-on-PR exposure. Status is PARTIAL for two honest
+      reasons, not one: (1) THREAT — the protective goal (no secret exfiltration on
+      an agent PR) is only fully met on the Copilot path, where the ADR-020
+      approval break is the tamper-proof backstop; on the ungated Claude/auto-run
+      path the in-workflow guard is best-effort and the PR-reachable surface is
+      bounded-but-NONZERO today (OCR_PROPAGATE_TOKEN, ANTHROPIC_API_KEY,
+      LINEAR_API_KEY, …), so a workflow-editing PR could still exfiltrate. That
+      residual closes only when ADR-020 Alternative B drives the reported surface
+      to ZERO. (2) FLEET — a floor in one repo of a multi-site fleet is not a
+      fleet floor; it travels via the OA (ourAirwaves) client-fork template, and
+      applies_to expands to oaw (and wkrp/osm) as they adopt. Promotes to LIVE
+      when BOTH hold: the ungated-path surface is zero AND the guard is fleet-borne.
+      Numbers 26 (explicit_identity) and 27 (no_biometric_identifiers) were
+      reserved by in-flight proposals when this was minted, so it takes 28 per the
+      naming spine.
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
