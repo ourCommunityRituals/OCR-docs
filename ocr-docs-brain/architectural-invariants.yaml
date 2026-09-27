@@ -2566,6 +2566,87 @@ invariants:
         floor+cap coverage; live at full adversarial set green, each born red
         first.
 
+  - id: 28
+    name: ci_approval_gate_secret_surface
+    label: "#28 — CI Approval-Gate Secret Surface"
+    group: security_isolation
+    group_order: 8
+    title: CI Approval-Gate Secret Surface
+    status: partial
+    test_file: ci-approval-gate-safety.invariant.spec.ts
+    enforces: >
+      The set of secrets reachable by a workflow job that can run on a plain
+      (non-full-pipeline, agent-authorable — e.g. copilot/*) pull request MUST
+      stay within a small, reviewed allowlist; deploy/infra credentials
+      (Cloudflare, CF Access, admin, forms, per-tier report tokens) MUST NOT be
+      reachable on such a PR; and no workflow may use pull_request_target. This
+      keeps the human approval gate on agent-authored PRs (ADR-020) safe by
+      construction, and is the precondition that would let that gate ever be
+      removed safely (zero-touch).
+    applies_to:
+      - ose
+    protective_statement: >
+      On a same-repo pull_request, GitHub runs the PR-HEAD's workflow content
+      with secrets available, and .github/ is protected only at MERGE time
+      (CODEOWNERS), not at RUN time. An auto-run, agent-authored PR that edited a
+      workflow could therefore exfiltrate any PR-reachable secret before a human
+      ever sees it — the exact agentic-swarm threat the platform is built to
+      resist (the prize is secret theft; doctrine
+      feedback_agentic_swarm_threat_model). Bounding the PR-reachable secret
+      surface to a reviewed minimum, and forbidding pull_request_target, makes
+      agent-authored CI safe: the ADR-020 human approval break is retained
+      deliberately, and the day it is dropped for velocity, no crown-jewel secret
+      is exposed. The property generalizes to every OCR site that runs CI with
+      secrets — a niche vertical forked from the OA (ourAirwaves) client-fork
+      template must inherit it rather than re-derive (and re-forget) it.
+    enforcement_statement: >
+      Meta-gate on the #10 deprecation_lock pattern, wired into CI on every PR +
+      push:
+      (a) Scanner — scripts/check-pr-secret-exposure.mjs parses every workflow,
+      computes plain-PR reachability with a GitHub-Actions expression evaluator +
+      needs-graph (a job gated by full-pipeline/* or transitively by a gated
+      deploy job is not reachable), collects secrets.* from reachable jobs, and
+      fails on any not in the allowlist or on any pull_request_target.
+      Fail-closed: an unparseable if: counts as reachable.
+      (b) Allowlist — scripts/check-pr-secret-exposure.allowlist.json holds the
+      reviewed, annotated set of accepted PR-reachable secrets; deploy/infra
+      creds are absent and forbidden from it (the structural test fails if one is
+      added).
+      (c) Self-tests — `npm run test:guard-pr-secrets` (the scanner's
+      --self-test) carries a born-red fixture per leak shape (Cloudflare-in-S0,
+      loosened deploy if:, always()-rearm, pull_request_target); run BEFORE the
+      scan in the lint shard.
+      (d) Structural test —
+      tests/e2e/0-architecture/ci-approval-gate-safety.invariant.spec.ts (T0
+      invariants shard) locks the mechanism wired and forbids allowlisting infra
+      creds. CODEOWNERS locks /.github/workflows/ + the scanner + allowlist. A
+      guard in scripts/ that CI never invokes is theater; this invariant prevents
+      that failure mode.
+    references:
+      scanner: scripts/check-pr-secret-exposure.mjs
+      allowlist: scripts/check-pr-secret-exposure.allowlist.json
+      self_tests: "npm run test:guard-pr-secrets (scanner --self-test)"
+      runbook: docs/security/PR_SECRET_EXPOSURE_GUARD.md
+      operator_runbook: workers/oursharedevents/docs/ops/copilot-pr-ci-approval-runbook.md
+      structural_test: tests/e2e/0-architecture/ci-approval-gate-safety.invariant.spec.ts
+      ci_workflow: .github/workflows/oursharedevents-ci.yml (lint shard — test:guard-pr-secrets then guard:pr-secrets)
+      codeowners_lock: .github/CODEOWNERS (/.github/workflows/ + scanner + allowlist + spec + ADR-020)
+      adr: docs/adr/ADR-020-copilot-ci-human-approval-gate.md (OSE repo)
+      activation_pr: "OSE — feat(ci-security): check-pr-secret-exposure guard + ADR-020 (commit 9efe73d); brain #28 minted this PR"
+      first_finding: "security-regression.yml reached staging with CF_ACCESS_* on every plain PR; gated to non-PR + full-pipeline/* on landing"
+      template_pattern: "invariant #10 deprecation_lock (meta-gate rich-form template)"
+      doctrine: "feedback_agentic_swarm_threat_model; feedback_infra_wide_by_default"
+    activation_criterion: >
+      LIVE in OSE today — scanner + self-tests + the structural invariant spec are
+      green in the T0 lint/invariants shards, and the guard already surfaced and
+      fixed a real CF_ACCESS-on-PR exposure. Status is PARTIAL as a FLEET
+      contract: a secret-exposure floor enforced in one repo of a multi-site fleet
+      is not a fleet floor. Promotes to LIVE when the guard travels with the OA
+      (ourAirwaves) client-fork template so a new site inherits it; applies_to
+      expands to oaw (and wkrp/osm) as they adopt. Numbers 26 (explicit_identity)
+      and 27 (no_biometric_identifiers) were reserved by in-flight proposals when
+      this was minted, so it takes 28 per the naming spine.
+
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
 # invariant transitions. Documents the evolution of the registry over time so
@@ -3908,11 +3989,33 @@ enrichment_history:
       surface+placement. Documentation-only; status unchanged (live).
       Mark-don't-erase: the runtime layer (a) + PII gate (b) are retained.
 
+  - invariant_id: 28
+    invariant_name: ci_approval_gate_secret_surface
+    from_state: absent
+    to_state: partial
+    date: "2026-09-26"
+    pr_refs:
+      - "OSE — feat(ci-security): check-pr-secret-exposure guard + ADR-020 (commit 9efe73d)"
+      - "OCR-docs — this PR (brain invariant #28 mint)"
+    rationale: >
+      Minted alongside OSE ADR-020 to make the human approval gate on
+      agent-authored (Copilot) PRs safe by construction rather than by vigilance.
+      The gate exists because a same-repo pull_request runs PR-HEAD workflow
+      content with secrets available while .github/ is guarded only at merge
+      time; the new guard bounds the PR-reachable secret surface to a reviewed
+      allowlist and forbids pull_request_target. On landing it surfaced a real
+      exposure — security-regression.yml was hitting staging with CF_ACCESS_* on
+      every plain PR — now gated to non-PR + full-pipeline/*. Lands PARTIAL as a
+      fleet contract: fully enforced in OSE, but a one-repo floor is not a fleet
+      floor; promotes to live when the OA client-fork template carries it. 26/27
+      reserved by in-flight proposals, so 28 per the naming spine.
+      status_summary: partial 7 -> 8, total 25 -> 26, rich_form 24 -> 25.
+
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
-  partial: 9  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW)
+  partial: 10  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW), #28 ci_approval_gate_secret_surface (live in OSE; fleet-live when the OA client-fork template carries it)
   planned: 0
   retired: 2  # #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe (retired 2026-09-02, OSE-1194 — self-hosted runner fleet decommissioned; CI on GitHub-hosted ubuntu-latest)
-  total: 27
-  rich_form: 26 # #1-#19, #21-#27 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
+  total: 28
+  rich_form: 27 # #1-#19, #21-#28 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
   lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)
