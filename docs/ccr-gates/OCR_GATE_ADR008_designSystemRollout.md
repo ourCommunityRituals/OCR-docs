@@ -286,6 +286,23 @@ These are intended or harmless, but the ratification does not record them.
 | **H5** | OW `mobile-workability.yml` stages `@ocr/ui` at the pin. | F8 |
 | **H6** | OCR_VISION §6.7, OSE CLAUDE.md §3 and ADR-008 Validation describe the gate as shipped, with the AA/13px claims scoped to "hub stylesheet, token pairs, not yet pinned by any spoke" until D4 lands. | F5, F11, F21 |
 
+## F2. Hold status (updated 2026-09-29, 16:10 UTC)
+
+HELD stays the verdict until every row below reads **merged**. Code for five of the six holds is written, tested and in review. Two rows wait on owner decisions.
+
+| Hold | Ticket | Fix | State |
+|---|---|---|---|
+| H1 merged-only pins | OSE-1394 | ourSharedEvents#672 · ourWKRP#69 | In review. Test fails when the check is removed. D7 answered: staging served `14f3ed71` for about 50 minutes (CSS and tokens only). |
+| H2 OW token scoping | OW-150 | ourWKRP#69 (+ allowlist wording in #672) | In review. **Owner:** rotate and split `OCR_PROPAGATE_TOKEN` (OW-116). |
+| H3 base-branch ratchet | OSE-1397 | ourCommunityRituals#47 | **Merged** (hub `b96b2c8`). Spokes wire `--base-config` in #672 and #69. |
+| H4 Dependabot path | OSE-1396 | — | **Owner decision:** read-only Dependabot secret (recommended) or a Dependabot skip. |
+| H5 OW mobile audit staging | OW-151 | ourWKRP#69 | In review. |
+| H6 docs as shipped | OCR-148 | — | Lands last, after the fixes merge. |
+
+Follow-ons in review: D3 wiring meta-gate (OSE-1399), D4 bump to hub `b96b2c8` plus `/ui.css` ETag revalidation (OSE-1398), D5 SharedReport and admin contrast (OSE-1395). C3 (remove the design check from the 6 docs-only spokes, OCR-147) waits on an owner decision, because it narrows the ratified "every spoke".
+
+Local verification at hub `b96b2c8`: OSE worker suite 284 files / 3,989 passed; OW `npm test` 1,166 passed.
+
 ## G. Not verified in this run
 
 - Whether `OCR_PROPAGATE_TOKEN` exists as a Dependabot secret (decides H4 severity).
