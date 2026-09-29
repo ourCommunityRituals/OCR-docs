@@ -1,0 +1,24 @@
+{
+  "include": [
+    "**/*.html",
+    "**/*.css",
+    "**/*.jsx",
+    "**/*.tsx"
+  ],
+  "exclude": [],
+  "inlineStyleBudget": 400,
+  "baseline": {
+    "docs/OCR_REFERENCE_uecSystem.jsx": {
+      "own-tokens": 0,
+      "own-stylesheet": 0,
+      "raw-hex": 1,
+      "foreign-stylesheet": 0
+    },
+    "docs/dashboard/OCR_DASHBOARD_release.html": {
+      "own-tokens": 12,
+      "own-stylesheet": 4956,
+      "raw-hex": 12,
+      "foreign-stylesheet": 0
+    }
+  }
+}

@@ -1,7 +1,7 @@
 # ADR-008: Consolidate the OSE and OW workers into the hub monorepo — after the launch window, and without merging databases or identity
 
-**Status:** Proposed
-**Date:** 2026-09-04
+**Status:** Accepted (ratified 2026-09-29)
+**Date:** 2026-09-04 (proposed) · 2026-09-29 (ratified)
 **Deciders:** Matt (Co-Architect convener)
 **Scope:** Fleet-wide (repository topology)
 **Supersedes:** None
@@ -70,6 +70,19 @@ The objection is therefore not a risk this ADR introduces. It is a description o
 - **It does not move OCR-docs.** The governance brain stays its own repository (ADR-001).
 - **It does not decide the fate of the other spokes** (OSG, OSR, OSP, OSM, OA). They follow or do not on their own evidence.
 - **It does not authorize the migration now.** Phase 1 is explicitly gated behind the launch window.
+
+## Ratification (2026-09-29)
+
+Ratified by Matt. **The parent is `ourCommunityRituals/ourCommunityRituals`: its `packages/` directory is the single source of every shared `@ocr/*` package, starting with `@ocr/ui`.** No spoke keeps its own copy.
+
+Phase 0, as ratified:
+
+1. **One copy.** The ourSharedEvents fork of `@ocr/ui` (including its light-theme contrast fix) is merged into the hub's `packages/ui`, and `ourSharedEvents/packages/ui` is deleted.
+2. **Pinned consumption.** Every spoke that consumes a shared package records the exact hub commit it builds against in a root `.ocr-hub-ref` file, and its CI checks out that commit, never `main`. A published registry version (as `@ocr/flags` already is) may replace the pin later; an unpinned clone may not.
+3. **Blocking design check.** Every spoke runs `@ocr/ui`'s `scripts/check-spoke-styles.mjs` from its pinned hub commit. It fails the build when a spoke adds its own tokens, stylesheet, raw colours or foreign stylesheets; existing debt is recorded in `.ocr-design-check.json` and may only shrink.
+4. **Brands are paint on the shared system.** A product's look is a registered `[data-brand]` theme in `@ocr/ui`, limited to the brand-customizable roles (`brand.ts`); status colours and UEC never re-theme. ourWKRP's amber is the first such brand (`ow`).
+
+Unchanged by ratification: Phase 1 (moving the workers into the hub) stays gated behind the launch window and the CI-surface budget above. The fork-detection gate in Validation is superseded for `@ocr/ui` by deleting the copy.
 
 ---
 
