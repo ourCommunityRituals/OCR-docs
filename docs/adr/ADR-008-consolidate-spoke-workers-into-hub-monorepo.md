@@ -100,10 +100,26 @@ Linear shape: a fleet-level **Initiative** ("Repository topology consolidation")
 
 An ADR without a self-check hook is doctrine without teeth (ADR-003). The structural locks:
 
-- **Fork detection (Phase 0, the load-bearing gate).** A CI check comparing any vendored `packages/*` tree against the hub canonical at the declared version; divergence at an equal version fails the build. This is the gate whose absence produced the 24-file fork, and it is worth having *even if Phase 1 never happens*.
+- **Phase 0 as shipped (CCR OSE-1393, 2026-09-29).** These locks exist in code today:
+  - **Merged-only pin.** The OSE and OW staging scripts refuse any `.ocr-hub-ref` that is not an ancestor of hub `main`. A hermetic test (`ourSharedEvents/tests/integration/hub-pin-ancestry.test.js`) proves the refusal.
+  - **Design check.** `check-spoke-styles` runs blocking in OSE and OW with `--base-config`, so a PR cannot raise its own baseline or widen its scope. A shrunk count fails until the baseline is lowered. A `var()` fallback is exempt only behind a real `@ocr/ui` token.
+  - **Wiring meta-gates.** `ourSharedEvents/tests/integration/adr008-wiring.test.js` and `ourWKRP/tests/security/adr008-wiring.invariant.spec.ts` assert that every Worker-building job stages the pin first, that the design check exists and is blocking, and that the hub token is step-scoped.
+
+  **What the design check does not see:** `rgb()`/`hsl()`/named colours, CSS held in TS constants, `:root:not(...)` token layers, single-quoted `style=`, and font sizes. It is a ratchet on recorded debt, not a proof of zero.
+
+  **Incident.** On 2026-09-29, before the merged-only check existed, OSE staging served a Worker built from the unmerged hub commit `14f3ed71` for about 50 minutes (run 36532118358; stylesheet and tokens only).
+- **What the fork merge changed beyond a merge (recorded, not reverted).** Hub `9f36587` did more than merge the OSE fork:
+  - It re-added the React and Tailwind layers that OSE had deliberately removed (`./react`, `./tailwind`, optional peer dependencies). No spoke imports them.
+  - It moved vitest from `^4` to `^2`.
+  - It added `[hidden]{display:none!important}`.
+  - It restyled OSE's dark theme: accent blue-600 → blue-400, and `.btn-danger` text now uses `--on-accent`.
+
+  The styling changes are intended accessibility fixes covered by contrast tests. The React/Tailwind re-add and the vitest downgrade are open questions for the next hub change.
+- **Fork detection (Phase 0, superseded for `@ocr/ui` by deleting the copy).** Still owed for `@ocr/flags` and `@ocr/data-provider`, which remain vendored in OSE (9 files differ).
+- **Fork detection (original text).** A CI check comparing any vendored `packages/*` tree against the hub canonical at the declared version; divergence at an equal version fails the build. This is the gate whose absence produced the 24-file fork, and it is worth having *even if Phase 1 never happens*.
 - **Deployment isolation (Phase 1).** A test asserting each deploy job's `--config` resolves to exactly one worker, so a change under one product cannot deploy the other.
 - **The identity boundary is unchanged and must prove it.** `anonymous-id.invariant.spec.ts`, `tenant-isolation.invariant.spec.ts` and OSE's `architecture.spec.ts` two-database guard must pass, unmodified, on the consolidated tree. If consolidation requires editing an identity invariant, the migration is wrong and stops.
-- **CI-surface budget (the Phase 1 go/no-go).** Count workflow files, propagation commits per 30 days, and cross-repo secret usages before and after. Phase 1 merges only if all three fall. This is the founder's objection turned into an acceptance criterion.
+- **CI-surface budget (the Phase 1 go/no-go).** Count workflow files, propagation commits per 30 days, and cross-repo secret usages before and after. Phase 1 merges only if all three fall. This is the founder's objection turned into an acceptance criterion. The "before" is recorded in `docs/releases/OCR_REFERENCE_ciSurfaceBaseline.md` (first entry 2026-09-29).
 - **Standards single-source (Phase 2).** The brain-contract check reads one copy; a re-introduced `.ocr-standards` directory fails the deprecation-lock pattern (Invariant #10).
 
 ## Open questions
