@@ -14,7 +14,7 @@ Structure:
 Apps (in roster order):
   1. ocr-brain   — first, because it validates cross-app sync (governance pyramid).
   2. ose-staging — OSE Cloudflare Worker on stg.oursharedevents.com + test pyramid.
-  3. ose-prod    — OSE Cloudflare Worker on oursharedevents.com (probes only).
+  3. ose-prod    — OSE Cloudflare Worker on oursharedevents.com (probes only; OSE-1418).
 
 Usage:
   py dashboard.py                         # probe every app, regenerate index + detail pages
@@ -37,6 +37,7 @@ import subprocess
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -202,9 +203,12 @@ APPS = [
     },
     {
         "key": "ose-prod", "name": "OSE — Production", "abbr": "OSE prod",
-        "subtitle": "ourSharedEvents · Cloudflare Worker · oursharedevents.com (not yet deployed — staging first)",
+        # OSE-1418: probes on. The prod Worker is deployed (OSE-1353, 2026-09-22), so
+        # its routes are checked like staging's. No test suites or drift here:
+        # production deploys by tag, so it trails main by design.
+        "subtitle": "ourSharedEvents · Cloudflare Worker · oursharedevents.com (live probes; launch 2026-10-24)",
         "role": "downstream", "lane": "ose",
-        "base": PROD_BASE, "probes": False,
+        "base": PROD_BASE, "probes": True,
         "repo": OSE_REPO, "github": OSE_GITHUB,
         "suite_keys": [], "drift": False,
     },
@@ -399,10 +403,26 @@ def probe_all_endpoints(base: str) -> list[dict]:
     return out
 
 
+def access_login_host(location: str | None) -> str | None:
+    """Host named in a Cloudflare Access login redirect, e.g.
+    https://team.cloudflareaccess.com/cdn-cgi/access/login/oursharedevents.com?... -> oursharedevents.com"""
+    if not location:
+        return None
+    m = re.search(r"/cdn-cgi/access/login/([^/?#&]+)", location)
+    return m.group(1).lower() if m else None
+
+
 def status_class(probe: dict) -> tuple[str, str]:
     """Return (css_class, text_summary) for an endpoint probe."""
     if probe.get("error") or probe.get("status") is None:
         return "fail", f"ERR {probe.get('error','?')[:40]}"
+    # OSE-1418 / OSE-1353: a 302 into an Access login must be THIS host's Access
+    # app. The prod host answered by the staging app returns the "expected" 302
+    # too, so the status code alone would show green.
+    login_host = access_login_host(probe.get("redirect"))
+    probe_host = (urllib.parse.urlsplit(probe.get("url", "")).hostname or "").lower()
+    if login_host and probe_host and login_host != probe_host:
+        return "fail", f"{probe['status']} · wrong Access app ({login_host})"
     expected = probe.get("expected")
     status = probe["status"]
     if isinstance(expected, int):
