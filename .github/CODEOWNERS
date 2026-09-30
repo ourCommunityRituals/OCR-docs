@@ -1,1 +1,14 @@
 /ocr-docs-brain/ @bereasonable13
+
+# Governance artifacts: a human must review every change (2026-09-30, after
+# OCR-docs#140 rewrote ADR-008 and VISION §6.7 through a bypassed review).
+# Owner is the human reviewer account (same as ourSharedEvents' human gate,
+# ADR-020), not the automation identity that authors agent PRs — GitHub does
+# not count a PR author's own approval, so the owner must differ from it.
+# Takes effect when branch protection has "Require review from Code Owners".
+/docs/adr/            @mzdano
+/docs/OCR_VISION.md   @mzdano
+/docs/standards/      @mzdano
+/CLAUDE.md            @mzdano
+/SKILL.md             @mzdano
+/skills/              @mzdano
