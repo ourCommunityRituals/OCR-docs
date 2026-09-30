@@ -108,6 +108,13 @@ An ADR without a self-check hook is doctrine without teeth (ADR-003). The struct
   **What the design check does not see:** `rgb()`/`hsl()`/named colours, CSS held in TS constants, `:root:not(...)` token layers, single-quoted `style=`, and font sizes. It is a ratchet on recorded debt, not a proof of zero.
 
   **Incident.** On 2026-09-29, before the merged-only check existed, OSE staging served a Worker built from the unmerged hub commit `14f3ed71` for about 50 minutes (run 36532118358; stylesheet and tokens only).
+- **What the fork merge changed beyond a merge (recorded, not reverted).** Hub `9f36587` did more than merge the OSE fork:
+  - It re-added the React and Tailwind layers that OSE had deliberately removed (`./react`, `./tailwind`, optional peer dependencies). No spoke imports them.
+  - It moved vitest from `^4` to `^2`.
+  - It added `[hidden]{display:none!important}`.
+  - It restyled OSE's dark theme: accent blue-600 → blue-400, and `.btn-danger` text now uses `--on-accent`.
+
+  The styling changes are intended accessibility fixes covered by contrast tests. The React/Tailwind re-add and the vitest downgrade are open questions for the next hub change.
 - **Fork detection (Phase 0, superseded for `@ocr/ui` by deleting the copy).** Still owed for `@ocr/flags` and `@ocr/data-provider`, which remain vendored in OSE (9 files differ).
 - **Fork detection (original text).** A CI check comparing any vendored `packages/*` tree against the hub canonical at the declared version; divergence at an equal version fails the build. This is the gate whose absence produced the 24-file fork, and it is worth having *even if Phase 1 never happens*.
 - **Deployment isolation (Phase 1).** A test asserting each deploy job's `--config` resolves to exactly one worker, so a change under one product cannot deploy the other.
