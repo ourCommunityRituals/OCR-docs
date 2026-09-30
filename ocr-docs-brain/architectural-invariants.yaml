@@ -1577,8 +1577,11 @@ invariants:
       non-allowlisted origins. corsHeaders must return empty object for
       blocked origins. ALLOWED_ORIGINS must be a Set (not a boolean, regex,
       or open passthrough). All domains in the allowlist must match the
-      oursharedevents.com domain family. Six-case structural spec locked in
-      T0 Gate invariants shard.
+      oursharedevents.com domain family. The allowlist is per environment:
+      ALLOWED_ORIGINS holds production origins only, and the staging origin
+      (stg.oursharedevents.com) lives in STAGING_ONLY_ORIGINS, consulted only
+      when WORKER_ENV === 'staging' (OSE-1417). Seven-case structural spec
+      locked in T0 Gate invariants shard.
     applies_to:
       - ose
     protective_statement: >
@@ -1590,16 +1593,25 @@ invariants:
       silently opens the admin surface to every origin on the internet. The
       invariant ensures the allowlist stays explicit, Set-based, and
       OCR-domain-scoped so no future "just allow all origins during
-      development" shortcut can persist into a merge.
+      development" shortcut can persist into a merge. The same reasoning
+      applies between environments: staging runs looser admin fallbacks, so
+      a production Worker that trusted the staging origin would widen
+      production's attack surface for no benefit (OSE-1417).
     enforcement_statement: >
       L0 STRUCTURAL CODE-SHAPE LOCK — tests/e2e/0-architecture/
-      cors-allowlist.invariant.spec.ts (6 cases, T0 Gate invariants shard —
-      added 2026-07-26) asserts: cors.ts exists at canonical path;
+      cors-allowlist.invariant.spec.ts (7 cases, T0 Gate invariants shard —
+      added 2026-07-26; 7th case added 2026-09-30 by OSE-1417) asserts:
+      cors.ts exists at canonical path;
       no wildcard ('*') string literal appears in the file; ALLOWED_ORIGINS
       is declared as a Set and the allowlist is enforced via Set.has();
       corsOrigin exports and returns null on failure; corsHeaders exports
       and returns {} for blocked origins; every domain in ALLOWED_ORIGINS
-      is under the oursharedevents.com domain family.
+      is under the oursharedevents.com domain family; the staging origin is
+      absent from ALLOWED_ORIGINS and STAGING_ONLY_ORIGINS is consulted only
+      behind an isStaging() check that compares WORKER_ENV to 'staging'.
+      Runtime companion: workers/oursharedevents/tests/cors-env-allowlist.spec.ts
+      (9 cases, workers pool) drives route() under production, staging,
+      development and test envs.
       This is a single-layer enforcement for a single-file, single-function
       concern. The spec is structural (reads via node:fs), runs on every PR +
       push in the T0 invariants shard, and is classified as structural by the
@@ -1611,7 +1623,11 @@ invariants:
       cors_lib: workers/oursharedevents/src/lib/cors.ts
       structural_gate: >
         tests/e2e/0-architecture/cors-allowlist.invariant.spec.ts
-        (6 cases, T0 Gate invariants shard — added 2026-07-26)
+        (7 cases, T0 Gate invariants shard — added 2026-07-26; 7th case
+        2026-09-30, OSE-1417)
+      runtime_gate: >
+        workers/oursharedevents/tests/cors-env-allowlist.spec.ts
+        (9 cases, workers pool — OSE-1417)
       companion_invariant: >
         Invariant #9 tenant_isolation — admin-auth-boundary tests in
         tenant-isolation.invariant.spec.ts are the HTTP-layer complement;
@@ -4029,6 +4045,30 @@ enrichment_history:
       floor; promotes to live when the OA client-fork template carries it. 26/27
       reserved by in-flight proposals, so 28 per the naming spine.
       status_summary: partial 7 -> 8, total 25 -> 26, rich_form 24 -> 25.
+
+  - invariant_id: 15
+    invariant_name: cors_allowlist_immutability
+    from_state: >-
+      rich live (6-case structural spec; one static allowlist that included
+      the staging origin in every environment)
+    to_state: >-
+      rich live (7-case structural spec + 9-case runtime spec; allowlist is
+      per environment — staging origin only when WORKER_ENV === 'staging')
+    date: "2026-09-30"
+    pr_refs:
+      - "Linear OSE-1417 (blocks OSE-1251, the production launch gate)"
+      - "ourSharedEvents#698 — the code + both specs (must merge first)"
+      - "OCR-docs — this PR (brain enforces/protective/enforcement text + references)"
+    rationale: >
+      The 2026-09-29 staging-vs-production stock-take found cors.ts:11
+      hardcoding https://stg.oursharedevents.com in the one allowlist, so the
+      production Worker trusted the staging origin. OSE-1417 split it:
+      ALLOWED_ORIGINS (production) and STAGING_ONLY_ORIGINS (staging only).
+      The 7th structural case locks the staging origin out of the production
+      set; it was verified red against the pre-change cors.ts and green after.
+      Mirrors the WKRP pattern (ourWKRP src/lib/cors.ts adds its staging
+      origin only when WORKER_ENV === 'staging'). Status unchanged (live);
+      status_summary unchanged.
 
 status_summary:
   live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
