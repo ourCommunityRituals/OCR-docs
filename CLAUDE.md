@@ -80,6 +80,15 @@ Full spec: `skills/ccr-protocol.knowledge.md`.
 
 ---
 
+## Human review gate for governance artifacts
+
+ADRs (`docs/adr/`), `docs/OCR_VISION.md`, standards (`docs/standards/`), the brain (`ocr-docs-brain/`), skills, and every repo's `CLAUDE.md` are governance artifacts. A change to any of them needs a human's review before it merges. Green CI is not enough.
+
+- **Flag it.** Any PR that touches a governance artifact says so at the top of its description: "Needs human review: edits <file>". It lists the exact claims it adds or changes, so the reviewer can check each one against the evidence.
+- **Never propose a bypass.** Claude never recommends "bypass rules and merge", admin override, or making a required check or review pass automatically on a governance PR. If a required check cannot report, fix the check so it still waits on a person; do not remove the gate.
+- **Numbers are claims.** Any count or measurement written into a governance artifact carries its method (the command, or the file and line), so the reviewer can re-derive it.
+- **Enforcement.** `.github/CODEOWNERS` routes these paths to the human reviewer account. It binds once branch protection has "Require review from Code Owners" turned on, which is an owner setting.
+
 ## Knowledge homes & reconciliation
 
 Every truth has one home; reconciliation keeps the homes agreeing and promotes shared truths into the brain so every spoke inherits them.
