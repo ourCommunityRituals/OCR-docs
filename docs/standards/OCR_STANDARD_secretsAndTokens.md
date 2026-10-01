@@ -4,7 +4,7 @@
 > **Applies to:** every repo in the fleet, every CI workflow, every deployed Worker, and every person with a credential.
 > **Inventory and plan:** `docs/references/OCR_REFERENCE_secretsInventory_2026-10-01.md`.
 
-**This is a privacy requirement.** The platform promises never to know who you are. That promise only holds if nobody outside the intended path can change the code that keeps it, or read the stores behind it. Credential isolation is invariant **#29 `credential_isolation`** (Privacy & Identity, next to #1 Anonymous ID and #8 Bounded PII Retention). It is tested like them: blocking gates and red-team tests, born red (§10).
+**This is a privacy requirement.** The platform promises never to know who you are. That promise only holds if nobody outside the intended path can change the code that keeps it, or read the stores behind it. ADR-012 proposes credential isolation as a brain invariant, `credential_isolation`, in the Privacy & Identity group next to #1 Anonymous ID and #8 Bounded PII Retention. It is not yet in the registry; it lands with Phase 0 item 0.9. It is tested like them: blocking gates and red-team tests, born red (§10).
 
 One idea runs through this standard: **a secret belongs to one trust zone, lives as briefly as its job allows, and is written in one place (Doppler).** Everything below is a consequence of that.
 
@@ -226,7 +226,7 @@ The checker **extends OSE's existing #28 enforcement** (`scripts/check-pr-secret
 - production config allows a static admin path (`ALLOW_OCR_INTERNAL` or `ALLOW_ADMIN_KEY_FALLBACK` in `[env.production.vars]`);
 - an `expires` or `exception_until` date has passed (failure), or is within 14 days (warning).
 
-This is the static enforcement of invariant #29 and of #28 (its CI-surface half), with #28's `applies_to` extended to every repo.
+This is the static enforcement of the proposed `credential_isolation` invariant and of #28 (its CI-surface half), with #28's `applies_to` extended to every repo.
 
 ---
 
