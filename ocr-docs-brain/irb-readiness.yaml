@@ -60,8 +60,13 @@ anonymity_architecture:
 
   aggregate_only_reporting: >
     All external-facing reports (SharedReport for sponsors, public corridor data)
-    contain aggregate counts only. No individual-level records cross the boundary
-    between the scan database and any external surface. Minimum aggregation
+    contain aggregate counts only. CURRENT EXCEPTION, until ourSharedEvents
+    PR #737 (OSE-1460) merges: the nightly export to the platform's own
+    analytics store (OER, BigQuery) sends one pseudonymous row per browser
+    id and event: anon_id_hash, venue_id, first and last seen timestamps and
+    a visit count (lib/shared-report-export.ts on main). That export is
+    individual-level, not aggregate. After PR #737 it sends corridor counts
+    only, and no individual-level record leaves OSE. Minimum aggregation
     threshold: data is not reported for groups smaller than 5 distinct
     anonymous browser ids (CORRIDOR_MAP_MIN_COUNT). A browser id is not a
     person: one person can hold several (browsers, devices, cleared cookies)
@@ -89,8 +94,11 @@ re_identification_risk_assessment:
     and is not unique to the platform.
   mitigation: >
     Scans are bucketed by the hour (scan_bucket = YYYY-MM-DDTHH; PO decision
-    2026-10-01, which is what the code has always done). Reports and exports
-    show the hour or coarser. Each scan row also keeps a full-precision
+    2026-10-01, which is what the code has always done). Reports show the
+    hour or coarser. The OER export does the same only after ourSharedEvents
+    PR #737 merges; until then it carries per-row first and last seen
+    timestamps (see aggregate_only_reporting). Each scan row also keeps a
+    full-precision
     created_at in OSE's own D1 database. That value is not exposed on any
     external surface and is not exported outside OSE; it is visible to OSE
     operators with database access. The Cloudflare infrastructure
