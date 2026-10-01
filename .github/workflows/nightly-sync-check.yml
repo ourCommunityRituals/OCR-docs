@@ -224,8 +224,21 @@ jobs:
               --label "nightly-sync"
           fi
 
-      - name: All clear — log only
+      - name: All clear — close any stale issue
         if: steps.audit.outputs.failures == '0' && steps.audit.outputs.warnings == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "All repos in sync. No issue created."
+          echo "All repos in sync."
           cat /tmp/report.md
+
+          # Drift tracked by a prior run may have been resolved since (e.g. a
+          # spoke's standards PR got merged). If an open nightly-sync issue is
+          # still sitting there from that run, close it instead of leaving it
+          # open forever — the "All clear" path used to only log and never
+          # touch any existing issue, so a resolved warning could go stale
+          # indefinitely (see OCR-docs#114).
+          EXISTING=$(gh issue list --label "nightly-sync" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --comment "All clear as of $(date +%Y-%m-%d) — every repo is back in sync. Closing automatically."
+          fi
