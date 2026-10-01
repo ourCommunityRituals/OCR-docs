@@ -52,8 +52,8 @@ First-party `actions/*` references are on tags everywhere except the hub (18 of 
    - `step-security/harden-runner@v2` (OSE).
 8. **11 OSE Worker secrets are outside `scripts/set-secrets.sh`**, which provisions only 4 (`ADMIN_KEY`, `FORMS_ENCRYPTION_KEY`, `FORMS_HASH_PEPPER`, `SHARED_REPORT_SIGNING_SECRET`).
    - The 11 are the §2.3 names, other than those four and the `LINEAR_TEAM_ID` identifier. The `ADMIN_TOKEN` alias of `ADMIN_KEY` (`src/auth/admin.ts:211`) makes 12 names.
-   - Each is read by `workers/oursharedevents/src/` (grep for `env.<NAME>`). None of them has a rotation procedure.
-   - `SPONSOR_INVITE_SIGNING_SECRET`, `ADMIN_BRAND_MEMBERSHIP` and `ADMIN_TOKEN` are not listed in `wrangler.toml` at all. Rotating `FORMS_ENCRYPTION_KEY` is documented as destroying data (`docs/runbooks/RUNBOOK-SECRETS.md:106-107`).
+   - Each is read by `workers/oursharedevents/src/` (grep for `env.<NAME>`). None of them has a rotation procedure, except `ANON_ID_HASH_PEPPER` (epoch-versioned; purge runbook in OSE `docs/runbooks/RUNBOOK-DEPLOYMENT.md`, "after any ANON_ID_HASH_PEPPER rotation").
+   - `SPONSOR_INVITE_SIGNING_SECRET`, `ADMIN_BRAND_MEMBERSHIP` and `ADMIN_TOKEN` are not listed in `wrangler.toml` at all. `docs/runbooks/RUNBOOK-SECRETS.md:106-107` says rotating `FORMS_ENCRYPTION_KEY` destroys data. **That is stale:** `src/lib/pii.ts` already accepts a `{"v1","v2"}` key map, encrypts with the newest version, prefixes the ciphertext with it, and names a `reencrypt-pii.ts` path. `hashEmail` falls back to bare SHA-256 when `FORMS_HASH_PEPPER` is unset, but every write and erase path already passes `requirePepper: true`; only self-delete (`forms.ts:338`) does not, and with no pepper it silently matches nothing.
 9. **OW declares Last.fm credentials as empty `[vars]`** (`wrangler.toml:95-96,155-156`). Doppler cannot deliver them there, and `wrangler secret put` collides with the var name.
 10. **Hygiene:**
     - a URL stored as a secret (`STAGING_BASE_URL`);
@@ -61,7 +61,7 @@ First-party `actions/*` references are on tags everywhere except the hub (18 of 
     - `OSE_ADMIN_BEARER`, unset since May;
     - stale `ADMIN_KEY_ROOT` still marked required in `.github-secrets-required.json`;
     - dead GAS/Sheets names in `.github/workflow-archive/`;
-    - no repo has `.github/dependabot.yml`, although two docs say "bump via Dependabot".
+    - only ourSharedEvents has `.github/dependabot.yml` (including the `github-actions` ecosystem); the other repos have none, although their docs say "bump via Dependabot".
 
 ### Exposure record (opened 2026-10-01)
 
@@ -70,9 +70,9 @@ The findings above describe paths by which **real credential values** could be r
 | | |
 |---|---|
 | **What** | `OCR_PROPAGATE_TOKEN` (write-capable, every repo in the org). OSE `CLOUDFLARE_API_TOKEN_OSE` (deploy + D1 read/write, staging and production). OSE `ADMIN_KEY`, `X_OCR_INTERNAL`, `CF_ACCESS_CLIENT_ID/SECRET`. OW `DOPPLER_TOKEN_STG/PRD` and `ANTHROPIC_API_KEY` through tag-pinned actions. `ROBOT_PAT` through script injection |
-| **To whom** | Anyone who can push a branch to these repos (including agent sessions). Code that runs in those jobs: PR test code, dependencies installed from a PR lockfile, tag-pinned third-party actions. **Not** fork pull requests, which receive no secrets |
+| **To whom** | Anyone who can push a branch to these repos, including agent sessions, which act as the owner's own account. Code that runs in those jobs: PR test code, dependencies installed from a PR lockfile, tag-pinned third-party actions. **Not** fork pull requests, which receive no secrets |
 | **How long** | Not established. The persisted checkouts and repo-level secrets date back at least to the workflows' creation. The scheduled conformance runs show the PAT in use since at least 2026-08-30 |
-| **What was not exposed** | The keys that protect stored personal data (`FORMS_ENCRYPTION_KEY`, the hashing peppers, the signing secrets) exist only as Worker secrets, never in GitHub. A database read through the Cloudflare token would return ciphertext and hashes. Production held 0 events and has never had real users (CLAUDE.md §3 DevOps) |
+| **What was not stored in GitHub (corrected 2026-10-01 by the CCR, §C)** | The keys that protect stored personal data (`FORMS_ENCRYPTION_KEY`, the hashing peppers, the signing secrets) exist only as Worker secrets. **They were still reachable:** the Cloudflare token can edit Workers, so its holder could deploy code that reads them. A D1 read alone returns ciphertext and hashes, but the token is effectively key access. Production keys minted before the token is rotated and split count as exposed. **Production was deployed by CI on 2026-09-22** (run 35679613677, `workflow_dispatch` on `main`): its keys existed from then, and `smoke-production` sent the repo-level, staging-valued `ADMIN_KEY`, `X_OCR_INTERNAL` and `CF_ACCESS_*` to production. Production held 0 events on 2026-10-01 (D1 `ocr-db-production`, `SELECT COUNT(*) FROM events`, recorded in OSE `CLAUDE.md` §3 DevOps "Reconciled 2026-10-01"), so there is **no known consequence for user data**. Whether any credential was misused is **unknown** until the audit-log review (R10) closes. A 2026-09-17 dispatch (run 35281104788) deployed feature-branch commit `2058984` to staging; that commit is not on `main` |
 | **Evidence of misuse** | **Unknown.** The scans read code, not audit logs |
 | **Open actions (owner)** | 1. Rotate `OCR_PROPAGATE_TOKEN` and **delete** the old token (Phase 1.1). 2. Check whether the production Worker has `X_OCR_INTERNAL` set; delete it if so. 3. Review the GitHub org audit log and the Cloudflare account audit log for unrecognised pushes, branches, PRs, deploys or D1 queries. 4. Record the outcome here, dated. 5. Rotate the Cloudflare, admin and Access credentials as per-environment values (Phase 1.3-1.5) |
 
@@ -118,8 +118,8 @@ All move to "**written from Doppler `stg` / `prd` by the deploy job, listed in t
 | `ADMIN_KEY` / `ADMIN_TOKEN` | shared auth | current + previous overlap; off in production (§6) |
 | `X_OCR_INTERNAL` | shared auth | off in production |
 | `OSE_INTERNAL_BATCH_TOKEN`, `WKRP_SERVICE_TOKEN` | service auth | current + previous overlap; per-caller logging |
-| `FORMS_ENCRYPTION_KEY` | data key | keyring with a `v<n>:` ciphertext prefix and re-encrypt job (INFRA-4) |
-| `FORMS_HASH_PEPPER` | data key | versioned hashes (data-subject lookup tries every live version) |
+| `FORMS_ENCRYPTION_KEY` | data key | **keyring already exists** (`src/lib/pii.ts`): add the new version, re-encrypt, retire the old. Missing: a key-strength check and AAD binding ciphertext to its row |
+| `FORMS_HASH_PEPPER` | data key | versioned hashes (data-subject lookup tries every live version). Until then, compromise-only. Production must refuse to hash without it (write and erase paths already do; self-delete does not) |
 | `ANON_ID_HASH_PEPPER` | data key | already versioned: `pepper_epoch`, migration 0091 |
 | `IP_HASH_PEPPER` | data key | versioned hashes |
 | `SHARED_REPORT_SIGNING_SECRET`, `SPONSOR_INVITE_SIGNING_SECRET` | data key | `kid` in the signed token; verify against current + previous |
@@ -172,8 +172,8 @@ Credential isolation is part of the privacy promise, not an ops appendix. If som
 | # | Owner action | Paired red-team test |
 |---|---|---|
 | 1.1 | Rotate `OCR_PROPAGATE_TOKEN` now (treat as exposed), and **delete** the old one. Then take it out of PR jobs: hub packages to GitHub Packages, brain checks as trusted checks (Standard §4.1), the two GitHub Apps in environments `ci-read` / `automation`, and revoke the PAT | A reader token minted in a trusted job is used to push, open a PR, read an unlisted repo, and after expiry; all must fail |
-| 1.2 | Protect `main`: no bypass for admins or agents, required checks. Add a **tag ruleset** so only the owner can create release tags | A sandbox push of a `v*` tag by a non-owner identity is refused |
-| 1.3 | Environments: `staging` (tests), `staging-deploy`, `production`, each with a deployment branch rule (`main`; `production` also protected tags). Add required reviewers where the plan allows (decision 7) | A PR-triggered job that names each environment is refused before any step runs |
+| 1.2 | Protect `main`: no bypass for admins or agents, required checks. Add a **tag ruleset** so only the owner can create release tags | A sandbox push of a `v*` tag by a non-owner identity is refused, **and** a `v*` tag on an off-`main` commit carrying an edited workflow does not deploy (the production environment admits `main` only) |
+| 1.3 | Environments: `staging` (tests), `staging-deploy`, `production`, each with a deployment branch rule. Today `deploy-staging` runs on `refs/tags/v*` and `deploy-production` needs it (`oursharedevents-ci.yml:1001-1008`); the tag trigger is retired instead (tags are labels only, Standard prerequisites), and production is released by `workflow_dispatch` on `main`. `staging`, `staging-deploy` and `production` admit `main` only; a `full-pipeline/*` PR branch is Z0 and never enters them (decision 6). **Order:** add environment syncs → add `environment:` to the jobs (non-breaking) → main green → only then delete repo-level copies. The T2/T4 D1 seeding moves out of test jobs (or uses a D1-only staging token). Add required reviewers where the plan allows (decision 7) | A PR-triggered job that names each environment is refused before any step runs |
 | 1.4 | Cloudflare: per-environment deploy tokens (scoped to one Worker if available), each expiring; `CF_READ`; one Access service token per environment | Staging credentials against production, and the reverse; all must fail |
 | 1.5 | Doppler: `stg` → `staging`, `stg_deploy` → `staging-deploy`, `prd` → `production`; **separate configs for CI credentials and Worker runtime** so `wrangler secret bulk` never ships CI or deploy credentials into a Worker. Stop syncing to repository secrets, then delete the repository copies | A deployed Worker's secret list contains only the manifest's runtime names |
 | 1.6 | `OCR_CI_EDGE_TOKEN` (env `staging`) and its WAF rule | — |
@@ -200,11 +200,11 @@ Credential isolation is part of the privacy promise, not an ops appendix. If som
 ### Owner decisions needed
 
 1. **GitHub Apps vs fine-grained PATs** for cross-repo access. Recommendation: Apps.
-2. **Who approves production,** plus a backup. With one owner, the real wall is branch and tag rules; a self-approval is a click, not a review.
+2. **Who approves production,** plus a backup. GitHub never counts an author's own approval, and agents act as the owner's account, so a required review either blocks every PR or needs the bypass this plan forbids. Agents need their own identity first (CCR gate R16); until then the wall is branch rules enforced outside the deployed commit.
 3. **Production admin through Access only.** Recommendation: yes (0.7).
 4. **Doppler delivery pattern.** Recommendation: sync to environments, with separate CI and runtime configs.
 5. **Can `OCR-docs` and the hub be public?** If neither holds anything private, every cross-repo read credential leaves CI.
-6. **`full-pipeline/*` PR-time staging deploys.** They put staging deploy credentials within reach of PR code. Recommendation: retire them; deploy only from `main` (the post-merge chain already exists). Note that root `CLAUDE.md` §5's Done definition reads the post-merge chain.
+6. **`full-pipeline/*` PR-time staging deploys.** They put staging deploy credentials within reach of PR code. Recommendation: retire them; deploy only from `main` (the post-merge chain already exists). Keeping them with credentials is not an option under ADR-012 (PR code is Z0); the only alternative is a credential-free preview flow, designed as its own zone. Note that root `CLAUDE.md` §5's Done definition reads the post-merge chain.
 7. **GitHub plan and repo visibility.** Required reviewers on environments may need GitHub Enterprise for private repositories (reported by the 2026-10-01 review; not verifiable from this environment). The design does not depend on them, but confirm what the org's plan allows.
 
 ## 4. Scan scripts (reproducible)
