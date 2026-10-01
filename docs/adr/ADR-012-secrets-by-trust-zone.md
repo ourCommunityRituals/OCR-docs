@@ -13,8 +13,8 @@ The fleet's credentials grew one workflow at a time. The 2026-10-01 inventory
 - **One write-capable personal access token reaches every repo.** `OCR_PROPAGATE_TOKEN`
   is an org secret referenced by 33 workflow files across the fleet. One workflow, `propagate-standards`,
   needs it to write, so it can write everywhere.
-  - **18 checkouts leave it in `.git/config`, in 10 workflow files that a pull request can trigger, across 9 repos.**
-    Pull-request code or freshly installed dependencies run later in the same job:
+  - **18 checkouts persist it for later steps, in 10 workflow files that a pull request can trigger, across 8 repos.**
+    In two of them, pull-request code or a PR-lockfile install runs later in the same job (`gate-tests-sub`, `brain-location-audit`); the rest are exposed because the PR controls the workflow file:
     - `brain-contract-check.yml` in OSE, OW, OA, OSG, OSM, OSP and OSR;
     - `oursharedevents-ci.yml` (`gate-tests-sub`, lines 943-948);
     - `inv22-cross-repo-gate.yml` (OSE);
@@ -38,7 +38,7 @@ The fleet's credentials grew one workflow at a time. The 2026-10-01 inventory
   procedure for the data-protection keys. Rotating `FORMS_ENCRYPTION_KEY` today would make
   stored data unreadable.
 
-- **The supply chain can read secrets.** Of 119 `uses:` lines in ourSharedEvents, 117 are pinned by tag.
+- **The supply chain can read secrets.** Of 117 action references in ourSharedEvents, 115 are pinned by tag.
   ourWKRP runs `dopplerhq/cli-action@v3` and `claude-code-action@v1` on tags, with Doppler and
   Anthropic credentials in scope.
 
@@ -52,15 +52,19 @@ This ADR turns those point decisions into one fleet model.
 
 ## Decision
 
+**0. Credential isolation is a privacy guarantee.** The platform's promise is that it never knows who you are. That promise also depends on who can change the code that keeps it, and who can read the stores behind it. So credential isolation becomes brain invariant **#29 `credential_isolation`** in the Privacy & Identity group. It is tested the way #1 and #8 are: blocking gates and red-team tests that are born red, mutation-checked and wired into CI. It is a **launch gate** (OSE-1251) and part of the Done definition.
+
+**Prerequisites:** `main` is protected with no bypass (admins and agents included), and a tag ruleset limits who can create release tags. Every zone below relies on them.
+
 **1. Every secret belongs to exactly one trust zone, and a zone's secrets are only reachable from that zone.**
 The zones follow the CI/CD pipeline, which already separates tiers:
 
 | Zone | Who runs there | May hold |
 |---|---|---|
-| **Z0 Untrusted code** | Any job that runs pull-request code or freshly installed dependencies, on any trigger | Read-only, repo-scoped, ≤1 hour GitHub App tokens. Nothing that deploys, writes data, or authenticates as admin |
-| **Z1 Trusted CI** | Jobs that run only `main` code (push to `main`, schedule) and test against staging | Staging *test* credentials, from GitHub environment `staging` |
-| **Z2 Staging deploy** | The staging deploy job | Staging deploy and data credentials, from environment `staging` |
-| **Z3 Production deploy** | The production deploy and production smoke jobs | Production credentials, from environment `production` with a required human reviewer and a `main`/tag-only deployment rule |
+| **Z0 Untrusted code** | Any job whose workflow file or executed code comes from a pull request, including dependencies the pull request selects | **No long-lived secret.** `GITHUB_TOKEN` (read, plus `packages: read`), and by recorded exception a federated short-lived token. Cross-repo inputs come as packages or trusted checks |
+| **Z1 Trusted CI** | Jobs that run only `main` code (push to `main`, schedule; `workflow_run` only when its source run was not a pull request) | Staging *test* credentials from environment `staging`; the cross-repo reader App key from environment `ci-read` |
+| **Z2 Staging deploy** | The staging deploy job | Staging deploy and data credentials, from environment `staging-deploy`, kept apart from the test credentials |
+| **Z3 Production deploy** | The production deploy and production smoke jobs | Production credentials, from environment `production` with a `main`/protected-tag deployment rule (and a required reviewer where the plan allows) |
 | **Z4 Org automation** | Cross-repo writers (`propagate-standards`, the conformance refresh PR) | A GitHub App token with write on named repos only, minted per run. Never in a workflow a pull request can trigger |
 | **Z5 Runtime** | The deployed Workers | Worker secrets, a distinct value per environment, never stored in GitHub |
 | **Z6 People** | Operators | Doppler and Cloudflare accounts with SSO and two-factor. Personal tokens never enter CI |
@@ -73,24 +77,24 @@ The zones follow the CI/CD pipeline, which already separates tiers:
 
 - Keys that protect stored data are versioned and rotated with a dual-read window, never by a blind swap.
 
-**3. Doppler is the only writer.** Each product has one Doppler project with `dev`, `stg` and `prd` configs.
+**3. Doppler is the only writer.** Each product has one Doppler project:
 
-- `stg` syncs to GitHub environment `staging`, and `prd` to environment `production`, never to repository secrets.
-- Worker runtime secrets are written from the matching config by the environment-gated deploy job.
+- runtime configs `dev`, `stg` and `prd`;
+- CI and deploy configs `stg_ci`, `stg_deploy` and `prd_deploy`.
+
+How values leave Doppler:
+
+- CI and deploy configs sync to the matching GitHub environments, never to repository secrets.
+- Worker runtime secrets are written from the runtime config by the environment-gated deploy job. A CI or deploy credential therefore never lands in a Worker.
 - Org-level automation credentials live in a separate project, `ocr-platform`.
 - Setting a GitHub or Worker secret by hand is a drift event, as the OSE-349 doc already says.
 
-**4. The rules are checked, not remembered.**
+**4. Every fix is proved by an attack.**
 
-- Each repo keeps a secrets manifest: names, zone, owner, expiry. No values.
-- A fleet checker fails CI when:
-  - a workflow references a secret missing from the manifest;
-  - a zone-Z2-or-higher secret is reachable from a pull-request-triggered job;
-  - a token checkout persists credentials;
-  - a third-party action is not SHA-pinned;
-  - a workflow has no top-level `permissions:`.
-
-  This is the fleet-wide form of invariant #28.
+- **Static gates:** OSE's existing #28 enforcement (`check-pr-secret-exposure.mjs` and its allowlist) becomes a fleet-wide shared check. The allowlist grows into a per-repo manifest of names, zone, owner and expiry; no values. It fails CI on any rule in Standard §5.
+- **Red-team tests:** each fix ships paired with the red-team test that proves it. The test is born red against today's `main`, mutation-checked, and blocking.
+  - Static checks show the configuration looks right. The red-team tests show an attacker cannot actually reach a secret.
+  - The pairs, in order, are the inventory's Phase 0 and Phase 1 tables.
 
 The full rules are in `docs/standards/OCR_STANDARD_secretsAndTokens.md`.
 
@@ -116,8 +120,8 @@ today, because there the gate is the protection.
 
 ### Alternative C: Separate Cloudflare accounts for staging and production now
 
-The strongest staging/production wall. Cloudflare API tokens can be limited to an account or zone,
-but not to one Worker script or one D1 database.
+The strongest staging/production wall. Within one account, a token's reach depends on Cloudflare's resource scoping.
+Per-Worker scoping for account-owned tokens was reported announced on 2026-09-15 (2026-10-01 review); confirm it in the dashboard, and use it.
 
 **Deferred, not rejected:** it means moving DNS, D1, KV, R2 and Access apps. Separate per-environment
 tokens with expiry come first. A second account is a Phase 3 decision for the owner.
@@ -132,14 +136,15 @@ OIDC tokens covers the same ground at this size.
 
 ### Positive
 
-- A leaked pull-request token can read a few repos for up to an hour. It cannot push, deploy or reach production.
-- Production credentials require a person to approve each production job. The staging values cannot reach production.
+- A pull-request job holds nothing long-lived. What it can leak is its own `GITHUB_TOKEN`, valid for that job, plus any recorded exception (today: the review bots' Anthropic key, capped and dated). It cannot push elsewhere, deploy or reach production.
+- Production credentials are reachable only from `main` or a protected tag (plus a reviewer where the plan allows). The staging values cannot reach production.
 - Each automation run has its own identity (the App plus a run), so the audit log shows which run did what.
 - Drift ends: one writer (Doppler), read-only mirrors, and a manifest that fails CI when a workflow strays from it.
 
 ### Negative
 
-- Two GitHub Apps to create and own, and their private keys to protect. They are the new crown jewels.
+- Two GitHub Apps to create and own, and their private keys to protect. They are the new crown jewels, and they live only in environments that pull requests cannot enter.
+- The hub must publish `@ocr/ui` to GitHub Packages and the brain checks must become trusted `workflow_run` checks before the PAT can go. That is the larger part of Phase 1.
 - Production deploys wait for a reviewer. That is the point, but it is slower.
 - Data-protection keys need key-versioning code before they can be rotated safely.
 - More environment secrets to keep in sync. Doppler does the work, but someone must set the integration up once per environment.
@@ -152,7 +157,13 @@ OIDC tokens covers the same ground at this size.
 ## Implementation Notes
 
 - **Affected repos:** all 11 in the inventory. ourSharedEvents and ourWKRP carry most of the work.
-- **Brain invariant:** extend #28 `ci_approval_gate_secret_surface` to the fleet (`applies_to`), and add the manifest checker as its enforcement.
+- **Brain invariants:**
+  - new **#29 `credential_isolation`** (Privacy & Identity);
+  - #28 `ci_approval_gate_secret_surface` stays as its CI-surface half, with `applies_to` extended to the fleet.
+
+  This lands as Phase 0 item 0.9, in its own PR, after the brain's test levels run.
+
+- **Launch gate:** OSE-1251 GO/NO-GO requires the Phase 0 pairs green and the exposure record (inventory §1) closed.
 - **Standard:** `docs/standards/OCR_STANDARD_secretsAndTokens.md`.
 - **Inventory and phased plan:** `docs/references/OCR_REFERENCE_secretsInventory_2026-10-01.md`.
 - **Related:** ADR-005 (shared CI security bracket); ADR-006 (cost guardrails); ADR-008 rollout gate D1/F2/F6/F12; OSE ADR-020 (human approval on agent PRs); OSE-349 (Doppler as single writer); OW-116, OW-150, OW-153.
