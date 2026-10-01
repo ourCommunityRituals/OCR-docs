@@ -51,10 +51,11 @@ Append to `changelog:`:
       attendee already established by scanning ENTER at the door, requiring no
       second scan, and (b) a screen-rendered code, which unlike a poster can
       change — allowing a code to carry a unit id directly rather than inferring
-      one from a timestamp, which OSE's scan path forbids (qr-scan.ts: scans
-      are counted by the hour-granularity scan_bucket; the row's exact
-      created_at is stored, but it is read only for windowed counts and is
-      rounded to the hour before any report shows it; corrected 2026-10-01).
+      one from a timestamp, which OSE's scan path does not do (qr-scan.ts:
+      scans are counted by the hour-granularity scan_bucket. The row's exact
+      created_at is stored and today is read only for windowed counts and
+      rounded to the hour before any report shows it, but no guard stops
+      future code from reading it more finely; corrected 2026-10-01).
 
       Neither channel is print. LIVE is therefore not a core code. It remains a
       valid extension and returns when a consumer exists.
