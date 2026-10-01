@@ -32,10 +32,15 @@ data_collection_overview:
 
 anonymity_architecture:
   session_scope: >
-    The anonymous token exists only for the duration of the browser session.
-    Closing the browser destroys the token. The same person attending the same
-    event the following week receives a different token. There is no mechanism
-    to link tokens across sessions, devices, or time.
+    Corrected 2026-10-01 (reconciliation against ourSharedEvents code). The
+    anonymous token is a random id in a first-party cookie (ose_anon, HttpOnly,
+    Secure, SameSite=Lax, Max-Age one year: workers/oursharedevents/src/lib/
+    anonymous-id.ts). It is not a session token: the same browser returning
+    within a year keeps the same id. OSE uses it inside its own database to
+    count returns (a peppered hash per event, anon_id_returns) and never
+    resolves it to a person. It is not linked across devices or browsers.
+    Under OSE-1460 (ourSharedEvents PR #737, open on 2026-10-01) no id or id
+    hash leaves OSE: the OER export carries corridor counts only, floored at 5.
 
   two_database_separation: >
     Scan data (anonymous) and opt-in registration data (contains PII) are stored
@@ -53,7 +58,9 @@ anonymity_architecture:
     All external-facing reports (SharedReport for sponsors, public corridor data)
     contain aggregate counts only. No individual-level records cross the boundary
     between the scan database and any external surface. Minimum aggregation
-    threshold: data is not reported for groups smaller than 5 scans.
+    threshold: data is not reported for groups smaller than 5 people
+    (CORRIDOR_MAP_MIN_COUNT); nested counts are floored as a chain so that no
+    difference of two published counts names fewer than 5 (OSE-1460, PR #737).
 
   ci_enforcement: >
     Architectural Invariant #1 (Anonymous ID) is enforced by a CI gate that
@@ -71,9 +78,11 @@ re_identification_risk_assessment:
     record to a person. This risk exists for any observation in a public space
     and is not unique to the platform.
   mitigation: >
-    Scan timestamps are rounded to 15-minute windows in aggregate exports.
-    Individual scan-level timestamps are available only in the raw database,
-    which is not accessible to external parties. The Cloudflare infrastructure
+    Scans are bucketed by the hour (scan_bucket = YYYY-MM-DDTHH; PO decision
+    2026-10-01, which is what the code has always done). Reports and exports
+    show the hour or coarser. Each scan row also keeps a full-precision
+    created_at inside the raw database, which is not accessible to external
+    parties and never leaves the Worker. The Cloudflare infrastructure
     layer is being evaluated for additional de-identification measures
     (identified as a potential side-channel by the technical team).
 
