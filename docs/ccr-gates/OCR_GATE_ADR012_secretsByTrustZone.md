@@ -159,7 +159,7 @@ Every High below was re-checked live (`gh api`, `gh run view`) before admission.
 - **Standard §2:** peppers rotate on compromise only, until hashes are versioned (D5).
 - **Standard §3:** Doppler isolation uses **root environments or separate projects**, not branch configs (O4). `wrangler secret bulk` gets a data-key denylist (S5).
 - **Standard §5:** expiry is a scheduled warning issue, not a merge blocker (O5).
-- **Inventory §3 Phase 1:** the `staging` environment's branch rule must admit the release-tag path (O1). The rollout order and the D1-seeding move are added (O2, O3).
+- **Inventory §3 Phase 1:** ~~the `staging` environment's branch rule must admit the release-tag path (O1)~~ **superseded in Loop 3:** the tag trigger is retired instead, and every credential-bearing environment admits `main` only (tags are labels; N6). The rollout order and the D1-seeding move are added (O2, O3).
 - **Loop 3:** ADR-012 (rotation facts, pepper versioning, the reviewer control, agent identity as a prerequisite, production gated outside the deployed commit); Standard (agent identity prerequisite, Z1 dispatch enforced by the branch rule, Z3 released by dispatch on `main`, yearly rotation for encryption and signing keys but never peppers, §9 agent sessions marked "not true today"); inventory (ANON pepper runbook, `requirePepper` scope, dependabot, production deployed 2026-09-22, the 2026-09-17 feature-branch deploy, decision 2, step 1.2's attack).
 
 ## D. Risk register and score
