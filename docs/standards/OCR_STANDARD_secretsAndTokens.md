@@ -12,8 +12,8 @@ One idea runs through this standard: **a secret belongs to one trust zone, lives
 
 - **`main` is protected with no bypass,** for admins and agents alike. Required checks are on, and changes come only through reviewed pull requests. Every environment branch rule below means "code that reached `main`", so a bypass would undo all of them.
 - **Agents act under their own identity** (a bot account or GitHub App), separate from the human who approves. Today they do not: agent sessions commit, open PRs and dispatch workflows as the owner's account (`bereasonable13`), so no review or bypass rule can tell the two apart (CCR gate R16). Until R16 closes, "reviewed" and "no bypass for agents" are not true for this fleet.
-- **A tag ruleset** limits who can create release tags. `production` accepts tags.
-- **Plan check:** required reviewers on environments may need GitHub Enterprise for private repositories. The zones do not depend on reviewers: branch rules and protected `main`/tags are the wall, and reviewers are an extra layer where the plan allows.
+- **A tag ruleset** limits who can create release tags. Tags are **labels only**: no environment deploys on a tag push, because a tag runs the tagged commit's own workflow file. `production` admits `main` only.
+- **Plan check:** required reviewers on environments may need GitHub Enterprise for private repositories. The zones do not depend on reviewers: protected `main` and environment branch rules (enforced in repository settings, outside the deployed commit) are the wall, and reviewers are an extra layer where the plan allows.
 
 ---
 
