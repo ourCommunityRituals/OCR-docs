@@ -5,7 +5,7 @@
 **Deciders:** Matt (founder / PO)
 **Scope:** Fleet-wide (geography model for every product that tags, stores or exports place)
 **Supersedes:** None. Records as doctrine what was until now a migration comment (ourSharedEvents `migrations/0046_density_tables_drop_corridor_fk.sql`: "the H3 res7 cell string IS the corridor identifier") and closes two open decisions in ourSharedEvents `docs/features/QR-AND-SHORTLINKS.md` (#1 "surface determines resolution", #3 "where a digital click's res7 comes from").
-**Cross-refs:** ADR-010 (the hyperlocal map — corridor → venue → event_type → event as the shared key; this ADR fixes the grain of the corridor and venue levels); ADR-002 (identity-profile-keyed invariants — the anonymous boundary this protects); ADR-009 (composition plane — a "corridor" there is a route between hubs, a different concept, see Consequences); `OCR_VISION.md` NCR section (Node = res9, Corridor = res7); `ocr-docs-brain/corridor-definitions.yaml` (named corridors anchored on a res7 cell); `docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md` (export: corridor-level only)
+**Cross-refs:** ADR-010 (the hyperlocal map — corridor → venue → event_type → event as the shared key; this ADR fixes the grain of the corridor and venue levels); ADR-002 (identity-profile-keyed invariants — the anonymous boundary this protects); ourSharedEvents ADR-009 (`docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md`, NCR v2 — a "corridor" there is a connection between nodes, a different concept, see Consequences; not the fleet ADR-009, which is the composition plane and has no corridor concept); `OCR_VISION.md` NCR section (Node = res9, Corridor = res7); `ocr-docs-brain/corridor-definitions.yaml` (named corridors anchored on a res7 cell); `docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md` (export: corridor-level only)
 
 ---
 
@@ -24,7 +24,7 @@ whose key items were still marked "proposed" or "open". The documents also
 disagreed about what a corridor is. One says it is a single res7 cell (vision,
 migration 0046). One says it is a named area such as `blue_island`, anchored on a
 res7 cell with a bounding box (brain `corridor-definitions.yaml`). One says it is
-a route between hub nodes (ADR-009). A shortlink click had no written location
+a connection between nodes (ourSharedEvents ADR-009, NCR v2). A shortlink click had no written location
 source at all.
 
 QR Path to Done rung 5 (OSE-616: trace one scan from the poster to the BigQuery
@@ -47,7 +47,7 @@ records those rulings.
 
 1. **res9 is for physical places only**: a poster's placement and live QR scans
    at the venue during the event. Nothing else is ever tagged finer than res7.
-2. **The corridor is the res7 node.** The corridor id that crosses to BigQuery /
+2. **The corridor is the res7 cell.** The corridor id that crosses to BigQuery /
    OER is the res7 cell string. Named corridors (`blue_island`, the OSE-613
    registry) are labels over sets of res7 cells. They are added beside the
    res7 id when the registry exists. They do not replace it.
@@ -81,12 +81,13 @@ of the same rule.
   that straddle cells need the registry (OSE-613) to be reported as one place.
 - Scan aggregates today take the venue's cells for every scan. A pre-event scan
   at a poster elsewhere is aggregated at the venue node, not the poster's. That
-  conflicts with rule 1's intent and is tracked as a follow-up to OSE-616.
+  conflicts with rule 1's intent and is tracked in OSE-1459.
 
 ### Neutral / explicit
 
-- ADR-009's "corridor" (a route between hub nodes in the NCR hierarchy) is a
-  different concept with the same word. This ADR governs geographic
+- ourSharedEvents ADR-009's "corridor" (a connection between nodes in the
+  NCR v2 hierarchy, e.g. Chicago→Detroit via I-94) is a different concept with
+  the same word. This ADR governs geographic
   corridor ids only.
 - This ADR does not set export time grain (hourly in code; 15 minutes in
   ADR-001 / IRB YAML / CHOICE-INVARIANTS) or K-floors. That conflict is
@@ -116,7 +117,8 @@ of the same rule.
 ## Validation
 
 - `tests/scan-to-export-trace.spec.ts` (T0 `worker-d1-schema`):
-  - the poster/venue res9 = `89266454447ffff` and corridor res7 = `872664544ffffff` at every hop;
+  - the poster/venue res9 = `89266454447ffff` and corridor res7 = `872664544ffffff` at every hop
+    (one fixture where the poster and the venue share a cell — see the gap below);
   - a click resolves to its event at the venue res7;
   - export rows carry `corridor_id` = res7, and res9 appears nowhere in the payload;
   - a res9-keyed corridor row fails the export phase closed.
@@ -128,14 +130,23 @@ of the same rule.
 - `scripts/ci/trace-scan-staging.sh` (T4): a real staging scan of the Eagles
   test poster lands at res9/res7.
 
+**Not yet validated — rule 1 for a poster away from the venue.** The trace
+fixture puts the poster and the venue in the same res9 cell, so it cannot tell
+"the scan was placed at its poster" from "the scan was placed at the venue".
+Today's code does the second (see Negative / trade-offs), and the trace would
+pass either way. OSE-1459 changes the aggregation and adds a fixture whose
+poster and venue are in different res9 cells, asserting the poster's cell
+before aggregation and export. Until then, rule 1 is enforced for the scan
+row (it stores no place of its own) but not for the aggregate.
+
 ## Open questions
 
 - Corridor registry: permanent ids, versioned definitions,
   `definition_version` stamping. → OSE-613 / OSE-603.
 - Per-placement scan aggregation, so poster scans aggregate at the poster's
-  res9. → follow-up to OSE-616.
+  res9. → OSE-1459.
 - Export time grain and the `anon_id_hash` / `venue_id` boundary question. →
-  separate Linear stories (filed with OSE-616 slice 1).
+  OSE-1460.
 
 ## References
 
