@@ -39,7 +39,7 @@
   - extending the existing `check-pr-secret-exposure` guard rather than a new checker.
 - **The biggest single lever:** rotate the live token and close the production static-admin path. These are owner actions, about 30 minutes, and every lens names them first.
 - **Defer past launch:** the two GitHub Apps and the GitHub Packages migration (they rewrite build wiring three weeks before launch), keyrings for every key, harden-runner block mode, canaries, and manifest tooling in the five docs-only repos.
-- **Cut:** required reviewers as a precondition. ~~For one owner, a self-approval is a click~~ **(corrected in Loop 2):** GitHub never counts an author's own approval, so with one identity a required review either deadlocks every PR or forces the admin bypass the ADR forbids. The wall is branch and tag rules **plus a separate identity for agents** (R16).
+- **Cut:** required reviewers as a precondition. ~~For one owner, a self-approval is a click~~ **(corrected in Loop 2):** GitHub never counts an author's own approval, so with one identity a required review either deadlocks every PR or forces the admin bypass the ADR forbids. The wall is protected `main` and environment branch rules set in repository settings (tags are labels only and never authorize a deploy), **plus a separate identity for agents** (R16).
 
 ## B. Findings by lens (High first)
 
@@ -180,7 +180,7 @@ Every High below was re-checked live (`gh api`, `gh run view`) before admission.
 | R5 | Doc overclaims and drift | 2 |  | **reopened (Loop 3)** | #153 merged with the Loop 2 and Loop 3 corrections, and a re-read finds no statement the loops disproved | code | A |
 | R6 | Production data keys (S2, D1, D3, N2) | 3 | ● | open | Production keys minted after R25, from a production-gated step. Evidence: a new keyring version id or `pepper_epoch` fingerprint dated after the split, plus the Doppler activity-log date; staging/production fingerprints kept as manifest metadata (hash prefixes only), compared in a manifest check, not inside a Z3 job. Self-delete passes `requirePepper`; the bare SHA-256 fallback is removed in production | code + owner | A+B |
 | R7 | BigQuery principal shared across environments (D2) | 3 | ● | open | A distinct `sub` per environment, IAM bound per subject (verified in GCP), `bigquery.readonly` dropped, local dev off production's provider. An attack shows the staging token cannot write the production dataset | code + owner | A+B |
-| R8 | Rollout order and environment rules (O1, O2) | 3 |  | open | Runbook written. `staging` admits `main` (and `full-pipeline/*` only if decision 6 keeps it); `production` admits `main` only. Environment copies proven green before repo secrets are deleted. Each environment holds distinct values (fingerprint check) | code + owner | A+B |
+| R8 | Rollout order and environment rules (O1, O2) | 3 |  | open | Runbook written. `staging`, `staging-deploy` and `production` each admit `main` only: a `full-pipeline/*` PR branch is Z0 and never enters a credential-bearing environment. If decision 6 keeps PR-time previews, they run as a separate credential-free preview flow (no environment, no secrets), recorded as its own zone first. A PR-triggered job naming any of the three environments is refused. Environment copies proven green before repo secrets are deleted. Each environment holds distinct values (fingerprint check) | code + owner | A+B |
 | R9 | Test-pyramid gap (T1, T2, T4, T6) | 3 | ● | open | Offline dynamic PR tests; a nightly sandbox attack run with written pass criteria; attacks include a tag on an off-`main` commit carrying an edited workflow, a dispatch from a feature branch, and an agent-identity attack; born-red runs recorded; at least one attack run by an identity other than the agent that wrote the guard. **Needs the sandbox repo and R16** | code + sandbox | A+C |
 | R10 | Exposure record and audit-log limits (D6, N2, N3) | 3 | ● | open | **Time-critical:** GitHub and Cloudflare audit logs exported now. The record names runs 35679613677 (production deploy and smoke with staging-valued admin credentials) and 35281104788 (feature branch to staging). Unobservable reads recorded as "unknowable". Record closed, dated | owner | B |
 | R11 | Test jobs hold the deploy/D1 token (O3) | 3 | ● | open | D1 seeding moves into the `staging-deploy` job, or test jobs use a D1-only staging token. Guard `--report` shows no test job reaching a token that deploys production. **Needs R8 and R25** | code | A |
@@ -203,7 +203,7 @@ Every High below was re-checked live (`gh api`, `gh run view`) before admission.
 | R28 | Other long-lived Z0 secrets | 2 | ● | open | `LINEAR_API_KEY` (a personal key), `BRANCH_PROTECTION_READ_TOKEN` and `ANTHROPIC_API_KEY` each removed from PR jobs or recorded as a dated Z0 exception with a cap | code + owner | A+B |
 | R29 | Third-party actions on tags in secret-holding jobs | 2 | ● | open | `dorny/test-reporter`, `step-security/harden-runner`, OW `dopplerhq/cli-action` and OW `claude-code-action` pinned by SHA; a guard rule fails on a tag-pinned third-party action in a job that holds a secret | code | A |
 
-**Dependencies (Loop 3):** R4 ← R16, R26 · R26 ← R16 · R17 ← R16 · R9 ← sandbox repo, R16 · R15 ← R8, R16 · R8 ← R13, decision 6 · R6 ← R25, R12 · R11 ← R8, R25 · R2 ← R25 · R20 ← R6 · R14 ← manifest (Phase 2.1). **R16 is the root:** five holds cannot close until agents have their own identity.
+**Dependencies (Loop 3):** R4 ← R16, R26 · R26 ← R16 · R17 ← R16 · R9 ← sandbox repo, R16 · R15 ← R8, R16 · R8 ← R13 · R6 ← R25, R12 · R11 ← R8, R25 · R2 ← R25 · R20 ← R6 · R14 ← manifest (Phase 2.1). **R16 is the root:** five holds cannot close until agents have their own identity.
 
 **Loop 3 changes to the register:** R5 reopened; R12 and R23 marked security; R1, R2, R3, R4, R6, R7, R8, R9, R10, R11, R15, R16, R17, R18, R19 and R21 have corrected closing evidence; R25-R29 are new.
 
@@ -273,5 +273,5 @@ The *design* is not what is scoring low here. All four lenses kept the model; th
 ## F. Owner decisions that change the path
 
 - **Decision 5 (make OCR-docs and the hub public):** removes R1's read token entirely, and the Apps/Packages migration.
-- **Decision 6 (retire `full-pipeline/*` PR deploys):** simplifies R8.
+- **Decision 6 (`full-pipeline/*` PR deploys):** they cannot keep credentials under ADR-012, because PR code is Z0. The choice is retire them, or rebuild them as a credential-free preview flow (a separate zone, no secrets). Either way R8 admits `main` only.
 - **R13 (plan):** if the org is on Free, private-repo environments and rulesets are limited. Then the wall becomes repo visibility, or a plan upgrade, which is a cost decision under ADR-006.
