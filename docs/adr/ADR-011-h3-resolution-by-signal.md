@@ -1,6 +1,6 @@
 # ADR-011: H3 resolution by signal — res9 for physical places, res7 is the corridor
 
-**Status:** Proposed
+**Status:** Accepted (2026-10-01, PO). Implemented in ourSharedEvents #720 and #726; the poster-scan aggregation consequence is OSE-1459.
 **Date:** 2026-10-01
 **Deciders:** Matt (founder / PO)
 **Scope:** Fleet-wide (geography model for every product that tags, stores or exports place)
