@@ -184,17 +184,45 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Close any existing nightly sync issue
-          EXISTING=$(gh issue list --label "nightly-sync" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
-          if [ -n "$EXISTING" ]; then
-            gh issue close "$EXISTING" --comment "Superseded by new nightly run."
-          fi
+          TITLE="Nightly Sync: ${{ steps.audit.outputs.failures }} failure(s), ${{ steps.audit.outputs.warnings }} warning(s) — $(date +%Y-%m-%d)"
 
-          # Open new issue
-          gh issue create \
-            --title "Nightly Sync: ${{ steps.audit.outputs.failures }} failure(s), ${{ steps.audit.outputs.warnings }} warning(s) — $(date +%Y-%m-%d)" \
-            --body-file /tmp/report.md \
-            --label "nightly-sync"
+          # Find any existing open nightly-sync issue
+          EXISTING=$(gh issue list --label "nightly-sync" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+
+          # The per-repo "### :icon: repo" section headers are the signal
+          # that matters — they capture which repos are flagged and at what
+          # severity. Incidental fields (last-commit date, open-PR counts)
+          # are expected to shift run to run without the underlying drift
+          # changing, so they are deliberately excluded from this comparison.
+          NEW_SECTIONS=$(grep '^### ' /tmp/report.md || true)
+
+          if [ -n "$EXISTING" ]; then
+            EXISTING_BODY=$(gh issue view "$EXISTING" --json body --jq '.body' 2>/dev/null || echo "")
+            EXISTING_SECTIONS=$(echo "$EXISTING_BODY" | grep '^### ' || true)
+
+            if [ "$EXISTING_SECTIONS" = "$NEW_SECTIONS" ]; then
+              # Same repos flagged, same severity — this is still-unresolved
+              # drift (e.g. a standards PR still awaiting human review), not
+              # a new finding. Fold into the existing issue instead of
+              # closing it and opening a duplicate (never duplicate — fold
+              # into the owner; see CLAUDE.md knowledge-homes reconciliation).
+              gh issue edit "$EXISTING" --title "$TITLE" --body-file /tmp/report.md
+              gh issue comment "$EXISTING" --body "Still unresolved as of $(date +%Y-%m-%d) — same repos/status as the last run. Updated in place rather than opening a duplicate issue."
+            else
+              # The flagged repos or their severity actually changed — close
+              # the stale issue and open a fresh one for the new findings.
+              gh issue close "$EXISTING" --comment "Superseded by new nightly run — findings changed."
+              gh issue create \
+                --title "$TITLE" \
+                --body-file /tmp/report.md \
+                --label "nightly-sync"
+            fi
+          else
+            gh issue create \
+              --title "$TITLE" \
+              --body-file /tmp/report.md \
+              --label "nightly-sync"
+          fi
 
       - name: All clear — log only
         if: steps.audit.outputs.failures == '0' && steps.audit.outputs.warnings == '0'
