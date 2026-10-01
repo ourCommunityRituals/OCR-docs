@@ -131,12 +131,40 @@ def test_no_unconditional_close():
     return 'no unconditional close-then-create of the existing issue'
 
 
+# ─── 4. All-clear path closes any stale open issue (OCR-docs#114) ───────────
+
+def test_all_clear_closes_stale_issue():
+    """The regression this guards against: a run that goes back to all-clear
+    after a prior run opened/folded a `nightly-sync` issue used to only log
+    ("All clear — log only") and never touch that issue, so a resolved
+    warning (e.g. a spoke's standards PR finally merged) could stay open
+    forever instead of being closed once it was actually fixed."""
+    wf = load_workflow()
+    job = wf['jobs']['sync-check']
+    all_clear_steps = [
+        step for step in job['steps']
+        if "steps.audit.outputs.failures == '0' && steps.audit.outputs.warnings == '0'" in (step.get('if') or '')
+    ]
+    assert all_clear_steps, 'must have a step gated on failures==0 && warnings==0 (the all-clear path)'
+    text = '\n'.join(step.get('run', '') for step in all_clear_steps)
+    assert 'gh issue list' in text, (
+        'the all-clear path must look up any existing open nightly-sync issue')
+    assert '--label "nightly-sync"' in text and '--state open' in text, (
+        'the all-clear lookup must scope to --label "nightly-sync" --state open'
+    )
+    assert 'gh issue close' in text, (
+        'the all-clear path must close any existing open nightly-sync issue, '
+        'not just log — otherwise a resolved warning stays open forever')
+    return 'all-clear path closes any stale open nightly-sync issue instead of only logging'
+
+
 CONTRACTS = [
     ('lookup.existing_open_issue', test_checks_for_existing_open_issue),
     ('compare.report_sections', test_compares_report_sections_not_whole_body),
     ('fold_in.unchanged_edits_existing', test_unchanged_findings_fold_into_existing_issue),
     ('recreate.changed_closes_and_creates', test_changed_findings_close_and_recreate),
     ('regression.no_unconditional_close', test_no_unconditional_close),
+    ('all_clear.closes_stale_issue', test_all_clear_closes_stale_issue),
 ]
 
 for name, fn in CONTRACTS:
