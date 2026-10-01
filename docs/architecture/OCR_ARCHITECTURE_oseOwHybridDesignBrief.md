@@ -17,8 +17,10 @@ didn't explicitly choose to be named. Attendees get three choices at every event
 
 - **OurSharedEvents (OSE)** — the event engine and the **anonymous pole**. Events,
   QR scan ingestion, sponsors, posters, and the SharedReport. An attendee at an OSE
-  event is a headcount, never a name. Scans store hour-granularity only — no exact
-  timestamps, no IPs, hashed non-reversible agent fingerprints.
+  event is a headcount, never a name. Scans are counted by the hour (`scan_bucket`);
+  each row also stores an exact `created_at`, which is read only for windowed counts
+  and rounded to the hour before any report shows it. No IPs; hashed non-reversible
+  agent fingerprints. (Corrected 2026-10-01: this said "no exact timestamps".)
 - **ourWKRP (OW)** — the music/arts catalog and the **named pole**. Contributors,
   curators, DJs, and artists *choose* attribution: their name on what they bring is
   the product. Listeners inside OW remain counts.
@@ -64,8 +66,9 @@ Artist *type* is vocabulary (data, cheap to add). Attribution *shape* is schema
 Object-indexed is fully built (per-placement posters + scans + floored report).
 Session-indexed needs no new attribution code. Time-indexed awaits a
 `playback_events` table; its law is settled: **the code carries the unit id — a
-scan never resolves by timestamp** (the scan path stores hour-buckets only, by
-privacy invariant). "New song, new code" = rotating logical key on the Display
+scan never resolves by timestamp.** That is a design rule, not something the
+storage makes impossible: the scan row keeps an exact `created_at`, and no guard
+yet stops code from reading it finely (corrected 2026-10-01). "New song, new code" = rotating logical key on the Display
 screen; the wall poster never changes.
 
 ## 5. QR codes: UEC (Universal Event Code)

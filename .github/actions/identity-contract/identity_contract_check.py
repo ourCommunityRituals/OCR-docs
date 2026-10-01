@@ -240,8 +240,8 @@ def anonymous_checks(repo: Path, strict_no_named: bool):
     results.append(('A-5', INFO,
                      'PII encryption-at-rest - verify in code review / infra config'))
     results.append(('A-8', INFO,
-                     'scan timestamps must round to 15-minute windows - verify in '
-                     'the scan handler'))
+                     'scans must be bucketed no finer than the hour '
+                     '- verify in the scan handler'))
     return results
 
 
