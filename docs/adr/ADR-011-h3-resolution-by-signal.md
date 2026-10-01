@@ -1,6 +1,6 @@
 # ADR-011: H3 resolution by signal — res9 for physical places, res7 is the corridor
 
-**Status:** Proposed
+**Status:** Accepted — implementation in flight (accepted 2026-10-01, PO). Done in ourSharedEvents #720 and #726: the res7 corridor id, the export row guard and the scan → export trace. Still open: poster-cell scan aggregation (OSE-1459) and the Brain evidence updates listed under Implementation.
 **Date:** 2026-10-01
 **Deciders:** Matt (founder / PO)
 **Scope:** Fleet-wide (geography model for every product that tags, stores or exports place)

@@ -30,7 +30,7 @@ ADRs and Brain invariants are complementary, not redundant:
 | [ADR-008](ADR-008-consolidate-spoke-workers-into-hub-monorepo.md) | Consolidate the OSE and OW workers into the hub monorepo after the launch window — databases, workers and the identity boundary stay separate | Accepted | 2026-09-29 |
 | [ADR-009](ADR-009-hybrid-is-a-composition-plane.md) | The hybrid OSE+OW product is a composition plane (OurAirwaves + OurSharedMagnets), not a fused product — co-locate freely, never fuse invariant regimes | Proposed | 2026-09-09 |
 | [ADR-010](ADR-010-hyperlocal-correlation-and-voluntary-identity.md) | The hyperlocal map — cross-product correlation as a write-time shared-key contract (corridor→venue→event_type→event) under a voluntary-identity covenant; six base templates (worship/arts/sports/academic/volunteer/hobbyist) | Proposed | 2026-09-10 |
-| [ADR-011](ADR-011-h3-resolution-by-signal.md) | H3 resolution by signal — res9 only for physical places (poster placement, live venue scans); res7 is the corridor and the corridor id that crosses to BigQuery/OER; shortlink clicks resolve to their event at the venue res7; exports res7 or coarser, sub-corridor rows rejected | Proposed | 2026-10-01 |
+| [ADR-011](ADR-011-h3-resolution-by-signal.md) | H3 resolution by signal — res9 only for physical places (poster placement, live venue scans); res7 is the corridor and the corridor id that crosses to BigQuery/OER; shortlink clicks resolve to their event at the venue res7; exports res7 or coarser, sub-corridor rows rejected | Accepted — impl. in flight | 2026-10-01 |
 
 ADR series planned (fleet scope, not yet written — numbers are provisional and
 assigned at write time per the Numbering rule below):
