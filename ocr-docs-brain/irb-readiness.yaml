@@ -62,9 +62,12 @@ anonymity_architecture:
   aggregate_only_reporting: >
     All external-facing reports (SharedReport for sponsors, public corridor data)
     contain aggregate counts only. The OSE -> OER export is NOT ACTIVE: no row
-    has crossed (read 2026-10-01: the staging dataset oureventring_general_stg
-    holds no tables and the production dataset oureventring_general does not
-    exist; see OCR_ARCHITECTURE_oerAggregationBoundary.md sections 6.3 and 11).
+    has crossed (read 2026-10-01 by listing the GCP project named in
+    ourSharedEvents wrangler.toml GCP_PROJECT_ID: `bq ls --project_id=<id>`
+    returned oureventring_general_stg, oursharedevents_backup and
+    oursharedevents_backup_stg, so oureventring_general does not exist; and
+    `bq ls --project_id=<id> oureventring_general_stg` returned no tables. This
+    matches OCR_ARCHITECTURE_oerAggregationBoundary.md sections 6.3 and 11).
     But the export code on ourSharedEvents main is built to send, once a
     destination exists, one pseudonymous row per browser id and event:
     anon_id_hash, venue_id, first and last seen timestamps and a visit count
