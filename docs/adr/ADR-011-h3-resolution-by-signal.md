@@ -146,8 +146,9 @@ row (it stores no place of its own) but not for the aggregate.
   `definition_version` stamping. → OSE-613 / OSE-603.
 - Per-placement scan aggregation, so poster scans aggregate at the poster's
   res9. → OSE-1459.
-- Export time grain and the `anon_id_hash` / `venue_id` boundary question. →
-  OSE-1460.
+- ~~Export time grain and the `anon_id_hash` / `venue_id` boundary
+  question~~ → decided 2026-10-01 under OSE-1460 (see the notes above);
+  implementation in ourSharedEvents PR #737.
 
 ## References
 

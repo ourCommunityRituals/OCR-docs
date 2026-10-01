@@ -39,7 +39,7 @@ For products like OurSharedEvents where privacy is the architecture.
 | **A-5** Personal data is encrypted at rest | Even if someone breaches the database, they get scrambled data |
 | **A-6** A cleanup job runs on schedule | Expired data actually gets deleted, not just marked |
 | **A-7** The two databases never talk to each other | You can't join anonymous scans to personal registrations. Ever. |
-| **A-8** Scans are counted by the hour | Reports never show when within the hour someone scanned (the raw row keeps its exact time inside the platform; it never leaves) |
+| **A-8** Scans are counted by the hour | Reports never show when within the hour someone scanned (the raw row keeps its exact time inside the platform's own database; it is never shown or exported. This conflicts with OCR_STANDARD_d1Migration rule 6: known drift, awaiting a decision) |
 
 ### 2. Identity Contract — "You chose to be known"
 
