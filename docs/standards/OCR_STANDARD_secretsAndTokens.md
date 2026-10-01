@@ -11,6 +11,7 @@ One idea runs through this standard: **a secret belongs to one trust zone, lives
 ## Prerequisites (the zones rest on these)
 
 - **`main` is protected with no bypass,** for admins and agents alike. Required checks are on, and changes come only through reviewed pull requests. Every environment branch rule below means "code that reached `main`", so a bypass would undo all of them.
+- **Agents act under their own identity** (a bot account or GitHub App), separate from the human who approves. Today they do not: agent sessions commit, open PRs and dispatch workflows as the owner's account (`bereasonable13`), so no review or bypass rule can tell the two apart (CCR gate R16). Until R16 closes, "reviewed" and "no bypass for agents" are not true for this fleet.
 - **A tag ruleset** limits who can create release tags. `production` accepts tags.
 - **Plan check:** required reviewers on environments may need GitHub Enterprise for private repositories. The zones do not depend on reviewers: branch rules and protected `main`/tags are the wall, and reviewers are an extra layer where the plan allows.
 
@@ -23,9 +24,9 @@ A trust zone is a set of places where code of one trust level runs. A secret is 
 | Zone | Where | Trigger shape | May hold |
 |---|---|---|---|
 | **Z0 Untrusted code** | Any job whose workflow file or executed code comes from a pull request, including dependencies a pull request selects (its lockfile, its `.ocr-hub-ref`) | `pull_request`, `merge_group` | **No long-lived secret.** Only `GITHUB_TOKEN` (`contents: read`, plus `packages: read` for org packages) and, by exception, an OIDC token bound to a provider-side rule (§4.4). Cross-repo inputs arrive as packages or as trusted checks, not as credentials (§4.1) |
-| **Z1 Trusted CI** | Jobs that run only `main` code and test against **staging** | `push` to `main`, `schedule`, `workflow_dispatch` on `main`, and `workflow_run` only when the source run was not a `pull_request` | Staging **test** credentials (CF Access service token for CI, staging admin key), from environment `staging`; the reader App key from environment `ci-read` |
+| **Z1 Trusted CI** | Jobs that run only `main` code and test against **staging** | `push` to `main`, `schedule`, `workflow_dispatch` on `main` (**enforced by the environment's branch rule**: a dispatch can name any ref, and a 2026-09-17 dispatch deployed a feature branch to staging), and `workflow_run` only when the source run was not a `pull_request` | Staging **test** credentials (CF Access service token for CI, staging admin key), from environment `staging`; the reader App key from environment `ci-read` |
 | **Z2 Staging deploy** | The job that deploys to staging and migrates its databases | `push` to `main` | Staging deploy and data credentials, from environment `staging-deploy` (separate from Z1, so a test job never holds deploy or D1 credentials) |
-| **Z3 Production** | Production deploy, migration and smoke jobs | Tag or `main`, through environment `production` | Production credentials, from environment `production`, which has a **required reviewer** and a **deployment branch rule** (`main` and release tags only). A **tag ruleset** limits who can create release tags; otherwise anyone with write access could push a matching tag carrying an edited workflow |
+| **Z3 Production** | Production deploy, migration and smoke jobs | `workflow_dispatch` on `main`, through environment `production` (a release tag may label the commit; it does not trigger the deploy) | Production credentials, from environment `production`, which has a **deployment branch rule** (`main` only; production is released by a `workflow_dispatch` on `main`, because a tag push runs the tagged commit's own workflow file and can delete any in-file ancestry check) and a **required reviewer** once agents have their own identity. A **tag ruleset** limits who can create release tags; otherwise anyone with write access could push a matching tag carrying an edited workflow |
 | **Z4 Org automation** | Jobs that write to *other* repos (standards propagation, conformance refresh PR) | `push` to `main`, `schedule`, `workflow_dispatch`. **Never** in a workflow file that has a `pull_request` trigger | A GitHub App installation token with write on the named repos only, minted per run (§4.1) |
 | **Z5 Runtime** | Deployed Workers | — | Worker secrets, **a distinct value per environment**, written from Doppler by the Z2/Z3 deploy job. Never stored in GitHub |
 | **Z6 People** | Operators' machines and dashboards | — | Personal Doppler / Cloudflare / GitHub sessions with SSO and two-factor. Personal tokens never enter CI |
@@ -59,7 +60,7 @@ A job never moves a credential down a zone:
 | **Expiring API token** | Cloudflare API tokens, Cloudflare Access service tokens, Doppler service tokens | **≤90 days.** Set as an expiry when created; where the provider's shortest setting is longer, rotate at 90 days anyway | Created with an end date. The manifest records `expires` or `rotate_every: 90d` (§5). Renewed by the owner before it lapses |
 | **Non-expiring API key** | Anthropic API key, Linear API key, Google Maps key | Rotated **every 90 days** on a calendar | The provider cannot set an expiry. Each key also gets a **spend or rate cap** at the provider where one exists |
 | **Shared auth secret** | `ADMIN_KEY`, `X_OCR_INTERNAL`, `OSE_INTERNAL_BATCH_TOKEN`, `WKRP_SERVICE_TOKEN` | Rotated **every 90 days**, and **never accepted in production** once a federated path exists (§6) | Two-value overlap: the Worker accepts `current` and `previous` during the swap |
-| **Data-protection key** | `FORMS_ENCRYPTION_KEY`, `FORMS_HASH_PEPPER`, `ANON_ID_HASH_PEPPER`, `IP_HASH_PEPPER`, `SHARED_REPORT_SIGNING_SECRET`, `SPONSOR_INVITE_SIGNING_SECRET`, `WKRP_ENCRYPTION_KEY`, `WIF_PRIVATE_KEY_PEM` | **Versioned**, never blind-swapped. Rotated on compromise. Hash peppers rotate **only** on compromise (a pepper rotation resets every count built on it), and the export marks the epoch change | §2.1 |
+| **Data-protection key** | `FORMS_ENCRYPTION_KEY`, `FORMS_HASH_PEPPER`, `ANON_ID_HASH_PEPPER`, `IP_HASH_PEPPER`, `SHARED_REPORT_SIGNING_SECRET`, `SPONSOR_INVITE_SIGNING_SECRET`, `WKRP_ENCRYPTION_KEY`, `WIF_PRIVATE_KEY_PEM` | **Versioned**, never blind-swapped. Encryption keys and signing secrets rotate **yearly** once they have a keyring or `kid` (until then, on compromise only, per §2.1), and on any compromise. Hash peppers are the exception: they rotate **only** on compromise, because a rotation resets every count built on them; an epoch-versioned pepper (`ANON_ID_HASH_PEPPER`) starts a new epoch and the export counts the current epoch only | §2.1 |
 | **Root** | GitHub App private keys, the Doppler workplace owner, the Cloudflare account owner | Owner-held; App keys rotated **yearly**, and on any suspicion | Two-factor on a hardware key or passkey. Never in CI except the App private key in its zone's environment |
 
 ### 2.1 Data-protection keys need a keyring before they can rotate
@@ -267,7 +268,7 @@ Break-glass access (owner sets a value directly in GitHub or Cloudflare) is allo
 | Weekly | Expiry report from the manifests (what lapses in the next 30 days) |
 | Monthly | Review the Doppler activity log, the GitHub org audit log (App token use, secret changes) and Cloudflare token use |
 | Quarterly | Calendar rotations (§2); re-run the inventory; prune unused secrets and archived references |
-| Yearly | GitHub App private keys; data-protection keys that have a keyring |
+| Yearly | GitHub App private keys; encryption keys and signing secrets that have a keyring or `kid` (never hash peppers, which rotate on compromise only) |
 
 **Optional canaries:** a decoy, never-used credential in each zone (e.g. a Cloudflare token with no permissions). Any use of it is an alert, because nothing legitimate calls it.
 
@@ -278,7 +279,7 @@ Break-glass access (owner sets a value directly in GitHub or Cloudflare) is allo
 Agent-authored work (Copilot, Claude sessions, scheduled routines) is the fastest-growing source of PRs and API calls. So:
 
 - **Agent PRs are Z0** like any other PR, and the human approval gate (OSE ADR-020) stays.
-- An agent session never receives a credential above Z0. Deploys and production changes run through the environment-gated jobs, where a person approves.
+- **Target:** an agent session never receives a credential above Z0. Deploys and production changes run through the environment-gated jobs, where a person approves. **Not true today** (CCR gate R17): interactive and scheduled sessions carry connectors that can query and delete production D1, run BigQuery SQL, merge PRs and dispatch workflows, and they act as the owner's GitHub account (R16). Each session type gets a recorded connector list, read-only where possible, and no production-capable connector on an unattended routine.
 - **Every automated caller gets its own identity:** an App, an Access service token, or a per-caller service token. A burst of calls is then attributable and can be cut off without cutting off everyone.
 - Provider-side limits cap the damage of a runaway or hijacked automation:
   - Anthropic spend limits;

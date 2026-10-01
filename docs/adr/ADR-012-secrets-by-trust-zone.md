@@ -34,9 +34,10 @@ The fleet's credentials grew one workflow at a time. The 2026-10-01 inventory
   - the Linear personal key;
   - the Worker's signing secrets and peppers.
 
-  Rotation is written down for four ourSharedEvents secrets, at 90 days. There is no
-  procedure for the data-protection keys. Rotating `FORMS_ENCRYPTION_KEY` today would make
-  stored data unreadable.
+  Rotation is written down for four ourSharedEvents secrets, at 90 days. Of the data-protection keys,
+  only two can rotate safely today: `FORMS_ENCRYPTION_KEY` has a keyring with a re-encrypt path, and
+  `ANON_ID_HASH_PEPPER` is epoch-versioned with a purge runbook. The other peppers and the signing
+  secrets have no versioning, so rotating them loses data or breaks links.
 
 - **The supply chain can read secrets.** Of 117 action references in ourSharedEvents, 115 are pinned by tag.
   ourWKRP runs `dopplerhq/cli-action@v3` and `claude-code-action@v1` on tags, with Doppler and
@@ -45,8 +46,9 @@ The fleet's credentials grew one workflow at a time. The 2026-10-01 inventory
 - **Workflow inputs reach the shell.** `robot-knowledge/.github/workflows/robot-commit.yml:28-50`
   interpolates dispatch inputs straight into a shell script that holds `ROBOT_PAT`.
 
-Invariant #28 (`ci_approval_gate_secret_surface`) already chose the right control for one repo
-on 2026-09-26: environment secrets with required reviewers. It is `partial` and applies to OSE only.
+Invariant #28 (`ci_approval_gate_secret_surface`) chose environment secrets with required reviewers
+for one repo on 2026-09-26. It is `partial` and applies to OSE only. The required-reviewer half cannot
+work yet: agents act as the owner's account, and GitHub never counts an author's own approval (CCR gate, Loop 2).
 The ADR-008 rollout gate (D1) already requires splitting and rotating `OCR_PROPAGATE_TOKEN`.
 This ADR turns those point decisions into one fleet model.
 
@@ -54,7 +56,7 @@ This ADR turns those point decisions into one fleet model.
 
 **0. Credential isolation is a privacy guarantee.** The platform's promise is that it never knows who you are. That promise also depends on who can change the code that keeps it, and who can read the stores behind it. So credential isolation becomes brain invariant **#29 `credential_isolation`** in the Privacy & Identity group. It is tested the way #1 and #8 are: blocking gates and red-team tests that are born red, mutation-checked and wired into CI. It is a **launch gate** (OSE-1251) and part of the Done definition.
 
-**Prerequisites:** `main` is protected with no bypass (admins and agents included), and a tag ruleset limits who can create release tags. Every zone below relies on them.
+**Prerequisites:** `main` is protected with no bypass (admins and agents included), and a tag ruleset limits who can create release tags. Every zone below relies on them. **Agents act under their own identity** (a bot account or GitHub App), separate from the human who approves. Today they do not: agent sessions commit, open PRs and dispatch workflows as the owner's account (`bereasonable13`), so no review or bypass rule can tell the two apart (CCR gate R16).
 
 **1. Every secret belongs to exactly one trust zone, and a zone's secrets are only reachable from that zone.**
 The zones follow the CI/CD pipeline, which already separates tiers:
@@ -64,7 +66,7 @@ The zones follow the CI/CD pipeline, which already separates tiers:
 | **Z0 Untrusted code** | Any job whose workflow file or executed code comes from a pull request, including dependencies the pull request selects | **No long-lived secret.** `GITHUB_TOKEN` (read, plus `packages: read`), and by recorded exception a federated short-lived token. Cross-repo inputs come as packages or trusted checks |
 | **Z1 Trusted CI** | Jobs that run only `main` code (push to `main`, schedule; `workflow_run` only when its source run was not a pull request) | Staging *test* credentials from environment `staging`; the cross-repo reader App key from environment `ci-read` |
 | **Z2 Staging deploy** | The staging deploy job | Staging deploy and data credentials, from environment `staging-deploy`, kept apart from the test credentials |
-| **Z3 Production deploy** | The production deploy and production smoke jobs | Production credentials, from environment `production` with a `main`/protected-tag deployment rule (and a required reviewer where the plan allows) |
+| **Z3 Production deploy** | The production deploy and production smoke jobs | Production credentials, from environment `production` with a `main`-only deployment rule, enforced outside the deployed commit (and a required reviewer once agents have their own identity) |
 | **Z4 Org automation** | Cross-repo writers (`propagate-standards`, the conformance refresh PR) | A GitHub App token with write on named repos only, minted per run. Never in a workflow a pull request can trigger |
 | **Z5 Runtime** | The deployed Workers | Worker secrets, a distinct value per environment, never stored in GitHub |
 | **Z6 People** | Operators | Doppler and Cloudflare accounts with SSO and two-factor. Personal tokens never enter CI |
@@ -137,7 +139,7 @@ OIDC tokens covers the same ground at this size.
 ### Positive
 
 - A pull-request job holds nothing long-lived. What it can leak is its own `GITHUB_TOKEN`, valid for that job, plus any recorded exception (today: the review bots' Anthropic key, capped and dated). It cannot push elsewhere, deploy or reach production.
-- Production credentials are reachable only from `main` or a protected tag (plus a reviewer where the plan allows). The staging values cannot reach production.
+- Production credentials are reachable only from `main`, through a control the deployed commit cannot edit: an environment branch rule or a deployment protection rule. An ancestry check inside the workflow is not enough, because a tag push runs the tagged commit's own workflow file. The staging values cannot reach production.
 - Each automation run has its own identity (the App plus a run), so the audit log shows which run did what.
 - Drift ends: one writer (Doppler), read-only mirrors, and a manifest that fails CI when a workflow strays from it.
 
@@ -145,8 +147,8 @@ OIDC tokens covers the same ground at this size.
 
 - Two GitHub Apps to create and own, and their private keys to protect. They are the new crown jewels, and they live only in environments that pull requests cannot enter.
 - The hub must publish `@ocr/ui` to GitHub Packages and the brain checks must become trusted `workflow_run` checks before the PAT can go. That is the larger part of Phase 1.
-- Production deploys wait for a reviewer. That is the point, but it is slower.
-- Data-protection keys need versioning before they can be rotated safely. `FORMS_ENCRYPTION_KEY` already has a keyring (`ourSharedEvents/workers/oursharedevents/src/lib/pii.ts`); the hash peppers and signing secrets do not.
+- Production deploys wait for a reviewer once agents have their own identity. That is the point, but it is slower.
+- Data-protection keys need versioning before they can be rotated safely. `FORMS_ENCRYPTION_KEY` already has a keyring (`ourSharedEvents/workers/oursharedevents/src/lib/pii.ts`); `ANON_ID_HASH_PEPPER` is epoch-versioned (`pepper_epoch`); `FORMS_HASH_PEPPER`, `IP_HASH_PEPPER` and the signing secrets are not.
 - More environment secrets to keep in sync. Doppler does the work, but someone must set the integration up once per environment.
 
 ### Neutral
