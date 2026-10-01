@@ -89,12 +89,13 @@ of the same rule.
   NCR v2 hierarchy, e.g. Chicago→Detroit via I-94) is a different concept with
   the same word. This ADR governs geographic
   corridor ids only.
-- This ADR does not set export time grain (hourly in code; 15 minutes in
-  ADR-001 / IRB YAML / CHOICE-INVARIANTS) or K-floors. That conflict is
-  tracked separately.
+- This ADR does not set export time grain or K-floors. The grain is hourly:
+  the PO decided it on 2026-10-01 (OSE-1460), matching the code, and
+  CHOICE-INVARIANTS A-8 and the IRB YAML now say so.
 - It does not decide whether `anon_id_hash` and `venue_id` may cross the OER
-  boundary. The current export sends both, against
-  `OCR_ARCHITECTURE_oerAggregationBoundary.md`; tracked separately.
+  boundary. OSE-1460 (PO decision 2026-10-01) says they may not: the returns
+  export becomes corridor counts with neither field, in ourSharedEvents
+  PR #737 (open as of 2026-10-01).
 
 ---
 
@@ -145,8 +146,9 @@ row (it stores no place of its own) but not for the aggregate.
   `definition_version` stamping. → OSE-613 / OSE-603.
 - Per-placement scan aggregation, so poster scans aggregate at the poster's
   res9. → OSE-1459.
-- Export time grain and the `anon_id_hash` / `venue_id` boundary question. →
-  OSE-1460.
+- ~~Export time grain and the `anon_id_hash` / `venue_id` boundary
+  question~~ → decided 2026-10-01 under OSE-1460 (see the notes above);
+  implementation in ourSharedEvents PR #737.
 
 ## References
 

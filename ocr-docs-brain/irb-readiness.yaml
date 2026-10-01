@@ -10,7 +10,8 @@ platform_identity: "OurSharedEvents (OSE), operated by OurCommunityRituals LLC"
 data_collection_overview:
   what_is_collected: >
     Anonymous behavioral signals at community events. When an attendee scans
-    a QR code at an event, the platform records: a session-scoped anonymous token,
+    a QR code at an event, the platform records: an anonymous browser token
+    (a random id in a one-year first-party cookie; see session_scope),
     the event ID, the venue ID, the scan type (PRESENCE or BEHAVIORAL), and a
     timestamp. No name, email, phone number, IP address, device ID, or any other
     personally identifiable information is attached to the scan record.
@@ -18,8 +19,9 @@ data_collection_overview:
   how_it_is_collected: >
     QR codes are displayed at event venues (on posters, tabletops, or screens).
     Attendees voluntarily scan the QR code with their phone's camera. No app
-    installation is required. The scan opens a web page that sets a session-scoped
-    browser cookie (HttpOnly, Secure, SameSite=Lax) containing the anonymous token.
+    installation is required. The scan opens a web page that sets a first-party
+    browser cookie (HttpOnly, Secure, SameSite=Lax, Max-Age one year) containing
+    the anonymous token.
 
   what_is_NOT_collected:
     - "Name or any form of identity"
@@ -32,10 +34,17 @@ data_collection_overview:
 
 anonymity_architecture:
   session_scope: >
-    The anonymous token exists only for the duration of the browser session.
-    Closing the browser destroys the token. The same person attending the same
-    event the following week receives a different token. There is no mechanism
-    to link tokens across sessions, devices, or time.
+    Corrected 2026-10-01 (reconciliation against ourSharedEvents code). The
+    anonymous token is a random id in a first-party cookie (ose_anon, HttpOnly,
+    Secure, SameSite=Lax, Max-Age one year: workers/oursharedevents/src/lib/
+    anonymous-id.ts). It is not a session token: the same browser returning
+    within a year keeps the same id. OSE uses it inside its own database to
+    count returns (a peppered hash per event, anon_id_returns) and never
+    resolves it to a person. It is not linked across devices or browsers.
+    PENDING, not yet in force: under OSE-1460 (ourSharedEvents PR #737, open
+    on 2026-10-01) no id or id hash leaves OSE and the OER export carries
+    corridor counts only, floored at 5. Until that merges, the export
+    implementation on main still sends a per-row anon_id_hash and venue_id.
 
   two_database_separation: >
     Scan data (anonymous) and opt-in registration data (contains PII) are stored
@@ -53,7 +62,12 @@ anonymity_architecture:
     All external-facing reports (SharedReport for sponsors, public corridor data)
     contain aggregate counts only. No individual-level records cross the boundary
     between the scan database and any external surface. Minimum aggregation
-    threshold: data is not reported for groups smaller than 5 scans.
+    threshold: data is not reported for groups smaller than 5 distinct
+    anonymous browser ids (CORRIDOR_MAP_MIN_COUNT). A browser id is not a
+    person: one person can hold several (browsers, devices, cleared cookies)
+    and several people can share one. PENDING, not yet in force (OSE-1460,
+    ourSharedEvents PR #737): nested counts are floored as a chain so that no
+    difference of two published counts names fewer than 5.
 
   ci_enforcement: >
     Architectural Invariant #1 (Anonymous ID) is enforced by a CI gate that
@@ -61,19 +75,25 @@ anonymity_architecture:
     This is a code-level enforcement mechanism, not a policy document.
 
 re_identification_risk_assessment:
-  risk_level: low
+  risk_level: low  # NEEDS HUMAN RE-ASSESSMENT: the 2026-10-01 correction removed part of its basis
   rationale: >
-    The combination of session-scoped tokens, no cross-session linking, no device
-    identification, and no IP storage makes re-identification through the platform's
-    own data extremely difficult. The primary re-identification risk is external:
+    Corrected 2026-10-01: the earlier basis ("session-scoped tokens, no
+    cross-session linking") was false; the token is a one-year cookie that OSE
+    uses to count returns across events (see session_scope). What remains:
+    no device identification, no IP storage, no name or contact data in the
+    scan database, and no join to the opt-in registration database. Repeat
+    attendance by one browser is linkable inside OSE's own database. The primary re-identification risk is external:
     if an observer at an event notes who scanned a QR code and correlates that
     observation with a specific scan timestamp, they could potentially link a scan
     record to a person. This risk exists for any observation in a public space
     and is not unique to the platform.
   mitigation: >
-    Scan timestamps are rounded to 15-minute windows in aggregate exports.
-    Individual scan-level timestamps are available only in the raw database,
-    which is not accessible to external parties. The Cloudflare infrastructure
+    Scans are bucketed by the hour (scan_bucket = YYYY-MM-DDTHH; PO decision
+    2026-10-01, which is what the code has always done). Reports and exports
+    show the hour or coarser. Each scan row also keeps a full-precision
+    created_at in OSE's own D1 database. That value is not exposed on any
+    external surface and is not exported outside OSE; it is visible to OSE
+    operators with database access. The Cloudflare infrastructure
     layer is being evaluated for additional de-identification measures
     (identified as a potential side-channel by the technical team).
 
