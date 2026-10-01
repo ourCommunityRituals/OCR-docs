@@ -59,7 +59,7 @@ A job never moves a credential down a zone:
 | **Expiring API token** | Cloudflare API tokens, Cloudflare Access service tokens, Doppler service tokens | **≤90 days.** Set as an expiry when created; where the provider's shortest setting is longer, rotate at 90 days anyway | Created with an end date. The manifest records `expires` or `rotate_every: 90d` (§5). Renewed by the owner before it lapses |
 | **Non-expiring API key** | Anthropic API key, Linear API key, Google Maps key | Rotated **every 90 days** on a calendar | The provider cannot set an expiry. Each key also gets a **spend or rate cap** at the provider where one exists |
 | **Shared auth secret** | `ADMIN_KEY`, `X_OCR_INTERNAL`, `OSE_INTERNAL_BATCH_TOKEN`, `WKRP_SERVICE_TOKEN` | Rotated **every 90 days**, and **never accepted in production** once a federated path exists (§6) | Two-value overlap: the Worker accepts `current` and `previous` during the swap |
-| **Data-protection key** | `FORMS_ENCRYPTION_KEY`, `FORMS_HASH_PEPPER`, `ANON_ID_HASH_PEPPER`, `IP_HASH_PEPPER`, `SHARED_REPORT_SIGNING_SECRET`, `SPONSOR_INVITE_SIGNING_SECRET`, `WKRP_ENCRYPTION_KEY`, `WIF_PRIVATE_KEY_PEM` | **Versioned**, never blind-swapped. Rotated on compromise, or yearly | §2.1 |
+| **Data-protection key** | `FORMS_ENCRYPTION_KEY`, `FORMS_HASH_PEPPER`, `ANON_ID_HASH_PEPPER`, `IP_HASH_PEPPER`, `SHARED_REPORT_SIGNING_SECRET`, `SPONSOR_INVITE_SIGNING_SECRET`, `WKRP_ENCRYPTION_KEY`, `WIF_PRIVATE_KEY_PEM` | **Versioned**, never blind-swapped. Rotated on compromise. Hash peppers rotate **only** on compromise (a pepper rotation resets every count built on it), and the export marks the epoch change | §2.1 |
 | **Root** | GitHub App private keys, the Doppler workplace owner, the Cloudflare account owner | Owner-held; App keys rotated **yearly**, and on any suspicion | Two-factor on a hardware key or passkey. Never in CI except the App private key in its zone's environment |
 
 ### 2.1 Data-protection keys need a keyring before they can rotate
@@ -99,7 +99,7 @@ The manifest names, per secret, everything that holds it, so the blast radius is
 
 | Doppler project | Configs | Holds |
 |---|---|---|
-| `oursharedevents`, `ourwkrp` (one per deployed product) | Runtime: `dev`, `stg`, `prd`. Branch configs: `stg_ci`, `stg_deploy`, `prd_deploy` | Runtime configs hold **only** Worker runtime secrets. `stg_ci` holds staging test credentials (→ environment `staging`); `stg_deploy` / `prd_deploy` hold deploy credentials and production smoke credentials (→ `staging-deploy` / `production`). Kept apart so `wrangler secret bulk` from a runtime config can never ship a CI or deploy credential into a Worker |
+| `oursharedevents`, `ourwkrp` (one per deployed product) | Runtime: `dev`, `stg`, `prd`. CI and deploy: **separate root environments** (`stg_ci`, `stg_deploy`, `prd_deploy`), not branch configs. A branch config may inherit its root's secrets and would carry runtime data keys into CI; verify with a throwaway secret before use | Runtime configs hold **only** Worker runtime secrets. `stg_ci` holds staging test credentials (→ environment `staging`); `stg_deploy` / `prd_deploy` hold deploy credentials and production smoke credentials (→ `staging-deploy` / `production`). Kept apart so `wrangler secret bulk` from a runtime config can never ship a CI or deploy credential into a Worker |
 | `ocr-platform` | `ci`, `automation` | Org-level: GitHub App IDs and private keys (`ci` = reader App, `automation` = writer App), fleet Linear key |
 | `dev_personal` (per person) | `dev` | Local-only conveniences. **Never a value that also exists in `stg` or `prd`** |
 
@@ -114,6 +114,7 @@ The manifest names, per secret, everything that holds it, so the blast radius is
   `doppler secrets download --no-file --format json | npx wrangler secret bulk --env <env>`.
   - This uses a per-config, read-only Doppler service token for the **runtime** config, held as the deploy environment's secret.
   - The deploy job drops Doppler's own `DOPPLER_*` metadata keys before upload, and uploads only names the manifest lists as runtime secrets.
+  - **Data-protection keys are never bulk-written.** They are on a denylist for `wrangler secret bulk` and are set once, deliberately, by a production-gated step, because a wrong value silently breaks stored data.
   - The deploy job then checks that every secret the manifest requires exists for that environment.
 - **To people:** `doppler run` locally against `dev` only. Reading `stg` or `prd` needs Doppler access granted to that person for that config.
 - **By hand:** `gh secret set` and `wrangler secret put` for a Doppler-managed name are drift. The only exception is break-glass (§7), which is followed by reconciling Doppler.
@@ -224,7 +225,9 @@ The checker **extends OSE's existing #28 enforcement** (`scripts/check-pr-secret
 - a third-party `uses:` is not SHA-pinned;
 - a workflow lacks top-level `permissions:`;
 - production config allows a static admin path (`ALLOW_OCR_INTERNAL` or `ALLOW_ADMIN_KEY_FALLBACK` in `[env.production.vars]`);
-- an `expires` or `exception_until` date has passed (failure), or is within 14 days (warning).
+- an `exception_until` date has passed (failure).
+
+Token **expiry** is not a merge blocker. A blocker would also block the PR that fixes a lapsed token. Instead, a scheduled job opens an issue 21 days and 3 days before each `expires` date, and a lapsed token fails its own job loudly.
 
 This is the static enforcement of the proposed `credential_isolation` invariant and of #28 (its CI-surface half), with #28's `applies_to` extended to every repo.
 

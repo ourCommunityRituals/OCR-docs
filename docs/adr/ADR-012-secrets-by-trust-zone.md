@@ -80,7 +80,7 @@ The zones follow the CI/CD pipeline, which already separates tiers:
 **3. Doppler is the only writer.** Each product has one Doppler project:
 
 - runtime configs `dev`, `stg` and `prd`;
-- CI and deploy configs `stg_ci`, `stg_deploy` and `prd_deploy`.
+- CI and deploy configs `stg_ci`, `stg_deploy` and `prd_deploy`, as separate root environments (not branch configs, which may inherit runtime keys).
 
 How values leave Doppler:
 
@@ -146,7 +146,7 @@ OIDC tokens covers the same ground at this size.
 - Two GitHub Apps to create and own, and their private keys to protect. They are the new crown jewels, and they live only in environments that pull requests cannot enter.
 - The hub must publish `@ocr/ui` to GitHub Packages and the brain checks must become trusted `workflow_run` checks before the PAT can go. That is the larger part of Phase 1.
 - Production deploys wait for a reviewer. That is the point, but it is slower.
-- Data-protection keys need key-versioning code before they can be rotated safely.
+- Data-protection keys need versioning before they can be rotated safely. `FORMS_ENCRYPTION_KEY` already has a keyring (`ourSharedEvents/workers/oursharedevents/src/lib/pii.ts`); the hash peppers and signing secrets do not.
 - More environment secrets to keep in sync. Doppler does the work, but someone must set the integration up once per environment.
 
 ### Neutral
