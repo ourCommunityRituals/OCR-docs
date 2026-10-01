@@ -43,8 +43,9 @@ anonymity_architecture:
     resolves it to a person. It is not linked across devices or browsers.
     PENDING, not yet in force: under OSE-1460 (ourSharedEvents PR #737, open
     on 2026-10-01) no id or id hash leaves OSE and the OER export carries
-    corridor counts only, floored at 5. Until that merges, the export
-    implementation on main still sends a per-row anon_id_hash and venue_id.
+    corridor counts only, floored at 5. Until that merges, the export code on
+    main is built to send a per-row anon_id_hash and venue_id; it is not
+    active and has sent nothing (see aggregate_only_reporting).
 
   two_database_separation: >
     Scan data (anonymous) and opt-in registration data (contains PII) are stored
@@ -60,8 +61,20 @@ anonymity_architecture:
 
   aggregate_only_reporting: >
     All external-facing reports (SharedReport for sponsors, public corridor data)
-    contain aggregate counts only. No individual-level records cross the boundary
-    between the scan database and any external surface. Minimum aggregation
+    contain aggregate counts only. The OSE -> OER export is NOT ACTIVE: no row
+    has crossed (read 2026-10-01 by listing the GCP project named in
+    ourSharedEvents wrangler.toml GCP_PROJECT_ID: `bq ls --project_id=<id>`
+    returned oureventring_general_stg, oursharedevents_backup and
+    oursharedevents_backup_stg, so oureventring_general does not exist; and
+    `bq ls --project_id=<id> oureventring_general_stg` returned no tables. This
+    matches OCR_ARCHITECTURE_oerAggregationBoundary.md sections 6.3 and 11).
+    But the export code on ourSharedEvents main is built to send, once a
+    destination exists, one pseudonymous row per browser id and event:
+    anon_id_hash, venue_id, first and last seen timestamps and a visit count
+    (lib/shared-report-export.ts). That shape is individual-level. Under
+    ourSharedEvents PR #737 (OSE-1460, open on 2026-10-01) it becomes corridor
+    counts only, so that no individual-level record would leave OSE when
+    emission is activated. Minimum aggregation
     threshold: data is not reported for groups smaller than 5 distinct
     anonymous browser ids (CORRIDOR_MAP_MIN_COUNT). A browser id is not a
     person: one person can hold several (browsers, devices, cleared cookies)
@@ -89,8 +102,12 @@ re_identification_risk_assessment:
     and is not unique to the platform.
   mitigation: >
     Scans are bucketed by the hour (scan_bucket = YYYY-MM-DDTHH; PO decision
-    2026-10-01, which is what the code has always done). Reports and exports
-    show the hour or coarser. Each scan row also keeps a full-precision
+    2026-10-01, which is what the code has always done). Reports show the
+    hour or coarser. The OER export is not active (see
+    aggregate_only_reporting); as built on main it would carry per-row first
+    and last seen timestamps, and only after ourSharedEvents PR #737 would it
+    carry nothing finer than counts over a 90-day window. Each scan row also keeps a
+    full-precision
     created_at in OSE's own D1 database. That value is not exposed on any
     external surface and is not exported outside OSE; it is visible to OSE
     operators with database access. The Cloudflare infrastructure
