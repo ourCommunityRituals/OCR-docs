@@ -391,6 +391,8 @@ Ranked by how much each unblocks. Each comes with a recommended default.
 
 ### E.4 The phases
 
+**Promotion rule (PO, 2026-10-02): production is never fixed in place.** Every code, migration, config and data change lands on `main`, is proven on staging, and reaches production only by promoting that same SHA through `deploy-production`. Production-specific values live in `[env.production]` and its secrets; they are the only thing that differs. Production is 15 migrations behind `main` (77 of 92, read 2026-10-02). It catches up through the pipeline, never by running `d1 migrations apply` by hand as was done on 2026-09-21. There are two exceptions, both containment, and each is recorded in the exposure record: deleting or revoking a credential that is already exposed, and revoking sessions.
+
 Each phase lists its work in four lanes: invariant gates (**INV**), code (**CODE**), pipeline (**CI**) and tests by pyramid level (**PYR**, using L1 Security, L2 Lint, L3 Contract, L4 Unit, L5 Integration, L6 API/Bruno, L7 E2E/Playwright). Linear ids are in brackets.
 
 #### Phase 0 — Owner, today, about 2 hours. Order matters.
@@ -407,7 +409,7 @@ Each phase lists its work in four lanes: invariant gates (**INV**), code (**CODE
 
    Revoke the exposed old values immediately; never keep one alive to keep a job running. New names come in Phase 5, because changing names now would turn every PR red (OSE-1467).
 6. Set `OCR_CI_EDGE_TOKEN` and its WAF skip rule (OSE-1490). Evidence is a green T4 run on `main`, not just the secret being set (N-QA-2).
-7. 2FA on every account, recovery codes escrowed offline, and one break-glass account each on GitHub, Cloudflare and Doppler (R24, OSE-1478). Insert the production `ose-platform` membership row (N-BE-5, OSE-1415).
+7. 2FA on every account, recovery codes escrowed offline, and one break-glass account each on GitHub, Cloudflare and Doppler (R24, OSE-1478). The founder's `ose-platform` membership row is **not** inserted by hand: it ships as a checked-in, idempotent seed that runs on staging first and then reaches production through the pipeline (N-BE-5, OSE-1415, OSE-837).
 8. Write down the admin browser policy: a dedicated profile with no extensions (OSE-1474).
 
 Secret values are never typed into chat or a ticket. Use `printf %s "$V" | wrangler secret put …` and the hidden prompt of `gh secret set`.
