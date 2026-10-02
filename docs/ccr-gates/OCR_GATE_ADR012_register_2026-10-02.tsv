@@ -1,6 +1,6 @@
 id	weight	security	dimension	phase	title
 R1	3	sec	OPS	P5	write PAT live
-R2	3	sec	CODE	P1	prod static admin path
+R2	3	sec	CODE	P5	prod static admin path
 R3	3	sec	CICD	P5	persisted checkouts fleet
 R4	3	sec	CICD	P5	gate anti-weakening meta-gate
 R5	2	-	CODE	P1	doc overclaims/drift
@@ -17,7 +17,7 @@ R15	3	sec	CICD	P5	tags/dispatch deploy unmerged code
 R16	3	sec	OPS	P4	agent identity
 R17	3	sec	OPS	P4	agent connectors
 R18	3	sec	CICD	P5	self-hosted runners PR code
-R19	2	sec	PYR	P1	creds in CI artifacts
+R19	2	sec	PYR	P5	creds in CI artifacts
 R20	2	sec	CODE	P6	Z5 secrets distinct/kid
 R21	2	sec	CICD	P5	LLM workflow gating
 R22	3	sec	CICD	P1	robot-knowledge injection

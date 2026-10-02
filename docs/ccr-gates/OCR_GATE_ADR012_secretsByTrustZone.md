@@ -328,6 +328,12 @@ Closed with evidence: S1, S2, S14 and S15 (12). R5 was reopened.
 | 5 | 14/176 = 8.0% | flat; weight grew, credit did not |
 | 6 | **12/184 = 6.5%** | **decay**: R5 reopened |
 
+**Production state, read live on 2026-10-02 (Cloudflare connector, read-only queries approved by the owner):**
+- `ocr-db-production`: 77 of 92 migrations applied (latest `0077_node_hierarchy_disambiguate_legal_clearance_tier.sql`), 0 events, 1 admin membership (`root:brand_owner`), **no `ose-platform` row** (N-BE-5 confirmed).
+- `ocr-forms-db-production`: 14 of 15 migrations applied (missing `0015_checkin_walk_in_count.sql`), 0 registrations, 0 email signups.
+- The Worker `oursharedevents-prod` exists. Its secret names could not be read through the connector, so R2's "absent" evidence still needs `wrangler secret list --env production`.
+- No attendee data exists in production, so the Phase 2b migration and the Phase 6 key mint cost nothing there today.
+
 **Vetoes:**
 - **DevOps:** no production launch while R15 or R25 is open.
 - **Data Science:** no public "anonymous by construction" claim, and no production scans or registrations, until N-DS-1 and N-DS-2 close and the production keys are regenerated after the token split.
@@ -343,7 +349,7 @@ Closed with evidence: S1, S2, S14 and S15 (12). R5 was reopened.
 | **Invariants** | The product's privacy and tenancy properties hold by construction, enforced by `tests/e2e/0-architecture/*.invariant.spec.ts` in the T0 `invariants` shard | Every invariant item in the register is closed, and each has a gate that was seen to fail (born red) before the fix |
 | **Code** | Worker, OW and workflow code changes | Every code item is closed, with a born-red test at the right pyramid level |
 | **CI/CD pipeline** | Walls between trust zones, release path, fail-closed checks, alerting | Every CI/CD item is closed. The meta-gate (R4) proves no wall can be removed silently |
-| **Test pyramid** | All 7 levels run on every merge and can fail | Levels 1–7 are green on one `main` SHA (T0–T4 plus T5 red-team). No security step uses `continue-on-error`. Every new control has a recorded red run. A sandbox attack run (R9) is performed by an identity other than the guard's author |
+| **Test pyramid** | Two cadences. **Per merge to `main`:** levels 1–7 run and can fail (T0 gates and unit, T1 deploy, T2 Bruno, T3/T4 Playwright, then T5 red-team on the same SHA). **Nightly:** the sandbox attack suite (R9) runs the attacks that need a separate repo with test-only secrets | Per merge: levels 1–7 and T5 green on one `main` SHA, no security step uses `continue-on-error`, and every new control has a recorded red run. Nightly: the R9 suite is green on two consecutive nights and was last run by an identity other than the guard's author. A nightly run does not replace any per-merge check |
 | **Overall** | §D2 method | ≥95% in **two consecutive loops** with nothing reopened, **every High security item closed**, and both vetoes lifted |
 
 The margin is thin: at the end of Phase 7 the score is 175/184 = 95.1%. Any High item left open drops it below 95%. So the plan treats every security item as mandatory.
@@ -356,16 +362,16 @@ Projected weight closed after each phase, assuming each item closes with its evi
 |---|---|---|---|---|---|---|
 | Today | 0% | 20% | 0% | 0% | 0% | **6.5%** |
 | Phase 0 | 0% | 20% | 0% | 21% | 25% | 14.1% |
-| Phase 1 | 7% | 42% | 13% | 36% | 25% | 26.1% |
-| Phase 2 | 37% | 42% | 13% | 36% | 32% | 32.1% |
-| Phase 3 | 78% | 70% | 13% | 36% | 32% | 47.3% |
-| Phase 4 | 78% | 70% | 13% | 36% | 52% | 52.2% |
+| Phase 1 | 7% | 37% | 13% | 21% | 25% | 23.4% |
+| Phase 2 | 37% | 37% | 13% | 21% | 32% | 29.3% |
+| Phase 3 | 78% | 65% | 13% | 21% | 32% | 44.6% |
+| Phase 4 | 78% | 65% | 13% | 21% | 52% | 49.5% |
 | Phase 5 | 78% | 70% | **100%** | 50% | 64% | 74.5% |
 | Phase 6 | **100%** | **100%** | 100% | 50% | 68% | 88.6% |
 | Phase 7 | 100% | 100% | 100% | 50% | **95%** | **95.1%** |
 | Phase 8 | 100% | 100% | 100% | **100%** | 100% | **100%** |
 
-Corrected after the PR review: R1 and R12 move to Phase 5, S10 to Phase 1, and the two logging fixes (N-DS-3, N-DS-5) to Phase 1, so no phase takes credit for work a later phase does.
+Corrected after two PR reviews: R1, R2, R12 and R19 move to Phase 5, S10 to Phase 1, and the two logging fixes (N-DS-3, N-DS-5) to Phase 1, so no phase takes credit for work a later phase does.
 
 PASS needs Phase 8. R9, the sandbox attack run, is a High security item. The pen test and two clean loops come after it.
 
@@ -378,7 +384,7 @@ Ranked by how much each unblocks. Each comes with a recommended default.
 | D1 | Give AI agents their own GitHub identity (a GitHub App or machine user with no admin and no bypass) | R16 → R4, R26, R9, R15, R17 (15 weight) | Yes. Agents commit and open PRs as the bot. The founder stays the only code owner |
 | D2 | GitHub plan, and whether OCR-docs and the hub go public | R13 → R8, R15, R27; removes R1's read token | Record the plan today. If it is Free, choose between making the docs repos public (they hold no secrets) and a plan upgrade |
 | D4+D5 | How production global-flag writes and erasure are authorised once the static header is gone | R2 together with S12r and S13. Without a decision, deleting the static header leaves erasure uncallable in production | Global flags: a per-environment Access service token mapped to a `key:` actor by its JWT `common_name`, used only for that route, every use audited. Erasure: **two people**. One actor requests, a different named admin approves, and only then does the job run; a single actor is refused. S12r does not close without this, because one stolen credential must not be able to erase across tenants. If only one human admin exists at launch, erasure stays a manual, recorded runbook step until a second approver exists |
-| D6 | The anonymous ID in FORMS_DB | N-DS-1 (OSE-1493), N-DS-2 (OSE-923), the S13 tail, and the Data Science veto | Replace it with a per-event HMAC id (`HMAC(key, event_id ‖ anon)`). Never store the raw cookie value. Check-in dedupe still works within an event, and nothing can be joined across tables or events. For the scan split, keep no row-level WHERE record: poster scans become counters per poster per hour, and the returns table keeps event and day only, so even a single scan in an hour cannot be joined one-to-one |
+| D6 | The anonymous ID in FORMS_DB | N-DS-1 (OSE-1493), N-DS-2 (OSE-923), the S13 tail, and the Data Science veto | Replace it with a per-table, per-event HMAC id (`HMAC(key, table ‖ event_id ‖ anon)`). Never store the raw cookie value. Dedupe still works inside each table for one event. Rows in different form tables, or for different events, cannot be joined on the id. For the scan split, keep no row-level WHERE record: poster scans become counters per poster per hour, and the returns table keeps event and day only, so even a single scan in an hour cannot be joined one-to-one |
 | D9 | Launch posture for Oct 24 | Whether Phase 8 must finish before launch | An invited-only launch on the E.5 bar. The public "anonymous by construction" wording waits until Phase 2b merges and production keys are regenerated (D8) |
 | D3 | `full-pipeline/*` PR deploys to staging | R8 | Retire them |
 | D7 | `ALLOWED_ADMIN_DOMAINS` | S10 | Remove it. Allow named emails only |
@@ -420,13 +426,13 @@ Secret values are never typed into chat or a ticket. Use `printf %s "$V" | wrang
 - **INV:** new gates:
   - `prod-config.invariant`: no `ALLOW_OCR_INTERNAL`, `ALLOW_ADMIN_KEY_FALLBACK` or `ADMIN_SCOPE_ALL` in production vars, and a non-empty `CF_ACCESS_AUD`.
   - `log-redaction.invariant`: no `request.url`, `anonId`, `emailHash` or token-shaped field in any `console.*` call.
-  - `workflow-injection.invariant`: no `${{ github.event.* }}` or `${{ inputs.* }}` inside `run:`, fleet-wide.
+  - `workflow-injection.invariant`: no `${{ github.event.* }}` or `${{ inputs.* }}` inside `run:`, fleet-wide. The existing cases are converted to `env:` in the same change, before the gate blocks: OCR-docs `propagate-standards.yml:131` and `docs-ci.yml:31`, OSE `force_clean` (×10) and `deploy-spoke`'s `inputs.environment`, OSE `security-triage.yml:52` and `robot-knowledge`. A repo whose cases are not yet converted runs the gate in report mode, never silently skipped.
 - **CI:**
   - Trace, video and HTML-report embedding are off in every Playwright config or spec that sends a credential.
   - An **artifact secret scan** runs before every `upload-artifact` and fails if a secret value, a `CF_Authorization` cookie or a `Bearer` header appears.
   - `smoke-production` moves into `environment: production`, runs read-only on the production Access token, and the release runbook is updated (R19, OSE-1470).
 - **PYR:** each gate is L1/L2, and each was seen red. One sandbox run fails a test on purpose, and its downloaded artifact is scanned clean (L7).
-- **Closes:** R2, R5, R19, R22, S10, N-SEC-1, N-ADV-4, N-DS-3, N-DS-5. Production deploys unfreeze.
+- **Closes:** R5, R22, S10, N-SEC-1, N-ADV-4, N-DS-3, N-DS-5. R2 and R19 are code-complete here but close in Phase 5: R2 needs the per-environment tokens (R25) and the production Access token on `smoke-production`; R19 needs top-level `permissions:` fleet-wide and the clean sandbox artifact. Production deploys unfreeze.
 
 #### Phase 2 — Anonymity by construction (Data Science veto), days 2–7
 
@@ -434,6 +440,7 @@ Secret values are never typed into chat or a ticket. Use `printf %s "$V" | wrang
 - **CODE:**
   - The `ose_anon` cookie is HMAC-signed by the server; an unsigned or forged value is reissued, never trusted.
   - `/q/` and `/s/` get a rate limit keyed on a peppered IP hash plus the event (OSE-1496).
+  - Signing alone does not stop someone from dropping the cookie and taking a fresh one. So the privacy floor does not rely on cookie dedupe. Each peppered IP hash counts at most once per poster per hour, and published scan counts are rounded down to multiples of 5, as the export already does. One real scan then cannot be told apart by adding K−1 scans of your own.
   - New scan writes stop storing a second-precision `created_at`. The WHERE side is written as a counter per poster per hour, not a row per scan; the WHO side (`scan_node_returns`) keeps event and day only.
   - `scan_node_returns` retention defaults to 90 days, keyed on `scan_bucket`.
   - Erasure covers `form_surveys` and `checkin_counts`.
@@ -445,17 +452,18 @@ Secret values are never typed into chat or a ticket. Use `printf %s "$V" | wrang
 
 2b, destructive, and only after D6 and the drill:
 - **CODE:**
-  - A forward-only migration replaces the FORMS_DB `anonymous_id` columns with the per-event HMAC id and scrubs existing rows.
+  - A forward-only migration replaces the FORMS_DB `anonymous_id` columns with the per-table, per-event HMAC id and scrubs existing rows.
   - Existing rows move to the new shape: placement rows fold into per-poster-hour counters and are deleted, and `scan_node_returns` keeps event and day only (OSE-1493, OSE-923). Truncating both tables to the same hour is not enough: an event with one scan in that hour would still join one-to-one.
   - Production holds 0 events, so production is a no-op. Staging runs after a Time Travel bookmark is recorded.
 - **INV:**
-  - New `anon-linkage.invariant`, as a property test. Seed both databases through the real handlers, then assert that no FORMS_DB column equals any main-DB `anonymous_id`, and that no join can link the two scan sides one-to-one, including for an event with a single scan in an hour (a singleton case is in the seed).
+  - New `anon-linkage.invariant`, as a property test. Seed both databases through the real handlers, then assert that no FORMS_DB column equals any main-DB `anonymous_id`, that no join can link the two scan sides one-to-one, including for an event with a single scan in an hour (a singleton case is in the seed), and that the same browser registering, checking in and answering a survey for one event leaves ids that differ across the three tables.
   - Extend `anonymous-id` to require a signed cookie, and extend `scan-path-split` to cover timestamps.
 - **PYR:**
   - L4: the HMAC id and the truncation.
   - L5 (workers pool):
     - a forged cookie cannot create a second dedupe bucket;
     - K−1 forged scans cannot reveal one real scan;
+    - dropping and re-taking the cookie repeatedly cannot add more than one count per IP per poster per hour, and cannot reveal one real scan;
     - erasure leaves no row holding the id.
   - L3: a schema snapshot.
   - L7: staging scan → register, then read back that the stored id is not the cookie.
@@ -540,7 +548,7 @@ Secret values are never typed into chat or a ticket. Use `printf %s "$V" | wrang
   Its fixtures live in a separate file (R4).
 - **PYR:** each wall is born red against the old workflow. The sandbox repo is created here for Phase 8.
 - **Doppler isolation (R12), before any production key is minted:** a throwaway-secret test shows CI and deploy configs do not carry runtime data keys, and a bulk-upload denylist stops a sync from overwriting them.
-- **Closes:** R1, R3, R4, R8, R11, R12, R14, R15, R18, R21, R25, R27, R28, R29, N-QA-4, N-QA-5. Lifts the DevOps veto.
+- **Closes:** R1, R2, R3, R4, R8, R11, R12, R14, R15, R18, R19, R21, R25, R27, R28, R29, N-QA-4, N-QA-5. Lifts the DevOps veto.
 
 #### Phase 6 — Keys, roles, composition (week 3)
 
@@ -550,6 +558,8 @@ Secret values are never typed into chat or a ticket. Use `printf %s "$V" | wrang
   - No unpeppered fallback for rate-limit keys.
   - `requirePepper` on self-delete, and no bare SHA-256 in production (R6).
   - One signing secret per link kind, with a `kid` and previous-value overlap, a capped `exp`, and a `jti` with a revocation table for sponsor and report links (R20, R23).
+  - The admin rate limit also runs on staging, not only production, with a test (R23).
+- **Owner (R23):** WAF or rate-limit rules for the admin, sponsor and forms routes, recorded with their thresholds.
   - URL tokens are replaced by a one-time code redeemed into an `HttpOnly` cookie (OSE-1475, N-FE-1).
 - **Owner:** mint the production keys **after** the token split and the R12 isolation test, while production still has 0 events, so the pepper reset costs nothing. This lifts the other half of the Data Science veto.
 - **CODE, rest:**
@@ -599,14 +609,14 @@ PASS cannot be reached by Oct 24: the sandbox run, the pen test and two clean lo
 - Phase 1;
 - Phase 2a and 2b;
 - the erasure items of Phase 3, including two-person approval (S12r);
-- R1, R12, R15 and R25 from Phase 5;
+- R1, R2, R11, R12, R15, R19 and R25 from Phase 5;
 - the Phase 6 key mint.
 
 Until Phase 2b merges and production keys are regenerated, the public "anonymous by construction" claim stays off every surface.
 
 ### E.6 Tracking
 
-Every item in §D and §D2 has a Linear ticket under OSE-1477, or a comment on the existing ticket that owns it. Each phase is tracked as a group of those tickets. The score is re-derived at the end of each phase. The next CCR loop (Loop 7) runs when Phase 3 merges.
+Every item in §D and §D2 has a Linear ticket under OSE-1477, or a comment on the existing ticket that owns it. Each phase is tracked as a group of those tickets. The score is re-derived at the end of each phase. A review loop is run when Phase 3 merges, as supplemental analysis. The next **protocol** loop (Loop 7) runs only after a recorded human resolution of the gate gaps, not on a merge alone.
 
 ## F. Owner decisions that change the path
 
