@@ -88,12 +88,12 @@ the halves silently fail to correlate. The venue-normalization and
 single-classification rules are a **shared contract** (brain / OSM contract
 layer), contract-tested, not reimplemented per product.
 
-*Decided 2026-10-04 (PO; OSE-1614, `ourSharedEvents/.telemetry/tracking-plan.md`):*
+*Decided 2026-10-04 (PO; OSE-1614, `ourSharedEvents/.telemetry/tracking-plan.md`). The ADR as a whole stays Proposed; these four points are settled within it.*
 
-- **`time_bucket`** is the **local date of `starts_at` minus 4 hours**, in the event's own IANA zone, written `YYYY-MM-DD` (a date-only event uses its start date). A late league night stays one id; two nights at the same venue in one week stay apart. The hash input is versioned (`v1`) so a later rule change is visible.
-- **`venue_canonical_id`** is a **stored, server-computed column** on the product's events table: a hash of the normalised venue name and the H3 res-7 cell. No coordinates enter the hash, and there is no venue registry yet. Known limit: one venue geocoded into two neighbouring cells gets two ids.
-- **`event_correlation_id` means "the same event"**: same venue, type and night. It does not group a league's nights across venues, because the venue is inside the hash. A league or season roll-up joins on the tenant (`brand_id`) plus `uec_code` and dates, through a consented league-to-event mapping that holds organisation and event identifiers only, never people.
-- **OW receives the keys**, never person-level rows. OSE and OW each stamp them at write time from the shared normalisation, and their data meets in the pool dataset, not in a join.
+- **`time_bucket`** is the **local date of the event's start in its own IANA zone, minus one day when the local start time is before 04:00**, written `YYYY-MM-DD` (a date-only event uses its start date). The rule is on the wall clock, not "minus 4 hours" on the instant, because the two disagree on a daylight-saving day and both planes must compute the same id. The plan carries six test vectors. A late league night stays one id; two nights at the same venue in one week stay apart. The hash input is versioned (`v1`) so a later rule change is visible.
+- **`venue_canonical_id`** is a **stored, server-computed column** on the product's events table: a hash of the normalised venue name and the H3 res-7 cell. No coordinates enter the hash, and there is no venue registry yet. Known limit: one venue geocoded into two neighbouring cells gets two ids. **A key is null when any input is missing**; it is never computed from part of its inputs.
+- **`event_correlation_id` means "the same event"**: same venue, type and night. It does not group a league's nights across venues, because the venue is inside the hash. A league or season roll-up joins on the tenant (`brand_id`) plus `uec_code` and dates. When the league owns its events, `brand_id` alone is enough. When the venues own them, a consented, people-free league-to-event mapping says which events are the league's.
+- **OW receives the keys**, never person-level rows. OSE and OW each stamp them at write time from the shared normalisation, and their data meets in the pool dataset, not in a join. Exports and roll-ups carry the keys only for listed events, and never return a total from which a withheld count could be worked out.
 
 ### 2. The voluntary-identity covenant
 
