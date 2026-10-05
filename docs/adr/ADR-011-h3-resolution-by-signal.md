@@ -5,7 +5,17 @@
 **Deciders:** Matt (founder / PO)
 **Scope:** Fleet-wide (geography model for every product that tags, stores or exports place)
 **Supersedes:** None. Records as doctrine what was until now a migration comment (ourSharedEvents `migrations/0046_density_tables_drop_corridor_fk.sql`: "the H3 res7 cell string IS the corridor identifier") and closes two open decisions in ourSharedEvents `docs/features/QR-AND-SHORTLINKS.md` (#1 "surface determines resolution", #3 "where a digital click's res7 comes from").
-**Cross-refs:** ADR-010 (the hyperlocal map — corridor → venue → event_type → event as the shared key; this ADR fixes the grain of the corridor and venue levels); ADR-002 (identity-profile-keyed invariants — the anonymous boundary this protects); ourSharedEvents ADR-009 (`docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md`, NCR v2 — a "corridor" there is a connection between nodes, a different concept, see Consequences; not the fleet ADR-009, which is the composition plane and has no corridor concept); `OCR_VISION.md` NCR section (Node = res9, Corridor = res7); `ocr-docs-brain/corridor-definitions.yaml` (named corridors anchored on a res7 cell); `docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md` (export: corridor-level only)
+**Cross-refs:** ADR-010 (the hyperlocal map — corridor → venue → event_type → event as the shared key; this ADR fixes the grain of the corridor and venue levels); ADR-002 (identity-profile-keyed invariants — the anonymous boundary this protects); ourSharedEvents ADR-009 (`docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md`, NCR v2 — a "corridor" there is a connection between nodes, a different concept, see Consequences; not the fleet ADR-009, which is the composition plane and has no corridor concept); `OCR_VISION.md` NCR section (Node = res9, Corridor = res7); `ocr-docs-brain/corridor-definitions.yaml` (named corridors anchored on a res7 cell); `docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md` (export: corridor-level only; read with the 2026-10-04 scope note below)
+
+> **Scope note (2026-10-04, PO decision A1, OSE-1617).** This note records a decision, not current behaviour: nothing it describes is exported until OSE-1615 and OSE-1617 ship. The decision is Decision 4 in ourSharedEvents `.telemetry/tracking-plan.md`, and it is the dated note that ADR-010 asks for. ADR-011 stays Accepted and its Decision section is unchanged.
+>
+> **What A1 changes.** `venue_canonical_id` and `event_correlation_id` are added to the `events_backup` row, for listed events only (null otherwise). Rule 4 is read this way: a venue hash and an event hash are identity keys of a listed event, not geography, so they are not a res9 cell, a coordinate, an address or a placement reference. They are the only fields beyond corridor grain allowed on the export boundary.
+>
+> **What it does not change.** The three aggregate exports stay at corridor grain. The returns export is untouched. The `venue_id` tag keeps its value (the event id), and the keys are new columns, not a use of `venue_id`. The OSE-1460 sentence under "Neutral / explicit" stands as written: the returns export carries neither `anon_id_hash` nor `venue_id`. No per-event or per-venue count leaves OSE. Nothing person-level joins the row: no `anon_id_hash`, no `ose_anon`, no hash of either. Counts stay floored and rounded as OSE-1460 set them.
+>
+> **Boundary doc.** The two "corridor-level only" mentions in this ADR (Cross-refs and References) quote the location row of `OCR_ARCHITECTURE_oerAggregationBoundary.md`. That row is amended to "corridor-level for counts; event identity keys for listed events" in section 4.1.1, proposed in the boundary-doc amendment (OCR-docs PR 157) and not yet merged. Read them with this note.
+>
+> If the PO reads rule 4 more strictly, A1 does not stand.
 
 ---
 
@@ -154,6 +164,6 @@ row (it stores no place of its own) but not for the aggregate.
 
 - `OCR_VISION.md` — NCR (Node res9, Corridor res7)
 - `ocr-docs-brain/corridor-definitions.yaml` — `blue_island.geo.anchor_h3_res7 = 872664544ffffff`
-- `docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md` — "Location: corridor-level only"
+- `docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md` — "Location: corridor-level only" (read with the 2026-10-04 scope note above)
 - ourSharedEvents `migrations/0046_density_tables_drop_corridor_fk.sql`, `docs/features/QR-AND-SHORTLINKS.md`, `docs/discovery/OSE_REFERENCE_posterPrimitiveReconciliation_2026-09-04.md`
 - Linear: OSE-616 (scan → export trace), OSE-613 (corridor registry), OSE-614 (channel-capped resolution), OSE-603 (snapshots)
