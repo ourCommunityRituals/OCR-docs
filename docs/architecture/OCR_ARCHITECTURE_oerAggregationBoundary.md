@@ -1,10 +1,10 @@
 # OER Aggregation Boundary Specification
 
 **Document ID:** OCR-ENF-24
-**Status:** Ratified — 2026-08-02
+**Status:** Ratified — 2026-08-02. Amended 2026-10-04 by decision A1 (section 4.1.1): a decision and rule, not yet live behaviour.
 **Owner:** OurCommunityRituals LLC (org-level)
 **Scope:** All OCR product repos — OSE, OW (WKRP), OA (OAW), OSM
-**Related Linear:** OSE-390 (F5c)
+**Related Linear:** OSE-390 (F5c); OSE-1614, OSE-1615, OSE-1617 (decision A1)
 
 ---
 
@@ -54,7 +54,7 @@ Data qualifies if it carries no identifier that can, alone or in combination wit
 |---------------------|-------------|
 | IDs | `anon_` prefixed, opaque, no session-to-person linkage |
 | Timestamps | Bucketed to hour-level minimum (no sub-hour resolution) |
-| Location | Corridor-level only (`corridor_id`); no exact lat/lon |
+| Location | Corridor-level (`corridor_id`) for every count; no exact lat/lon. One exception, decision A1 (section 4.1.1): the event identity keys `venue_canonical_id` and `event_correlation_id` may sit on the event index row of a *listed* event. They are keys, not locations, and no count carries them. |
 | Aggregates | Counts only; no individual-row payloads |
 | Behavior | Scan codes, form type, party size — never free-text content |
 
@@ -89,7 +89,7 @@ OSE emits **aggregate behavioral data only**. No individual-row payloads cross t
 
 | Emission dataset | Fields | Granularity | Privacy gate |
 |-----------------|--------|-------------|--------------|
-| Event index | `event_id`, `brand_id`, `corridor_id`, `status`, `start_date`, `end_date`, `legal_clearance_tier` | Per event | No PII; no location below corridor |
+| Event index | `event_id`, `brand_id`, `corridor_id`, `status`, `start_date`, `end_date`, `legal_clearance_tier`; and, for listed events only, `venue_canonical_id`, `event_correlation_id` (decision A1, section 4.1.1: not yet emitted; null for an event that is not listed) | Per event | No PII; no location below corridor. The two keys are identity keys for an event, never coordinates, and are allowed on this row only |
 | Scan aggregates | `event_id`, `uec_code`, `hour_bucket`, `count` | Per event × code × hour | Hour-bucket enforced |
 | Form submission counts | `event_id`, `form_type`, `hour_bucket`, `count` | Per event × form type × hour | Count only — no anon_id |
 | Poster deployment signals | `event_id`, `corridor_id`, `deployment_count` | Per event × corridor | No exact lat/lon |
@@ -99,10 +99,32 @@ OSE emits **aggregate behavioral data only**. No individual-row payloads cross t
 **Fields that may never emit from OSE:**
 - `anon_id` (individual anon visitor identifiers)
 - `lat` / `lon` below corridor resolution
+- `venue_canonical_id` or `event_correlation_id` on any dataset other than the event index row of a listed event (section 4.1.1)
+- Any count at event grain or venue grain (section 4.1.1)
 - Any `FORMS_DB` field
 - `email_hash`, `email_encrypted`
 - `ip_hash`
 - Free-text survey content (even via `comment_length`)
+
+### 4.1.1 Decision A1 (PO, 2026-10-04): event identity keys on the event index row
+
+**Status of this subsection:** a decision and a rule. It is **not** current behaviour. Neither key exists in OSE yet and neither is emitted. `OSE-1615` computes and stores them as columns on OSE's `events` table (and publishes the normalisation and hash fixtures). `OSE-1617` adds them to the event index row (the `events_backup` export), adds an allowlist for exactly these two names on that row, and adds a gate that fails on any other venue-grain field. Nothing emits either key until both stories have merged and the pre-conditions in OSE's tracking plan (`ourSharedEvents/.telemetry/tracking-plan.md`, Decision 4) are met, including the Dr of Security sign-off, which is **pending** at the time of writing.
+
+The rule:
+
+1. **Two keys, exactly these names:** `venue_canonical_id` and `event_correlation_id`. No other venue-grain or event-identity field is added by this decision.
+2. **Listed events only.** Both are present on the event index row of a *listed* event and null for any other event. "Listed" is OSE's own rule for what appears on the public list and map.
+3. **Event index row only.** Neither key may appear on any scan, form, poster, sponsor, SharedReport, returns, density or series dataset.
+4. **Counts stay at corridor grain.** No count is emitted at event grain or venue grain. Rows in section 4.1 that list `event_id` next to a count are the 2026-08-02 contract ceiling; they are not emitted at event grain while this rule stands. Emitting any per-event count needs its own decision (called A2 in the tracking plan, not chosen) with its own floor, rounding and no-subtraction design, and a revision of this subsection.
+5. **The returns export is untouched.** It stays at corridor x event type x pool with floored and rounded counts, and its venue tag stays the corridor-aggregate sentinel.
+6. **No person-level field.** The keys identify an event and a place, never a visitor. `anon_id`, `anon_id_hash` and every `FORMS_DB` field remain Class X.
+7. **Server-computed, coordinate-free.** The keys are computed by OSE, never supplied by a client. The hash input contains no coordinates and no res-9 cell, and a key is null when any input is missing.
+8. **Classification (section 8, step 1):** Class A, as identity keys of an event. The event id and title already cross on the same row, so this adds a venue hash and a night hash, not a new kind of data.
+9. **Not retracted.** A key already exported is not withdrawn if the event is later unlisted. That is accepted and recorded here.
+
+How OW uses it: OW joins its events to OSE's by these two keys and brings its own counts. OSE sends no per-event counts for it to join. Per-venue and per-night counts for chambers and leagues are produced inside OSE (admin and SharedReport), not in OER.
+
+Still to do before this is live behaviour, none of it in this document: the `events_backup` schema change, the allowlist and the L0 gate (`OSE-1617`), and the `architectural-invariants.yaml` `enrichment_history` entry required by section 8, step 3, which belongs in the `OSE-1617` product PR together with the emission contract test (section 8, step 4).
 
 ### 4.2 OW / WKRP — OurWKRP (named-with-attribution class)
 
@@ -157,6 +179,7 @@ The following are unconditional prohibitions. No story, no shortcut, no "just th
 | Emitting a `FORMS_DB` field to OER | Invariant #1 (anonymous_id) | Identified-user surface — destroys OSE's anonymous guarantee |
 | Emitting sub-hour timestamps | Invariant #4 (ncr_data_accumulation) | Fine-grained timing enables behavioral fingerprinting |
 | Emitting individual anon_id rows | Invariant #1 | Longitudinal tracking across events |
+| Emitting `venue_canonical_id` or `event_correlation_id` outside the event index row of a listed event, or any count at event or venue grain (section 4.1.1) | Invariant #17 (gate to be added by the story that emits the keys) | Keeps decision A1 to identity keys on event rows; a keyed count would be a venue-grain or event-grain measure |
 | Cross-tenant join before emission | Invariant #9 (tenant_isolation) | Join bypasses brand isolation; exposes one brand's data to another's OER slice |
 | OER answering a query by proxying a direct DB call back to a product | (architectural) | Negates the decoupling; products become dependent on OER's internals |
 
@@ -270,6 +293,7 @@ Confirm the field does not appear in any row of the prohibited patterns table. I
 | Date | Change | PR | Author |
 |------|--------|----|--------|
 | 2026-08-02 | Initial ratification — full boundary contract, 4 product emission contracts, prohibition matrix, governance protocol | OCR-docs PR #72 | OCR co-architect |
+| 2026-10-04 | Amendment, PO decision A1: event identity keys `venue_canonical_id` and `event_correlation_id` allowed on the event index row of listed events only; counts stay at corridor grain; no per-event or per-venue counts; returns export untouched. Edits the Location row (section 3), the event index row and the never-emit list (section 4.1), adds section 4.1.1 and one prohibition row (section 5). Decision and rule only; implemented by OSE-1615 and OSE-1617 | OCR-docs branch `docs/oer-boundary-a1` (draft PR) | Claude Code, for the PO |
 
 ---
 
