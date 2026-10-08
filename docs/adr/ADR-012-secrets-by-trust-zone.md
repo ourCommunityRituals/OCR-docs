@@ -160,7 +160,7 @@ OIDC tokens covers the same ground at this size.
 
 - **Affected repos:** all 11 in the inventory. ourSharedEvents and ourWKRP carry most of the work.
 - **Brain invariants:**
-  - new **#29 `credential_isolation`** (Privacy & Identity);
+  - new **`credential_isolation`** (Privacy & Identity). It was first written here as #29; #29 was minted on 2026-10-08 as `declined_regulatory_regimes`, so `credential_isolation` takes the next free number when it is minted (numbers are assigned in sequence at mint time, as ADR-002's reservation landed as #26);
   - #28 `ci_approval_gate_secret_surface` stays as its CI-surface half, with `applies_to` extended to the fleet.
 
   This lands as Phase 0 item 0.9, in its own PR, after the brain's test levels run.
