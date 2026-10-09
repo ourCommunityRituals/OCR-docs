@@ -79,10 +79,14 @@ The zones follow the CI/CD pipeline, which already separates tiers:
 
 - Keys that protect stored data are versioned and rotated with a dual-read window, never by a blind swap.
 
-**3. Doppler is the only writer.** Each product has one Doppler project:
+**3. Doppler is the only writer.** Each deployed product has two Doppler projects:
 
-- runtime configs `dev`, `stg` and `prd`;
-- CI and deploy configs `stg_ci`, `stg_deploy` and `prd_deploy`, as separate root environments (not branch configs, which may inherit runtime keys).
+- `<product>` holds the runtime configs `dev`, `stg` and `prd`, and nothing else;
+- `<product>-deploy` holds the deploy configs `stg` and `prd`, and a `ci` config for staging test credentials when the product needs one.
+
+A CI or deploy credential never sits in the runtime project. Branch configs stay ruled out, because they may inherit runtime keys.
+
+*Amended 2026-10-09:* this section first put all six configs in one project, as root environments. Doppler's free plan allows 4 environments per project, and OW hit that limit on its first setup run (`HTTP 400: Your project has reached its limit of 4 environments`). A second project is also the stronger boundary: a runtime service token cannot see the deploy project at all. Founder decision, 2026-10-09; first used in ourWKRP PR 85.
 
 How values leave Doppler:
 

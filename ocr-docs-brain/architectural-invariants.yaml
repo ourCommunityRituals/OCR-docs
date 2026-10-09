@@ -661,7 +661,7 @@ invariants:
     group: privacy_identity
     group_order: 6
     title: Declined Regulatory Regimes
-    status: partial
+    status: live
     test_file: declined-regimes.invariant.test.ts
     lives_in:
       - ose
@@ -702,8 +702,8 @@ invariants:
       general pool with no PHI and no BAA, and an engagement that requires
       either is declined.
     enforcement_statement: >
-      PARTIAL (2026-10-08). The rule holds today by construction in both
-      workers; the gates that keep it holding are per repo.
+      LIVE (2026-10-09). The rule holds by construction in both workers,
+      and a gate named declined-regimes.invariant.test.ts is green in each.
       (a) OSE ROUTING REFUSAL (OSE-1220): phaseToPool() throws
       PoolRoutingError on legal_clearance_tier 4 (HIPAA) and 5 (COPPA);
       resolveAllowedMaxTier clamps to 3; REGULATORY_POOLS is ['general'].
@@ -717,19 +717,29 @@ invariants:
       fails. Its scanners carry PASS/FAIL unit tests
       (tests/unit/declined-regime-scan.test.ts) and the gate was seen red on
       a planted birth_year column and a planted school_name field.
-      partial→live criterion: a file named declined-regimes.invariant.test.ts
-      is present and green in BOTH lives_in repos. OSE's routing refusal and
-      CI gate are in place, but OSE does not yet carry a spec of that name,
-      so the conformance check reports OSE as a gap (not a failure) until it
-      does.
+      (d) OSE META-GATE (OSE-1674):
+      tests/e2e/0-architecture/declined-regimes.invariant.test.ts (T0
+      structural invariants) locks (a) and (b): the vendored standard names
+      all three regimes; the guard and its self-tests run in the T0 lint
+      shard, self-tests first; the guard still fails on a planted
+      ALLOWED_MAX_TIER=4 and a seeded tier-5 type; phaseToPool, the clamp,
+      the pool list and the dataset map stand; the worker tests proving them
+      are not skipped; and no migration in either database adds an age,
+      birth-date, consent, student, school, grade, patient, diagnosis or
+      medical column. Five planted faults each turned it red.
+      partial→live criterion MET 2026-10-09: a file named
+      declined-regimes.invariant.test.ts is present and green in BOTH
+      lives_in repos (ourWKRP#81 on OW main; ourSharedEvents#891, merged as
+      a70fcfe, with main's staging chain T1–T4 green in run 37858539330).
     references:
       standard: docs/standards/OCR_STANDARD_declinedRegimes.md
       ose_adr: docs/adr/ADR-018-declined-regulatory-regimes.md (OSE repo)
       ose_router: workers/oursharedevents/src/lib/pool-contract.ts (OSE repo)
       ose_gate: scripts/guard-declined-regimes.js + scripts/guard-declined-regimes.test.js (OSE repo)
+      ose_meta_gate: tests/e2e/0-architecture/declined-regimes.invariant.test.ts (OSE repo)
       ow_gate: tests/security/declined-regimes.invariant.test.ts + tests/support/declined-regime-scan.ts (ourWKRP)
       declined_records: ocr-docs-brain/bigquery-schemas/{hipaa,coppa}.json (status declined); SOPPA never modeled
-      linear: OSE-1220 (OSE routing), OW-159 (OW gate)
+      linear: OSE-1220 (OSE routing), OW-159 (OW gate), OSE-1674 (OSE meta-gate)
       companion_invariants: >
         #1 anonymous_id: item-tracking is what keeps OSE out of all three.
         #8 bounded_pii_retention: how long the PII OCR does hold may live.
@@ -4187,9 +4197,33 @@ enrichment_history:
       ADR-012 now says credential_isolation takes the next free number. Partial on creation: OSE refuses by routing and its own
       CI gate but carries no spec named declined-regimes.invariant.test.ts yet.
 
+  - invariant_id: 29
+    invariant_name: declined_regulatory_regimes
+    from_state: >-
+      rich partial (holds by construction in OSE and OW; OSE carried no spec
+      named declined-regimes.invariant.test.ts)
+    to_state: >-
+      rich live (gate of that name green in both lives_in repos; enforcement
+      layer (d) OSE meta-gate added)
+    date: "2026-10-09"
+    pr_refs:
+      - "ourSharedEvents#891 — carries the OSE meta-gate from #892 (merged as a70fcfe)"
+      - "ourWKRP#81 — the OW static absence gate (merged earlier)"
+      - "OCR-docs — this PR (status, enforcement_statement, references, status_summary)"
+    rationale: >
+      The partial→live criterion recorded at mint (2026-10-08) was a file named
+      declined-regimes.invariant.test.ts present and green in BOTH lives_in
+      repos. OW's merged with ourWKRP#81. OSE's merged with ourSharedEvents#891
+      (a70fcfe), and main's post-merge staging chain (T1 Deploy, T2 Contract,
+      T3 E2E Smoke, T4 Functional) was green for that SHA in run 37858539330
+      (recorded on OSE-1674). Mark-don't-erase: layers (a)-(c) are unchanged;
+      (d) is added. The open legal readings under legal_note (OCR-60) are not
+      part of the criterion and stay open. status_summary: live 16 -> 17,
+      partial 11 -> 10.
+
 status_summary:
-  live: 16    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI)
-  partial: 11  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW), #28 ci_approval_gate_secret_surface (live in OSE; fleet-live when the OA client-fork template carries it), #29 declined_regulatory_regimes (holds by construction in OSE and OW; live when declined-regimes.invariant.test.ts is green in both)
+  live: 17    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI), #29 declined_regulatory_regimes (OSE-1674 + OW-159 — gate green in both)
+  partial: 10  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW), #28 ci_approval_gate_secret_surface (live in OSE; fleet-live when the OA client-fork template carries it)
   planned: 0
   retired: 2  # #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe (retired 2026-09-02, OSE-1194 — self-hosted runner fleet decommissioned; CI on GitHub-hosted ubuntu-latest)
   total: 29
