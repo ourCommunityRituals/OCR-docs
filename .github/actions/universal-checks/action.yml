@@ -46,9 +46,10 @@ runs:
     - name: Resolve OCR-docs paths
       shell: bash
       run: |
-        # github.action_path arrives Windows-style on self-hosted runners.
+        # github.action_path arrives Windows-style on a Windows runner.
         # Normalize backslashes, then emit mixed-mode (C:/...) paths so they
         # pass cleanly to native python.exe without MSYS argument mangling.
+        # On Linux (ubuntu-latest, where OCR CI runs) this is a plain `pwd`.
         p='${{ github.action_path }}'
         p="${p//\\//}"
         ad=$(cd "$p" && { pwd -W 2>/dev/null || pwd; })

@@ -78,9 +78,8 @@ jobs:
         with:
           python-version: '3.11'
 
-      # Per brain-validate.yml's note: no pip cache (hashFiles() fails on
-      # self-hosted Windows under _work). The scanner has zero deps anyway —
-      # pure stdlib regex + subprocess. No pip install needed.
+      # No pip install and no pip cache: the scanner has zero deps
+      # (pure stdlib regex + subprocess).
 
       # On PR events: capture scanner output, allow step to fail without aborting
       # the job (so the comment step can run with the findings), then fail the job

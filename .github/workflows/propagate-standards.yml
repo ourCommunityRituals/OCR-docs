@@ -53,10 +53,9 @@ env:
     ourSharedMagnets
     ourAirwaves
 
-# Pin all `run:` steps to bash. Without this, the self-hosted Windows
-# runner defaults to PowerShell and every bash-syntax script in this
-# workflow fails with "Missing '(' after 'if'" parser errors. Git Bash
-# ships with Git-for-Windows and is already on PATH.
+# Pin all `run:` steps to bash. ubuntu-latest already defaults to bash, but
+# only an explicit `shell: bash` runs with `-o pipefail`, so a failure on
+# the left of a pipe fails the step. Keep the pin.
 defaults:
   run:
     shell: bash
