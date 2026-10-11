@@ -135,16 +135,26 @@ invariants:
       forms.ts NEVER references env.DB; feature-flags.ts NEVER references
       env.DB; events.ts and sponsors.ts NEVER reference FORMS_DB;
       data-subject.ts (the sole authorised cross-binder) is scope-locked to
-      DELETE-only on subscribers table via DB and three explicit FORMS_DB
-      tables (email_signups, form_registrations, pii_audit_log); a BROAD
-      REVERSE GATE asserts that NO other handler in src/handlers/ references
+      DELETE-only via DB and to explicit FORMS_DB tables (email_signups,
+      form_registrations, subscribers, pii_audit_log); a BROAD REVERSE GATE
+      asserts that only a named list of handlers in src/handlers/ references
       env.FORMS_DB — closes the gap where 9+ ungated handler files previously
       had no coverage (extended 2026-07-26). L2 PRAGMA assertions confirm the
       schema separation holds at the migration layer: FORMS_DB contains no
-      anonymous-surface tables; DB contains no identified-user-surface tables.
-      (b) PII COLUMN GATE — tests/pii-invariant.spec.ts prevents net-new
-      raw-PII column names from being introduced in either database via
-      migration. Covers both DB and FORMS_DB exhaustively.
+      anonymous-surface tables (a named list); and, derived from the live
+      schema since OSE-1661 (2026-10-11), no table exists in both databases
+      and no DB column names a person (email, phone or person's name, hashed
+      or not) unless it is a reviewed exemption in
+      tests/helpers/identity-columns.ts. The landing-page email list
+      (subscribers) moved from DB to FORMS_DB to satisfy this.
+      (b) PII COLUMN GATE — tests/pii-invariant.spec.ts reads every column of
+      both databases after all migrations (sqlite_master + PRAGMA table_info)
+      and classifies it by name pattern (email, phone, person's name, network
+      address, browser identifier). Each such column must be hashed or
+      encrypted by name, or be a reviewed exemption with its reason and
+      ticket; an exemption that matches no column fails (OSE-1660,
+      2026-10-11). It is a name-pattern check: a column whose name hides
+      what it holds is not caught.
       (c) COOKIE CONTRACT — src/lib/anonymous-id.ts sets the ose_anon cookie
       with all three required attributes (HttpOnly, Secure, SameSite=Lax).
       All three attributes are asserted in tests/testid-pyramid.spec.ts L3
