@@ -4,11 +4,16 @@
 # touches them. A defect in an action.yml or a bundled checker is caught HERE,
 # in OCR-docs, instead of in a spoke's pipeline.
 #
-# The jobs run on the self-hosted Windows runner and invoke the composite
-# actions for real, so this workflow also verifies the environment
-# assumptions the actions depend on — `pwd -W` path resolution and
+# The jobs run on GitHub-hosted ubuntu-latest, the runner every OCR workflow
+# uses (the owner stopped self-hosting runners; statement of 2026-10-11), and
+# invoke the composite actions for real. So this workflow also verifies the
+# environment assumptions the actions depend on: action-path resolution and
 # setup-python / setup-node inside a composite action. It is the automated
 # form of CCR gate OCR_GATE_PR63 story G1.
+#
+# The actions still normalise a Windows-style action path (`pwd -W`, with a
+# plain `pwd` fallback). No OCR job runs on Windows any more, so that branch
+# is not exercised here; on Linux the fallback is the path under test.
 #
 # deploy-spoke is NOT exercised — it performs a real Cloudflare deploy. Its
 # action.yml is structurally validated by the `metadata` job.
@@ -35,7 +40,7 @@ defaults:
 jobs:
   metadata:
     name: action.yml metadata is valid
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -50,7 +55,7 @@ jobs:
   universal:
     name: universal-checks against fixture
     needs: metadata
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -65,7 +70,7 @@ jobs:
   identity:
     name: identity-contract against fixture
     needs: metadata
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -78,7 +83,7 @@ jobs:
   brain:
     name: brain-conformance against fixture
     needs: metadata
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

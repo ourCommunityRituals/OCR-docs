@@ -58,8 +58,7 @@ jobs:
       - name: Check for broken internal links
         run: |
           # Don't fail — just warn. Cross-repo links are expected unresolvable.
-          # Use -oE (ERE); -oP needs UTF-8 locale which Git-bash on Windows
-          # self-hosted does not provide.
+          # -oE (ERE) is enough for this pattern; no PCRE (-oP) needed.
           grep -roh '\[.*\]([^http][^)]*\.md)' --include='*.md' . \
             | grep -oE '\(([^)]+)\)' \
             | tr -d '()' \

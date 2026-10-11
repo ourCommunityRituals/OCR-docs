@@ -23,7 +23,7 @@
 # Action refs below are pinned to @v1 — a released major-version tag, not
 # @v1. Pinning a tag means this spoke's CI changes only when OCR-docs cuts
 # a new action release, never silently on an unrelated hub commit. OCR-docs
-# publishes the v1 tag once the actions pass actions-selftest on the runner.
+# publishes the v1 tag once the actions pass actions-selftest.
 # ============================================================================
 name: CI
 
@@ -40,7 +40,7 @@ jobs:
   # --- Stage 1: universal invariant checks (every spoke, every identity mode)
   universal-checks:
     name: Universal checks
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR universal checks
@@ -54,7 +54,7 @@ jobs:
   identity-contract:
     name: Identity contract
     needs: universal-checks
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR identity contract
@@ -68,7 +68,7 @@ jobs:
   brain-conformance:
     name: Brain conformance
     needs: identity-contract
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR brain conformance
@@ -80,7 +80,7 @@ jobs:
   tests:
     name: Tests
     needs: brain-conformance
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
@@ -99,7 +99,7 @@ jobs:
     name: Deploy (production)
     needs: tests
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: [self-hosted, windows]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Deploy spoke worker
