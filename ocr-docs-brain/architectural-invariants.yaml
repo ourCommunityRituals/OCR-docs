@@ -198,8 +198,8 @@ invariants:
       records or raw anonymous identifiers. Closes the privacy story on
       the output side: Invariant #1 (Anonymous ID) guards the data at
       rest and in transit; this invariant guards what the reports
-      actually surface. Six report fields (unique_gatherings,
-      return_rate, corridor_density, sponsor_impressions,
+      actually surface. Six report fields (distinct_scanners,
+      return_rate, corridor_density, sponsor_displays,
       poster_attribution, headcount_trend) all return aggregate counts
       or ratios only. No anon_id_hash ever surfaces as a projected
       column. Below-min-sample fields are suppressed with structured
@@ -1135,12 +1135,12 @@ invariants:
     enforces: >
       The SharedReport TypeScript interface in shared-report-builder.ts must
       retain its minimum field set as committed in shared-report.snapshot.json.
-      Top-level fields (event_id, event_title, unique_gatherings, return_rate,
-      corridor_density, sponsor_impressions, campaign_summary, poster_attribution,
-      headcount_trend, corridor_map, _meta), sponsor_impressions row fields
+      Top-level fields (event_id, event_title, distinct_scanners, return_rate,
+      corridor_density, sponsor_displays, campaign_summary, poster_attribution,
+      headcount_trend, corridor_map, _meta), sponsor_displays row fields
       (sponsor_id, sponsor_name, campaign_id, campaign_title, sponsor_tier,
       is_local, surface, count), and campaign_summary fields (campaign_id,
-      campaign_title, total_impressions, sponsor_count, impressions_by_surface)
+      campaign_title, total_displays, sponsor_count, displays_by_surface)
       are all locked. campaign_summary must remain in mid and premium depth
       tiers. Six-case structural spec locked in T0 Gate invariants shard.
     applies_to:
@@ -1149,7 +1149,7 @@ invariants:
       The SharedReport surface is the enterprise monetization layer — the proof
       artifact that sponsors use to evaluate campaign performance across events.
       The campaign fields added in 2026-07 (campaign_id, campaign_title on each
-      sponsor_impressions row; campaign_summary with impressions_by_surface)
+      sponsor_displays row; campaign_summary with displays_by_surface)
       are the data backbone of the cross-event comparison feature that
       enterprise clients depend on. Without a schema lock, any of these fields
       can be silently removed from the SharedReport interface — the field
@@ -1170,8 +1170,8 @@ invariants:
       (c) Every top_level_field in the snapshot appears in the SharedReport
       interface definition in shared-report-builder.ts — scoped to the
       interface block via brace-depth extraction.
-      (d) Every sponsor_impressions_field in the snapshot appears in the
-      sponsor_impressions array type definition.
+      (d) Every sponsor_displays_field in the snapshot appears in the
+      sponsor_displays array type definition.
       (e) Every campaign_summary_field in the snapshot appears in the
       campaign_summary array type definition.
       (f) campaign_summary appears in both mid and premium DEPTH_SECTIONS
@@ -3532,7 +3532,7 @@ enrichment_history:
     to_state: >-
       rich live (2026-07-26 — new invariant; 6-case structural spec
       shared-report-schema.invariant.spec.ts wired to T0 Gate invariants
-      shard; locks SharedReport interface top-level fields, sponsor_impressions
+      shard; locks SharedReport interface top-level fields, sponsor_displays
       fields, campaign_summary fields, and depth-tier gate for campaign_summary
       in mid + premium; snapshot v1.0.0 committed as minimum contract floor)
     date: "2026-07-26"
@@ -3542,7 +3542,7 @@ enrichment_history:
       the SharedReport interface in shared-report-builder.ts had no contract
       lock. The campaign comparison feature added in 2026-07 introduced six
       new fields (campaign_id, campaign_title, sponsor_tier, is_local on each
-      sponsor_impressions row; campaign_summary with impressions_by_surface)
+      sponsor_displays row; campaign_summary with displays_by_surface)
       that enterprise sponsors depend on for cross-event performance analysis.
       Without a structural gate, any of these fields could be silently removed
       from the TypeScript interface — the field disappears from every

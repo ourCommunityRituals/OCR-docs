@@ -99,7 +99,7 @@ Every artifact lands in exactly one of these. If it doesn't fit, ask before inve
 │                                                                             │
 │  ⑨ Next sales call ◄─────────  ⑧ Measure: SharedReport / dashboard          │
 │     (case study,                   anon_id_returns, corridor_density,       │
-│      pricing validation,           sponsor_impressions                      │
+│      pricing validation,           sponsor_displays                         │
 │      tier signal)                                                           │
 │                                                                             │
 │                                    ⑦ Pricing/tier update                    │
