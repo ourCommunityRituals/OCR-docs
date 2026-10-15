@@ -48,7 +48,7 @@ jobs:
       - name: Run sync audit
         id: audit
         env:
-          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          GH_TOKEN: ${{ secrets.OCR_SPOKES_READ }}
         run: |
           REPORT=""
           FAILURES=0
