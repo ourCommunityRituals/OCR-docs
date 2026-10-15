@@ -55,7 +55,7 @@ jobs:
           repository: ourCommunityRituals/ourCommunityRituals
           path: workspace-root
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
 
       # Each app repo gets its own checkout under ./app-repos/<name>.
       # Cloning them all upfront is cheap (shallow + sparse) and keeps
@@ -66,7 +66,7 @@ jobs:
           repository: ourCommunityRituals/ourSharedEvents
           path: app-repos/ourSharedEvents
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
 
       - name: Checkout app repo — ourSharedMagnets
         uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
           repository: ourCommunityRituals/ourSharedMagnets
           path: app-repos/ourSharedMagnets
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
 
       - name: Checkout app repo — ourWKRP
         uses: actions/checkout@v4
@@ -82,7 +82,7 @@ jobs:
           repository: ourCommunityRituals/ourWKRP
           path: app-repos/ourWKRP
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
         continue-on-error: true  # planned repo; may not exist yet
 
       - name: Checkout app repo — ourAirwaves
@@ -91,7 +91,7 @@ jobs:
           repository: ourCommunityRituals/ourAirwaves
           path: app-repos/ourAirwaves
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
         continue-on-error: true  # planned repo
 
       - name: Checkout app repo — ourSharedGames
@@ -100,7 +100,7 @@ jobs:
           repository: ourCommunityRituals/ourSharedGames
           path: app-repos/ourSharedGames
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
         continue-on-error: true  # pre-tech repo
 
       - name: Checkout app repo — ourSharedRecords
@@ -109,7 +109,7 @@ jobs:
           repository: ourCommunityRituals/ourSharedRecords
           path: app-repos/ourSharedRecords
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
         continue-on-error: true  # pre-tech repo
 
       - name: Checkout app repo — ourSharedPulse
@@ -118,7 +118,7 @@ jobs:
           repository: ourCommunityRituals/ourSharedPulse
           path: app-repos/ourSharedPulse
           ref: main
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_SPOKES_READ }}
         continue-on-error: true  # pre-tech repo
 
       - name: Set up Python
