@@ -112,6 +112,8 @@ jobs:
     name: Open PRs in product repos
     needs: detect-changes
     runs-on: ubuntu-latest
+    # The write token is an environment secret, reachable only from main (OSE-1695).
+    environment: main-automation
     strategy:
       fail-fast: false
       matrix:
@@ -149,7 +151,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.ORG }}/${{ matrix.repo }}
-          token: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          token: ${{ secrets.OCR_PROPAGATE_WRITE }}
           path: target
 
       - name: Build propagation summary
@@ -203,7 +205,7 @@ jobs:
         if: steps.scope.outputs.in_scope == 'true'
         working-directory: target
         env:
-          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_WRITE }}
         run: |
           git config user.name "OCR Standards Bot"
           git config user.email "noreply@ourcommunityrituals.com"
@@ -284,7 +286,7 @@ jobs:
           && github.event.inputs.dry_run != 'true'
         working-directory: target
         env:
-          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_TOKEN }}
+          GH_TOKEN: ${{ secrets.OCR_PROPAGATE_WRITE }}
         run: |
           # The branch ($PROPAGATE_BRANCH) was already selected in the dedup
           # step and staged in the diff step, so just commit the delta here.
