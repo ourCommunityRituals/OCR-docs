@@ -35,22 +35,11 @@ Full registry with per-product detail → `docs/OCR_VISION.md §6`.
 
 ## Architectural boundaries
 
-Architecture is the Triangle + 4 invariants + 4 governance files per repo. Source of truth lives in code at `ourSharedEvents/tests/e2e/0-architecture/`. This document mirrors what the tests enforce. Full prose in `docs/OCR_VISION.md` (Architecture section).
+Architecture is the Triangle + the invariants in the brain + 4 governance files per repo. Source of truth lives in code at `ourSharedEvents/tests/e2e/0-architecture/`. This document mirrors what the tests enforce. Full prose in `docs/OCR_VISION.md` (Architecture section).
 
 **The Triangle.** `Sponsor → Event ← Customer` with `SharedReport` derived. Any entity plugs into any corner. The Triangle enforces HOW entities participate, not WHAT they are.
 
-**The ten invariants.** Status legend: ✅ in code · ⚙️ partial (CI gate or related tests; promote to 0-architecture suite) · 📋 proposed.
-
-1. ✅ **Anonymous ID** — Zero-PII, two-DB separation (DB / FORMS_DB), `ose_anon` cookie contract, no cross-linking.
-2. ✅ **Hyper-local Geo-Resolution** — `sponsor_areas` + `sponsor_event_types`, corridor-level resolution, zip+radius matching.
-3. ✅ **UEC Encoding** — 7 color-semantic QR codes (Blue `#1A3A8A` = SPONSOR) + 4 extensions.
-4. ✅ **NCR Data Accumulation** — `poster_deployments` lat/lng + `scan_aggregates` pipeline, permanent storage (no PII = no TTL).
-5. 📋 **Tier Equity / Pricing Governance** — pricing tiers govern display priority only, never platform access. Same QR / forms / privacy / counts at every tier. Local stays in at all flag levels.
-6. ⚙️ **Inert Monetization Hooks** — `X-Monetization-Inert: true` header on every response. Existing CI gate `checkMonetizationHooksInert` already enforces.
-7. 📋 **Aggregate-Only Reporting** — SharedReports return aggregates only, never individual rows.
-8. ⚙️ **Bounded PII Retention** — every opt-in PII column has a TTL; daily lifecycle cron deletes/scrubs on schedule.
-9. ⚙️ **Tenant Isolation** — dual-key (`id` + `brandId`) on multi-tenant tables; no cross-tenant leakage.
-10. ⚙️ **Deprecation Lock** — once a runtime is removed (GAS today; HTML/Phase-3 future), CI forbids its re-introduction. Generalizes `scripts/guard-no-gas.js`.
+**The invariants.** The list lives in `ocr-docs-brain/architectural-invariants.yaml` (schema 1.2.0): 29 numbered invariants in six groups, of which 17 are live, 10 partial and 2 retired. Method: parse the file and count `invariants[]` by `status`; the ids run 1 to 29. Numbers are never reused or renumbered, and a retired entry keeps its number. Read that file for each invariant's current text and status. This document does not copy it, so it cannot drift from it.
 
 **The four governance files per repo.** Every repo maintains `CLAUDE.md`, `docs/OCR_VISION.md`, `README.md`, `SKILL.md`.
 
@@ -108,7 +97,7 @@ Full standard: `docs/standards/OCR_STANDARD_knowledgeHomes.md`. Transport mechan
 
 To avoid drift, Claude should not duplicate these from VISION.md here:
 
-- **The Triangle and four invariants (source of truth)** → `ourSharedEvents/tests/e2e/0-architecture/` (executable specs) and `docs/OCR_VISION.md` (Architecture section, prose mirror)
+- **The Triangle and the invariants (source of truth)** → `ocr-docs-brain/architectural-invariants.yaml` (the list), `ourSharedEvents/tests/e2e/0-architecture/` (executable specs) and `docs/OCR_VISION.md` (Architecture section, prose mirror)
 - **Four governance files per repo** → `docs/OCR_VISION.md` (Architecture section, governance-files subsection)
 - **OSM + OA flywheel** → `docs/OCR_VISION.md` (Architecture section)
 - **OSE / OW platform symmetry** → `docs/OCR_VISION.md` (Architecture section)
@@ -121,6 +110,6 @@ To avoid drift, Claude should not duplicate these from VISION.md here:
 
 ---
 
-*Last updated: 2026-04-14 (v2 — de-duplicated against VISION.md)*
+*Last updated: 2026-10-21 (v3: invariants list replaced by a pointer to the brain)*
 *Owner: Matt*
-*Status: DRAFT — awaiting review.*
+*Status: edited 2026-10-21, awaiting human review.*
