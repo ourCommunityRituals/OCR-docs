@@ -40,7 +40,7 @@ jobs:
   # --- Stage 1: universal invariant checks (every spoke, every identity mode)
   universal-checks:
     name: Universal checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR universal checks
@@ -54,7 +54,7 @@ jobs:
   identity-contract:
     name: Identity contract
     needs: universal-checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR identity contract
@@ -68,7 +68,7 @@ jobs:
   brain-conformance:
     name: Brain conformance
     needs: identity-contract
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Run OCR brain conformance
@@ -80,7 +80,7 @@ jobs:
   tests:
     name: Tests
     needs: brain-conformance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         shell: bash
@@ -99,7 +99,7 @@ jobs:
     name: Deploy (production)
     needs: tests
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - name: Deploy spoke worker

@@ -68,7 +68,7 @@ defaults:
 jobs:
   scan:
     name: Scan for phantom invariant references
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     steps:

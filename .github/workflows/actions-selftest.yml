@@ -4,7 +4,7 @@
 # touches them. A defect in an action.yml or a bundled checker is caught HERE,
 # in OCR-docs, instead of in a spoke's pipeline.
 #
-# The jobs run on GitHub-hosted ubuntu-latest, the runner every OCR workflow
+# The jobs run on GitHub-hosted ubuntu-24.04, the runner every OCR workflow
 # uses (the owner stopped self-hosting runners; statement of 2026-10-11), and
 # invoke the composite actions for real. So this workflow also verifies the
 # environment assumptions the actions depend on: action-path resolution and
@@ -40,7 +40,7 @@ defaults:
 jobs:
   metadata:
     name: action.yml metadata is valid
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
@@ -55,7 +55,7 @@ jobs:
   universal:
     name: universal-checks against fixture
     needs: metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -70,7 +70,7 @@ jobs:
   identity:
     name: identity-contract against fixture
     needs: metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +83,7 @@ jobs:
   brain:
     name: brain-conformance against fixture
     needs: metadata
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
