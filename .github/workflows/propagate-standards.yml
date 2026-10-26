@@ -53,7 +53,7 @@ env:
     ourSharedMagnets
     ourAirwaves
 
-# Pin all `run:` steps to bash. ubuntu-latest already defaults to bash, but
+# Pin all `run:` steps to bash. ubuntu-24.04 already defaults to bash, but
 # only an explicit `shell: bash` runs with `-o pipefail`, so a failure on
 # the left of a pipe fails the step. Keep the pin.
 defaults:
@@ -63,7 +63,7 @@ defaults:
 jobs:
   detect-changes:
     name: Detect what changed
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       templates_changed: ${{ steps.changes.outputs.templates }}
       skills_changed: ${{ steps.changes.outputs.skills }}
@@ -111,7 +111,7 @@ jobs:
   propagate:
     name: Open PRs in product repos
     needs: detect-changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # The write token is an environment secret, reachable only from main (OSE-1695).
     environment: main-automation
     strategy:

@@ -41,7 +41,7 @@ runs:
       run: |
         # On a Windows runner the action path arrives Windows-style: normalize
         # it to mixed-mode (C:/...) so it passes cleanly to native python.exe.
-        # On Linux (ubuntu-latest, where OCR CI runs) this is a plain `pwd`.
+        # On Linux (ubuntu-24.04, where OCR CI runs) this is a plain `pwd`.
         p='${{ github.action_path }}'
         p="${p//\\//}"
         echo "dir=$(cd "$p" && { pwd -W 2>/dev/null || pwd; })" >> "$GITHUB_OUTPUT"
