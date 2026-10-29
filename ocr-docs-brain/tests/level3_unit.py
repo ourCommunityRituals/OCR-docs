@@ -47,11 +47,171 @@ invariants = inv.get('invariants', [])
 # ---------------------------------------------------------------------------
 # 2.1 — Taxonomy count matches declared total
 # ---------------------------------------------------------------------------
-declared = et.get('total_types_v1', 0)
-actual = sum(len(c.get('event_types', [])) for c in categories)
-check('taxonomy_count_match', declared == actual,
-      f'declared={declared} actual={actual} drift={declared-actual}' if declared != actual
-      else f'{actual} types, matches')
+all_types = [t for c in categories for t in c.get('event_types', [])]
+phase1_types = [t for t in all_types if t.get('phase', 1) == 1]
+declared_v1 = et.get('total_types_v1', 0)
+declared_all = et.get('total_types', 0)
+count_ok = declared_v1 == len(phase1_types) and declared_all == len(all_types)
+check('taxonomy_count_match', count_ok,
+      f'total_types_v1 declared={declared_v1} actual={len(phase1_types)}; '
+      f'total_types declared={declared_all} actual={len(all_types)}' if not count_ok
+      else f'{len(phase1_types)} phase 1 types and {len(all_types)} in all, matches')
+
+# ---------------------------------------------------------------------------
+# 2.1b — Phase 2 types (owner decision: add parade and holy_day_gathering;
+#        the heritage label is chosen by the organizer and is never part of a type)
+# ---------------------------------------------------------------------------
+PHASE2_EXPECTED = {
+    'parade': ('SS-006', 'seasonal_special'),
+    'holy_day_gathering': ('CR-008', 'community_ritual'),
+    'recreational_league': ('GR-007', 'games_recreation'),
+}
+phase2_found = {}
+for cat in categories:
+    for t in cat.get('event_types', []):
+        if t.get('phase', 1) == 2:
+            phase2_found[t.get('type_id')] = (t.get('uec_code'), cat.get('category_id'))
+check('phase2_types_registered', phase2_found == PHASE2_EXPECTED,
+      f'expected {PHASE2_EXPECTED}, found {phase2_found}' if phase2_found != PHASE2_EXPECTED
+      else f'{len(PHASE2_EXPECTED)} phase 2 types registered with the expected codes and categories')
+
+bad_phase = [t.get('type_id') for t in all_types if t.get('phase', 1) not in (1, 2)]
+check('phase_values_valid', not bad_phase,
+      f'phase must be 1 or 2: {bad_phase}' if bad_phase else 'every phase is 1 or 2')
+
+check('phase1_seed_is_47', len(phase1_types) == 47,
+      f'the Phase 1 seed is fixed at 47, found {len(phase1_types)}' if len(phase1_types) != 47
+      else '47 phase 1 types, the seed OSE migration 0024 shares')
+
+holy = next((t for t in all_types if t.get('type_id') == 'holy_day_gathering'), {})
+holy_adds = holy.get('scan_codes_add', []) or []
+holy_removes = holy.get('scan_codes_remove', []) or []
+check('holy_day_gathering_no_commerce_codes',
+      bool(holy) and 'SPONSOR' in holy_removes and not {'SPONSOR', 'SHOP'} & set(holy_adds),
+      f'add={holy_adds} remove={holy_removes}' if not (holy and 'SPONSOR' in holy_removes and not {'SPONSOR', 'SHOP'} & set(holy_adds))
+      else 'SPONSOR removed, no SPONSOR or SHOP added')
+
+# A type describes the form of the event. An ethnic, national, language or faith label
+# belongs to the organizer's choice on the event, never to a type id or name.
+LABEL_WORDS = {
+    # ethnic, national and regional labels
+    'palestinian', 'arab', 'arabic', 'hispanic', 'latino', 'latina', 'latinx', 'latin', 'mexican',
+    'puerto', 'rican', 'cuban', 'jamaican', 'caribbean', 'asian', 'african', 'chinese', 'korean',
+    'vietnamese', 'filipino', 'japanese', 'indian', 'persian', 'turkish', 'greek', 'armenian',
+    'polish', 'irish', 'italian', 'ukrainian', 'nigerian', 'ethiopian', 'somali', 'hmong',
+    'navajo', 'native', 'pacific',
+    # language labels
+    'spanish', 'french', 'russian', 'haitian', 'portuguese', 'amharic', 'tigrinya', 'yoruba',
+    'igbo', 'swahili', 'thai', 'tagalog', 'hindi', 'urdu', 'mandarin', 'cantonese', 'hausa', 'wolof',
+    # faith and observance labels
+    'muslim', 'islamic', 'christian', 'catholic', 'jewish', 'hindu', 'sikh', 'buddhist',
+    'diwali', 'eid', 'ramadan', 'hanukkah', 'lunar',
+}
+
+
+def _label_words(text):
+    # Whole words, plus the singular of a plural, so "Hispanics" is caught as "hispanic".
+    out = set()
+    for w in re.findall(r'[a-z]+', text.lower()):
+        out.add(w)
+        if w.endswith('s'):
+            out.add(w[:-1])
+    return out
+
+
+labelled = []
+for t in all_types:
+    text = f'{t.get("type_id", "")} {t.get("type_name", "")} {t.get("description", "")}'
+    hit = _label_words(text) & LABEL_WORDS
+    if hit:
+        labelled.append(f'{t.get("type_id")}: {sorted(hit)}')
+check('type_names_carry_no_community_label', not labelled,
+      f'move the label to the organizer field: {labelled}' if labelled
+      else 'no type id, name or description carries an ethnic, national, language or faith label')
+
+# ---------------------------------------------------------------------------
+# 2.1c — Activities (sports). A league-style type names one sport from a closed list,
+#        so every sport is represented without a type per sport.
+# ---------------------------------------------------------------------------
+activities = et.get('activities', []) or []
+act_ids = [a.get('activity_id') for a in activities]
+act_codes = [a.get('activity_code') for a in activities]
+act_names = [str(a.get('activity_name', '')).strip().lower() for a in activities]
+ACT_PATTERN = re.compile(r'^AC-\d{3}$')
+act_problems = []
+if not activities:
+    act_problems.append('no activities defined')
+if any(not a.get('activity_id') or not a.get('activity_name') for a in activities):
+    act_problems.append('an activity is missing its id or name')
+if len(set(act_ids)) != len(act_ids):
+    act_problems.append('duplicate activity_id')
+if len(set(act_codes)) != len(act_codes):
+    act_problems.append('duplicate activity_code')
+if len(set(act_names)) != len(act_names):
+    act_problems.append('duplicate activity_name')
+if any(not (c and ACT_PATTERN.match(c)) for c in act_codes):
+    act_problems.append('activity_code must look like AC-001')
+check('activities_registry_valid', not act_problems,
+      '; '.join(act_problems) if act_problems else f'{len(activities)} activities, ids, codes and names unique')
+
+declared_acts = et.get('total_activities', 0)
+count_acts_ok = bool(activities) and declared_acts == len(activities)
+check('activities_count_match', count_acts_ok,
+      f'total_activities declared={declared_acts} actual={len(activities)}' if not count_acts_ok
+      else f'{len(activities)} activities, matches')
+
+# The floor of "all sports": these must always be present. More may be added; none removed.
+MUST_HAVE_ACTIVITIES = {
+    # core and Olympic
+    'soccer', 'futsal', 'beach_soccer', 'futevolei', 'volleyball', 'beach_volleyball',
+    'basketball', 'baseball', 'softball', 'cricket', 'rugby', 'tennis', 'swimming', 'athletics',
+    'flag_football', 'lacrosse', 'squash',
+    # fast-growing and newer competitive sports
+    'pickleball', 'padel', 'roundnet', 'beach_tennis', 'esports', 'breaking',
+    'obstacle_course_racing', 'functional_fitness', 'wingfoiling',
+    # adaptive and Paralympic sports with their own rules
+    'wheelchair_basketball', 'wheelchair_rugby', 'goalball', 'boccia', 'sitting_volleyball',
+}
+missing_acts = sorted(MUST_HAVE_ACTIVITIES - set(act_ids))
+check('activities_cover_required_sports', not missing_acts,
+      f'missing: {missing_acts}' if missing_acts else f'all {len(MUST_HAVE_ACTIVITIES)} required sports present')
+
+labelled_acts = [a.get('activity_id') for a in activities
+                 if _label_words(f'{a.get("activity_id", "")} {a.get("activity_name", "")}') & LABEL_WORDS]
+check('activities_carry_no_community_label', not labelled_acts,
+      f'move the label to the organizer field: {labelled_acts}' if labelled_acts
+      else 'no activity id or name carries an ethnic, national, language or faith label')
+
+league = next((t for t in all_types if t.get('type_id') == 'recreational_league'), {})
+check('recreational_league_takes_activity', league.get('takes_activity') is True,
+      f'takes_activity={league.get("takes_activity")!r}' if league.get('takes_activity') is not True
+      else 'recreational_league names one activity from the closed list')
+
+# A sport is listed by its generic name, never by a company's trademark.
+BRAND_WORDS = {
+    'frisbee', 'spikeball', 'crossfit', 'hyrox', 'spartan', 'mudder', 'zumba', 'nerf',
+    'wiffle', 'rollerblade', 'rollerblading',
+}
+branded_acts = [a.get('activity_id') for a in activities
+                if _label_words(f'{a.get("activity_id", "")} {a.get("activity_name", "")}') & BRAND_WORDS]
+check('activities_carry_no_brand_name', not branded_acts,
+      f'use the generic name: {branded_acts}' if branded_acts
+      else 'no activity id or name is a trademark')
+
+# Codes are issued in order and never reused, so the list must read AC-001 up to AC-N.
+expected_codes = [f'AC-{i:03d}' for i in range(1, len(activities) + 1)]
+check('activities_codes_contiguous', bool(activities) and act_codes == expected_codes,
+      'activity codes are not AC-001 up to AC-N in order' if act_codes != expected_codes
+      else f'AC-001 to AC-{len(activities):03d}, in order')
+
+# A sport that already has its own type (bocce, bowling) keeps it and is not repeated here.
+type_id_tokens = set()
+for t in all_types:
+    type_id_tokens |= set(re.findall(r'[a-z]+', str(t.get('type_id', ''))))
+repeated = [i for i in act_ids if i in type_id_tokens]
+check('activities_do_not_repeat_typed_sports', not repeated,
+      f'already has its own type: {repeated}' if repeated
+      else 'no activity repeats a sport that has its own type')
 
 # ---------------------------------------------------------------------------
 # 2.2 — UEC codes are globally unique

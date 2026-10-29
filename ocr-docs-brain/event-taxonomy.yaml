@@ -1,8 +1,12 @@
 # Event taxonomy — canonical classification. UEC coded.
-# Updated: schema v1.3.0 — added UEC scan code sets per event type.
+# Updated: schema v1.4.0 — added phase 2 types (parade, holy_day_gathering, recreational_league), the activities list, and total_types.
+# total_types_v1 is the Phase 1 seed and never changes: it is the count OSE migration 0024 and the deck share.
+# total_types counts every type defined here, whatever its phase, and is checked against the file.
 
-schema_version: 1.3.0
+schema_version: 1.4.0
 total_types_v1: 47
+total_types: 50
+total_activities: 116
 roadmap_target: 180
 uec_color_system:
   description: 'QR codes are generated with category-specific colors. The color IS the first layer of information. A blue
@@ -75,6 +79,17 @@ categories:
     product_origin:
     - ose
     description: Organized civic safety gathering.
+  - type_id: holy_day_gathering
+    type_name: Holy Day Gathering
+    uec_code: CR-008
+    phase: 2
+    product_origin:
+    - ose
+    description: Community gathering for a religious holy day or observance, such as holiday prayers or a service held outdoors or at a large venue. The faith or tradition is not part of the type.
+    scan_codes_add:
+    - HELP
+    scan_codes_remove:
+    - SPONSOR
 - category_id: music_culture
   category_name: Music & Culture
   uec_color: '#8B2FC9'
@@ -213,6 +228,17 @@ categories:
     - osg
     description: Recurring chess play and instruction.
     scan_codes_add:
+    - CHECK-IN
+  - type_id: recreational_league
+    type_name: Recreational League
+    uec_code: GR-007
+    phase: 2
+    takes_activity: true
+    product_origin:
+    - ose
+    description: Recurring league with teams, fixtures and standings. The organizer names one sport from the activities list.
+    scan_codes_add:
+    - LIVE
     - CHECK-IN
 - category_id: food_drink
   category_name: Food & Drink
@@ -517,6 +543,372 @@ categories:
     - HELP
     - STAFF
     - ALERT
+  - type_id: parade
+    type_name: Parade
+    uec_code: SS-006
+    phase: 2
+    product_origin:
+    - ose
+    description: Organized procession along a public street. Usually needs a street permit from the municipality; the organizer is responsible for confirming it.
+    scan_codes_add:
+    - LIVE
+    - HELP
+    - STAFF
+    - ALERT
+# Sports and games. A type with takes_activity: true names exactly one of these on the event.
+# Closed list: a new sport gets a new AC code and codes never change. A sport that already has
+# its own type (bocce, bowling) keeps it and is not repeated here. Where a sport sits under a wider
+# one (running and athletics, cycling and its disciplines, trampoline and gymnastics), the organizer
+# picks the narrowest one that fits. Sports are listed by their generic names, never by a trademark.
+activities:
+- activity_id: archery
+  activity_name: Archery
+  activity_code: AC-001
+- activity_id: athletics
+  activity_name: Athletics (track and field)
+  activity_code: AC-002
+- activity_id: badminton
+  activity_name: Badminton
+  activity_code: AC-003
+- activity_id: baseball
+  activity_name: Baseball
+  activity_code: AC-004
+- activity_id: basketball
+  activity_name: Basketball
+  activity_code: AC-005
+- activity_id: beach_soccer
+  activity_name: Beach soccer
+  activity_code: AC-006
+- activity_id: beach_volleyball
+  activity_name: Beach volleyball
+  activity_code: AC-007
+- activity_id: billiards
+  activity_name: Billiards and pool
+  activity_code: AC-008
+- activity_id: boxing
+  activity_name: Boxing
+  activity_code: AC-009
+- activity_id: canoeing
+  activity_name: Canoeing and kayaking
+  activity_code: AC-010
+- activity_id: capoeira
+  activity_name: Capoeira
+  activity_code: AC-011
+- activity_id: climbing
+  activity_name: Climbing
+  activity_code: AC-012
+- activity_id: cricket
+  activity_name: Cricket
+  activity_code: AC-013
+- activity_id: curling
+  activity_name: Curling
+  activity_code: AC-014
+- activity_id: cycling
+  activity_name: Cycling
+  activity_code: AC-015
+- activity_id: darts
+  activity_name: Darts
+  activity_code: AC-016
+- activity_id: disc_golf
+  activity_name: Disc golf
+  activity_code: AC-017
+- activity_id: diving
+  activity_name: Diving
+  activity_code: AC-018
+- activity_id: dodgeball
+  activity_name: Dodgeball
+  activity_code: AC-019
+- activity_id: equestrian
+  activity_name: Equestrian
+  activity_code: AC-020
+- activity_id: fencing
+  activity_name: Fencing
+  activity_code: AC-021
+- activity_id: field_hockey
+  activity_name: Field hockey
+  activity_code: AC-022
+- activity_id: figure_skating
+  activity_name: Figure skating
+  activity_code: AC-023
+- activity_id: flag_football
+  activity_name: Flag football
+  activity_code: AC-024
+- activity_id: futevolei
+  activity_name: Futevôlei (footvolley)
+  activity_code: AC-025
+- activity_id: futsal
+  activity_name: Futsal
+  activity_code: AC-026
+- activity_id: golf
+  activity_name: Golf
+  activity_code: AC-027
+- activity_id: gymnastics
+  activity_name: Gymnastics
+  activity_code: AC-028
+- activity_id: handball
+  activity_name: Handball
+  activity_code: AC-029
+- activity_id: ice_hockey
+  activity_name: Ice hockey
+  activity_code: AC-030
+- activity_id: jiu_jitsu
+  activity_name: Jiu-jitsu
+  activity_code: AC-031
+- activity_id: judo
+  activity_name: Judo
+  activity_code: AC-032
+- activity_id: kabaddi
+  activity_name: Kabaddi
+  activity_code: AC-033
+- activity_id: karate
+  activity_name: Karate
+  activity_code: AC-034
+- activity_id: kickball
+  activity_name: Kickball
+  activity_code: AC-035
+- activity_id: kickboxing
+  activity_name: Kickboxing
+  activity_code: AC-036
+- activity_id: lacrosse
+  activity_name: Lacrosse
+  activity_code: AC-037
+- activity_id: netball
+  activity_name: Netball
+  activity_code: AC-038
+- activity_id: pickleball
+  activity_name: Pickleball
+  activity_code: AC-039
+- activity_id: roller_derby
+  activity_name: Roller derby
+  activity_code: AC-040
+- activity_id: rowing
+  activity_name: Rowing
+  activity_code: AC-041
+- activity_id: rugby
+  activity_name: Rugby
+  activity_code: AC-042
+- activity_id: running
+  activity_name: Running
+  activity_code: AC-043
+- activity_id: sailing
+  activity_name: Sailing
+  activity_code: AC-044
+- activity_id: sepak_takraw
+  activity_name: Sepak takraw
+  activity_code: AC-045
+- activity_id: skateboarding
+  activity_name: Skateboarding
+  activity_code: AC-046
+- activity_id: skiing
+  activity_name: Skiing
+  activity_code: AC-047
+- activity_id: snowboarding
+  activity_name: Snowboarding
+  activity_code: AC-048
+- activity_id: soccer
+  activity_name: Soccer
+  activity_code: AC-049
+- activity_id: softball
+  activity_name: Softball
+  activity_code: AC-050
+- activity_id: speed_skating
+  activity_name: Speed skating
+  activity_code: AC-051
+- activity_id: squash
+  activity_name: Squash
+  activity_code: AC-052
+- activity_id: surfing
+  activity_name: Surfing
+  activity_code: AC-053
+- activity_id: swimming
+  activity_name: Swimming
+  activity_code: AC-054
+- activity_id: table_tennis
+  activity_name: Table tennis
+  activity_code: AC-055
+- activity_id: tackle_football
+  activity_name: Tackle football
+  activity_code: AC-056
+- activity_id: taekwondo
+  activity_name: Taekwondo
+  activity_code: AC-057
+- activity_id: tennis
+  activity_name: Tennis
+  activity_code: AC-058
+- activity_id: triathlon
+  activity_name: Triathlon
+  activity_code: AC-059
+- activity_id: ultimate
+  activity_name: Ultimate (flying disc)
+  activity_code: AC-060
+- activity_id: volleyball
+  activity_name: Volleyball
+  activity_code: AC-061
+- activity_id: water_polo
+  activity_name: Water polo
+  activity_code: AC-062
+- activity_id: weightlifting
+  activity_name: Weightlifting
+  activity_code: AC-063
+- activity_id: wrestling
+  activity_name: Wrestling
+  activity_code: AC-064
+- activity_id: padel
+  activity_name: Padel
+  activity_code: AC-065
+- activity_id: racquetball
+  activity_name: Racquetball
+  activity_code: AC-066
+- activity_id: platform_tennis
+  activity_name: Platform tennis
+  activity_code: AC-067
+- activity_id: roundnet
+  activity_name: Roundnet
+  activity_code: AC-068
+- activity_id: teqball
+  activity_name: Teqball
+  activity_code: AC-069
+- activity_id: wheelchair_basketball
+  activity_name: Wheelchair basketball
+  activity_code: AC-070
+- activity_id: wheelchair_rugby
+  activity_name: Wheelchair rugby
+  activity_code: AC-071
+- activity_id: wheelchair_tennis
+  activity_name: Wheelchair tennis
+  activity_code: AC-072
+- activity_id: goalball
+  activity_name: Goalball
+  activity_code: AC-073
+- activity_id: boccia
+  activity_name: Boccia (Paralympic target ball)
+  activity_code: AC-074
+- activity_id: sitting_volleyball
+  activity_name: Sitting volleyball
+  activity_code: AC-075
+- activity_id: blind_football
+  activity_name: Blind football (5-a-side)
+  activity_code: AC-076
+- activity_id: powerlifting
+  activity_name: Powerlifting
+  activity_code: AC-077
+- activity_id: shooting_sports
+  activity_name: Shooting sports
+  activity_code: AC-078
+- activity_id: esports
+  activity_name: Esports
+  activity_code: AC-079
+- activity_id: sim_racing
+  activity_name: Sim racing
+  activity_code: AC-080
+- activity_id: drone_racing
+  activity_name: Drone racing
+  activity_code: AC-081
+- activity_id: breaking
+  activity_name: Breaking (breakdance)
+  activity_code: AC-082
+- activity_id: parkour
+  activity_name: Parkour
+  activity_code: AC-083
+- activity_id: obstacle_course_racing
+  activity_name: Obstacle course racing
+  activity_code: AC-084
+- activity_id: fitness_racing
+  activity_name: Fitness racing
+  activity_code: AC-085
+- activity_id: functional_fitness
+  activity_name: Functional fitness
+  activity_code: AC-086
+- activity_id: wingfoiling
+  activity_name: Wingfoiling
+  activity_code: AC-087
+- activity_id: kiteboarding
+  activity_name: Kiteboarding
+  activity_code: AC-088
+- activity_id: stand_up_paddleboarding
+  activity_name: Stand-up paddleboarding
+  activity_code: AC-089
+- activity_id: dragon_boat
+  activity_name: Dragon boat
+  activity_code: AC-090
+- activity_id: bike_polo
+  activity_name: Bike polo
+  activity_code: AC-091
+- activity_id: bmx
+  activity_name: BMX
+  activity_code: AC-092
+- activity_id: mountain_biking
+  activity_name: Mountain biking
+  activity_code: AC-093
+- activity_id: cornhole
+  activity_name: Cornhole
+  activity_code: AC-094
+- activity_id: axe_throwing
+  activity_name: Axe throwing
+  activity_code: AC-095
+- activity_id: quadball
+  activity_name: Quadball
+  activity_code: AC-096
+- activity_id: footgolf
+  activity_name: Footgolf
+  activity_code: AC-097
+- activity_id: lawn_bowls
+  activity_name: Lawn bowls (outdoor green)
+  activity_code: AC-098
+- activity_id: cheerleading
+  activity_name: Cheerleading
+  activity_code: AC-099
+- activity_id: tug_of_war
+  activity_name: Tug of war
+  activity_code: AC-100
+- activity_id: mixed_martial_arts
+  activity_name: Mixed martial arts
+  activity_code: AC-101
+- activity_id: aikido
+  activity_name: Aikido
+  activity_code: AC-102
+- activity_id: hurling
+  activity_name: Hurling
+  activity_code: AC-103
+- activity_id: floorball
+  activity_name: Floorball
+  activity_code: AC-104
+- activity_id: broomball
+  activity_name: Broomball
+  activity_code: AC-105
+- activity_id: sled_hockey
+  activity_name: Sled hockey (para ice hockey)
+  activity_code: AC-106
+- activity_id: orienteering
+  activity_name: Orienteering
+  activity_code: AC-107
+- activity_id: paintball
+  activity_name: Paintball
+  activity_code: AC-108
+- activity_id: beach_tennis
+  activity_name: Beach tennis
+  activity_code: AC-109
+- activity_id: wakeboarding
+  activity_name: Wakeboarding
+  activity_code: AC-110
+- activity_id: artistic_swimming
+  activity_name: Artistic swimming
+  activity_code: AC-111
+- activity_id: trampoline
+  activity_name: Trampoline
+  activity_code: AC-112
+- activity_id: kendo
+  activity_name: Kendo
+  activity_code: AC-113
+- activity_id: biathlon
+  activity_name: Biathlon
+  activity_code: AC-114
+- activity_id: polo
+  activity_name: Polo
+  activity_code: AC-115
+- activity_id: roller_skating
+  activity_name: Roller skating
+  activity_code: AC-116
 validation:
 - rule: Every event must have exactly one uec_code from this taxonomy.
 - rule: UEC codes are immutable once assigned. New types get new codes.
@@ -524,6 +916,9 @@ validation:
 - rule: product_origin must include the product_id writing the event.
 - rule: QR color must match the category's uec_color.
 - rule: A type with status duplicate (see duplicate_of) or excluded_regime is not offered for new events. Its code stays reserved, so events already written under it remain valid.
+- rule: A type without a phase key is a Phase 1 type. total_types_v1 must equal the number of Phase 1 types, and total_types must equal the number of all types.
+- rule: When an event carries a heritage, language or community label, the organizer chooses it. It is never part of a type id, type name or UEC code, and it is never inferred from who attends. The event record that holds the label is defined by the product that writes the event.
+- rule: An event of a type with takes_activity true names exactly one activity from the activities list. The list is closed and its codes never change. total_activities must equal the number of activities. A sport with its own type, such as bocce or bowling, keeps that type and is not repeated in the list.
 valid_scan_codes:
   ENTER:
     hex: '#1A6B2F'

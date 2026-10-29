@@ -78,12 +78,14 @@ for fname, required in REQUIRED_KEYS.items():
 # TEST 3: Taxonomy count
 # ---------------------------------------------------------------------------
 et = loaded.get('event-taxonomy.yaml', {})
-declared = et.get('total_types_v1', 0)
-actual = sum(len(c.get('event_types', [])) for c in et.get('categories', []))
-if declared == actual:
-    record('taxonomy:count_match', PASS, f'{actual} types defined, {declared} declared')
+all_types = [t for c in et.get('categories', []) for t in c.get('event_types', [])]
+phase1_actual = sum(1 for t in all_types if t.get('phase', 1) == 1)
+declared_v1 = et.get('total_types_v1', 0)
+declared_all = et.get('total_types', 0)
+if declared_v1 == phase1_actual and declared_all == len(all_types):
+    record('taxonomy:count_match', PASS, f'{phase1_actual} phase 1 types ({declared_v1} declared), {len(all_types)} in all ({declared_all} declared)')
 else:
-    record('taxonomy:count_match', FAIL, f'declared {declared}, actually defined {actual} (drift = {declared - actual})')
+    record('taxonomy:count_match', FAIL, f'phase 1: declared {declared_v1}, defined {phase1_actual}; all: declared {declared_all}, defined {len(all_types)}')
 
 # ---------------------------------------------------------------------------
 # TEST 4: Cross-reference integrity
