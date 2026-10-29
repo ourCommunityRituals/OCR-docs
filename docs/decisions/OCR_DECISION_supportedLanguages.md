@@ -85,6 +85,23 @@ The county list is a working draft of the owner's description. The owner confirm
 
 That makes 24 languages for the Chicago reach: the national 12 plus 12 regional ones (Polish, Gujarati, Ukrainian, Greek, Serbian, Croatian, Bosnian, Hmong, Burmese, Karen, Swahili, Kinyarwanda). This also settles the per-corridor question: a region can turn on languages the national list does not have. The regional languages use machine translation only, the same as the other non-Spanish, non-Arabic languages.
 
+## Language selector (owner, 2026-10-29)
+
+**Today:** no OCR surface has a language selector or any i18n code. The OSE pages hard-code `<html lang="en">` (33 of them: `grep -rho '<html[^>]*lang="[a-z-]*"' workers web` in ourSharedEvents), and the ourWKRP templates do too.
+
+**What the owner wants:**
+
+- A language selector in the **top-right corner** of every page, in the shared `Header` component (`@ocr/ui`), so every product gets it.
+- **Order:** English first (the default), Spanish second, then every other language the region supports. In the Chicago reach that is the other 22.
+- **Flow:** choosing a language switches the whole site to that language at once.
+
+**Rules the build must follow:**
+
+- **Each language is listed in its own name** (Español, العربية, Polski, 中文), so a reader can find theirs without reading English.
+- **Remembering the choice cannot use a cookie.** Invariant 4 allows no cookies on public surfaces except `ose_anon`. Carry the choice in the URL (for example `?lang=es` or `/es/…`), or keep it in the browser's local storage. The URL is better because a shared link keeps its language.
+- **Right-to-left mirrors the layout.** In Arabic and Urdu the whole page flips, so the selector moves to the top-left.
+- **The design system still applies:** touch targets ≥ 44 px, text ≥ 16 px, colours only from `packages/tokens`.
+
 ## Still open
 
 1. **Chinese:** ship Simplified and Traditional both, or one first?
