@@ -1,6 +1,6 @@
 # Decision: Supported languages across the OCR product line
 
-> **Status:** DECIDED (owner, 2026-10-29). The language list is set. Rollout order and timing are open.
+> **Status:** DECIDED (owner, 2026-10-29). The language list, timing, rollout order and translation method are set (see "Owner answers").
 > **Decided by:** Matt (owner)
 > **Applies to:** every OCR product with a public surface (OSE, OW, OSM, OA, and later spokes)
 
@@ -50,18 +50,44 @@ These languages are close behind the top 12 overall, or among the largest in one
 
 ## Consequences
 
-- **This changes a prior scope line.** `ourSharedEvents/docs/mvp/MVP_SCOPE.md` lists "i18n/localization" under OUT OF SCOPE (v2+). This decision says which languages, not when. Whether i18n stays v2+ is still open (below).
+- **This changes a prior scope line.** `ourSharedEvents/docs/mvp/MVP_SCOPE.md` lists "i18n/localization" under OUT OF SCOPE (v2+). This decision says which languages. The owner kept i18n at v2+ (below), so there is no conflict.
 - **Right-to-left layout is required.** Arabic and Urdu (and Persian, on the watch list) need RTL support in `@ocr/ui`. That is design-system work in the spine repo and follows `packages/ui/design-system/` rules.
 - **Fonts must cover Chinese, Korean, Arabic, Devanagari and Urdu scripts.** Input text stays ≥ 16 px (invariant).
 - **Translation never touches identity or counts.** Translated strings change wording only. They never change what a count means, and the under-5 floor wording ("Fewer than 5") is translated, never replaced with a number.
 
-## Open questions for the owner
+## Owner answers (2026-10-29)
 
-1. **Rollout order:** all 12 at once, or in waves (for example Spanish first, then by corridor)?
-2. **Timing:** does i18n stay v2+ per MVP_SCOPE, or move earlier?
-3. **Per-corridor languages:** can a corridor turn on a watch-list language (for example Hmong in Minneapolis) before it reaches the national list?
-4. **Who translates:** professional translators, community volunteers, or machine translation reviewed by a person? (The OSE runtime is LLM-free, so translations are produced ahead of time, never at request time.)
-5. **Chinese:** ship Simplified and Traditional both, or one first?
+1. **Timing:** i18n stays v2+, as `ourSharedEvents/docs/mvp/MVP_SCOPE.md` already says. Nothing in MVP scope changes. (The owner answered "number one", meaning the first option offered: stay v2+.)
+2. **Rollout order:** city by city, driven by demand. The first region is the **Chicago reach**, defined below. It must be fully covered.
+3. **Who translates:** machine translation first for every language. Spanish and Arabic then get a paid human reviewer, a native speaker from the owner's local network. Experience on earlier sites showed that machine translation alone was not good enough for Spanish. Translations are made ahead of time, never at request time, because the OSE runtime is LLM-free.
+
+## First region: the Chicago reach
+
+The owner's definition is everywhere Chicago's pull reaches, roughly 10 million people:
+
+- **Greater Chicagoland:** Cook, DuPage, Lake (IL), Will, Kane, McHenry, Kendall, DeKalb, Grundy and Kankakee counties
+- **Northwest Indiana:** Lake, Porter and LaPorte counties
+- **Southwest Michigan:** Berrien, Cass, Van Buren, St. Joseph and Kalamazoo counties
+- **Southern Wisconsin:** Kenosha, Racine, Walworth, Rock and Milwaukee counties
+- **West to the Quad Cities:** Rock Island (IL) and Scott (IA) counties, with the I-88 corridor between them
+
+The county list is a working draft of the owner's description. The owner confirms or edits it.
+
+**Languages in this region that are not in the national 12** (candidates, from the same unverified ACS estimate; pull B16001 by county to confirm):
+
+- **Polish:** Chicago, Northwest Indiana, Milwaukee. Likely the #3 language in the region, so it is the strongest candidate to add.
+- **Gujarati:** Chicago's west and northwest suburbs
+- **Ukrainian:** Chicago
+- **Greek:** Chicago
+- **Serbian / Croatian / Bosnian:** Chicago, Northwest Indiana, Milwaukee
+- **Hmong:** Milwaukee
+- **Burmese, Karen, Swahili and Kinyarwanda:** the Quad Cities, from refugee resettlement
+
+## Still open
+
+1. **Polish (and other regional languages):** add Polish for the Chicago reach even though it is not in the national 12? This is the per-corridor question: can a region turn on a language the national list does not have?
+2. **Chinese:** ship Simplified and Traditional both, or one first?
+3. **County list:** confirm or edit the Chicago-reach counties above.
 
 ---
 
