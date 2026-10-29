@@ -93,6 +93,44 @@ check('founding_nodes_have_descriptions', not undescribed,
       else 'every founding node has a description written from the owner\'s own words')
 
 # ---------------------------------------------------------------------------
+# 2.1d — No stale copy of the old founding-node count. The corridor data owns the
+#        roster; a hand-written "5 founding corridors" or "Founding Five" in the brain
+#        is a copy that drifted. A dated record is exempt as a whole file only when it is
+#        named in HISTORICAL_RECORDS below AND carries a "[historical record" marker in its
+#        first 15 lines; a marker alone never exempts a file, so a living file cannot be
+#        silenced by adding one. This guard's own file is excluded, so its wording is not
+#        flagged. Not scanned: docs/ (the vision table waits on an owner decision; widen
+#        the scan when it is settled).
+# ---------------------------------------------------------------------------
+STALE_NODE_COUNT = re.compile(
+    r'\bfounding[\s_-]*(?:5|five)\b|\b(?:5|five)[\s_-]*founding\b|\b(?:5|five)\s+corridors\b', re.I)
+HISTORICAL_RECORDS = {'NCR_BRAIN_PROMOTION_PROPOSAL.md'}
+REPO_ROOT = BRAIN.parent
+stale_scan = [p for ext in ('*.yaml', '*.md', '*.py') for p in BRAIN.rglob(ext)
+              if p.name != Path(__file__).name]
+root_proposal = REPO_ROOT / 'NCR_BRAIN_PROMOTION_PROPOSAL.md'
+if root_proposal.exists():
+    stale_scan.append(root_proposal)
+stale_hits = []
+for p in stale_scan:
+    lines = p.read_text(encoding='utf-8', errors='replace').splitlines()
+    if p.name in HISTORICAL_RECORDS and any('[historical record' in head for head in lines[:15]):
+        continue
+    for n, line in enumerate(lines, 1):
+        if STALE_NODE_COUNT.search(line):
+            stale_hits.append(f'{p.relative_to(REPO_ROOT).as_posix()}:{n}')
+scanned_paths = {p.relative_to(REPO_ROOT).as_posix() for p in stale_scan}
+REQUIRED_SCANNED = {'ocr-docs-brain/corridor-definitions.yaml', 'ocr-docs-brain/research-questions-registry.yaml',
+                    'ocr-docs-brain/tests/level8_pact.py', 'ocr-docs-brain/README.md',
+                    'NCR_BRAIN_PROMOTION_PROPOSAL.md'}
+missing_scan = sorted(REQUIRED_SCANNED - scanned_paths)
+check('stale_node_count_scan_covers_files', not missing_scan,
+      f'the scan no longer reaches: {missing_scan}' if missing_scan else f'scanned {len(stale_scan)} files')
+check('no_stale_founding_node_count', not stale_hits,
+      f'old founding-node count still written at: {stale_hits}' if stale_hits
+      else 'no file says five founding corridors outside a dated historical note')
+
+# ---------------------------------------------------------------------------
 # 2.1b — Phase 2 types (owner decision: add parade and holy_day_gathering;
 #        the heritage label is chosen by the organizer and is never part of a type)
 # ---------------------------------------------------------------------------
