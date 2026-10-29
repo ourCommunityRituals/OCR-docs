@@ -1,6 +1,6 @@
 # Decision: Supported languages across the OCR product line
 
-> **Status:** DECIDED (owner, 2026-10-29). The language list, timing, rollout order and translation method are set (see "Owner answers").
+> **Status:** DECIDED (owner, 2026-10-29). The language list, timing, rollout order and translation method are set (see "Owner answers"). Chicago leads, with 22 languages (see "First region").
 > **Decided by:** Matt (owner)
 > **Applies to:** every OCR product with a public surface (OSE, OW, OSM, OA, and later spokes)
 
@@ -73,9 +73,9 @@ The owner's definition is everywhere Chicago's pull reaches, roughly 10 million 
 
 The county list is a working draft of the owner's description. The owner confirms or edits it.
 
-**Languages in this region that are not in the national 12** (candidates, from the same unverified ACS estimate; pull B16001 by county to confirm):
+**Chicago leads, so the Chicago reach ships with every language in the national 12 plus these regional languages** (owner, 2026-10-29). Where they are spoken comes from the same unverified ACS estimate; pull B16001 by county to confirm.
 
-- **Polish:** Chicago, Northwest Indiana, Milwaukee. Likely the #3 language in the region, so it is the strongest candidate to add.
+- **Polish:** Chicago, Northwest Indiana, Milwaukee. Likely the #3 language in the region.
 - **Gujarati:** Chicago's west and northwest suburbs
 - **Ukrainian:** Chicago
 - **Greek:** Chicago
@@ -83,11 +83,12 @@ The county list is a working draft of the owner's description. The owner confirm
 - **Hmong:** Milwaukee
 - **Burmese, Karen, Swahili and Kinyarwanda:** the Quad Cities, from refugee resettlement
 
+That makes 22 languages for the Chicago reach: the national 12 plus 10 regional ones (Serbian, Croatian and Bosnian count as three). This also settles the per-corridor question: a region can turn on languages the national list does not have. The regional languages use machine translation only, the same as the other non-Spanish, non-Arabic languages.
+
 ## Still open
 
-1. **Polish (and other regional languages):** add Polish for the Chicago reach even though it is not in the national 12? This is the per-corridor question: can a region turn on a language the national list does not have?
-2. **Chinese:** ship Simplified and Traditional both, or one first?
-3. **County list:** confirm or edit the Chicago-reach counties above.
+1. **Chinese:** ship Simplified and Traditional both, or one first?
+2. **County list:** confirm or edit the Chicago-reach counties above.
 
 ---
 
