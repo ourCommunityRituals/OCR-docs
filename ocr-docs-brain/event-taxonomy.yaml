@@ -1,8 +1,11 @@
 # Event taxonomy — canonical classification. UEC coded.
-# Updated: schema v1.3.0 — added UEC scan code sets per event type.
+# Updated: schema v1.4.0 — added phase 2 types (parade, holy_day_gathering) and total_types.
+# total_types_v1 is the Phase 1 seed and never changes: it is the count OSE migration 0024 and the deck share.
+# total_types counts every type defined here, whatever its phase, and is checked against the file.
 
-schema_version: 1.3.0
+schema_version: 1.4.0
 total_types_v1: 47
+total_types: 49
 roadmap_target: 180
 uec_color_system:
   description: 'QR codes are generated with category-specific colors. The color IS the first layer of information. A blue
@@ -75,6 +78,17 @@ categories:
     product_origin:
     - ose
     description: Organized civic safety gathering.
+  - type_id: holy_day_gathering
+    type_name: Holy Day Gathering
+    uec_code: CR-008
+    phase: 2
+    product_origin:
+    - ose
+    description: Community gathering for a religious holy day or observance, such as holiday prayers or a service held outdoors or at a large venue. The faith or tradition is not part of the type.
+    scan_codes_add:
+    - HELP
+    scan_codes_remove:
+    - SPONSOR
 - category_id: music_culture
   category_name: Music & Culture
   uec_color: '#8B2FC9'
@@ -517,6 +531,18 @@ categories:
     - HELP
     - STAFF
     - ALERT
+  - type_id: parade
+    type_name: Parade
+    uec_code: SS-006
+    phase: 2
+    product_origin:
+    - ose
+    description: Organized procession along a public street. Usually needs a street permit from the municipality; the organizer is responsible for confirming it.
+    scan_codes_add:
+    - LIVE
+    - HELP
+    - STAFF
+    - ALERT
 validation:
 - rule: Every event must have exactly one uec_code from this taxonomy.
 - rule: UEC codes are immutable once assigned. New types get new codes.
@@ -524,6 +550,8 @@ validation:
 - rule: product_origin must include the product_id writing the event.
 - rule: QR color must match the category's uec_color.
 - rule: A type with status duplicate (see duplicate_of) or excluded_regime is not offered for new events. Its code stays reserved, so events already written under it remain valid.
+- rule: A type without a phase key is a Phase 1 type. total_types_v1 must equal the number of Phase 1 types, and total_types must equal the number of all types.
+- rule: When an event carries a heritage, language or community label, the organizer chooses it. It is never part of a type id, type name or UEC code, and it is never inferred from who attends. The event record that holds the label is defined by the product that writes the event.
 valid_scan_codes:
   ENTER:
     hex: '#1A6B2F'
