@@ -1,6 +1,6 @@
 # Decision: Supported languages across the OCR product line
 
-> **Status:** DECIDED (owner, 2026-10-29). The language list, timing, rollout order and translation method are set (see "Owner answers"). Chicago leads, with 22 languages (see "First region").
+> **Status:** DECIDED (owner, 2026-10-29). The language list, timing, rollout order and translation method are set (see "Owner answers"). Chicago leads, with 24 languages (see "First region").
 > **Decided by:** Matt (owner)
 > **Applies to:** every OCR product with a public surface (OSE, OW, OSM, OA, and later spokes)
 
@@ -83,7 +83,7 @@ The county list is a working draft of the owner's description. The owner confirm
 - **Hmong:** Milwaukee
 - **Burmese, Karen, Swahili and Kinyarwanda:** the Quad Cities, from refugee resettlement
 
-That makes 22 languages for the Chicago reach: the national 12 plus 10 regional ones (Serbian, Croatian and Bosnian count as three). This also settles the per-corridor question: a region can turn on languages the national list does not have. The regional languages use machine translation only, the same as the other non-Spanish, non-Arabic languages.
+That makes 24 languages for the Chicago reach: the national 12 plus 12 regional ones (Polish, Gujarati, Ukrainian, Greek, Serbian, Croatian, Bosnian, Hmong, Burmese, Karen, Swahili, Kinyarwanda). This also settles the per-corridor question: a region can turn on languages the national list does not have. The regional languages use machine translation only, the same as the other non-Spanish, non-Arabic languages.
 
 ## Still open
 
