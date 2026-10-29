@@ -59,7 +59,7 @@ These languages are close behind the top 12 overall, or among the largest in one
 
 1. **Timing:** i18n stays v2+, as `ourSharedEvents/docs/mvp/MVP_SCOPE.md` already says. Nothing in MVP scope changes. (The owner answered "number one", meaning the first option offered: stay v2+.)
 2. **Rollout order:** city by city, driven by demand. The first region is the **Chicago reach**, defined below. It must be fully covered.
-3. **Who translates:** machine translation first for every language. Spanish and Arabic then get a paid human reviewer, a native speaker from the owner's local network. Experience on earlier sites showed that machine translation alone was not good enough for Spanish. Translations are made ahead of time, never at request time, because the OSE runtime is LLM-free.
+3. **Who translates:** machine translation first for every language. Spanish and Arabic then get a paid human reviewer, a native speaker from the owner's local network. Every other language has no outside reviewer for now. The owner handles those alone, with machine translation as the only check. Experience on earlier sites showed that machine translation alone was not good enough for Spanish. Translations are made ahead of time, never at request time, because the OSE runtime is LLM-free.
 
 ## First region: the Chicago reach
 
