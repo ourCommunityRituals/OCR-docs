@@ -39,6 +39,7 @@ pr = load('product-registry.yaml')
 tg = load('tier-gates.yaml')
 et = load('event-taxonomy.yaml')
 inv = load('architectural-invariants.yaml')
+cd = load('corridor-definitions.yaml')
 
 products = pr.get('products', [])
 categories = et.get('categories', [])
@@ -56,6 +57,40 @@ check('taxonomy_count_match', count_ok,
       f'total_types_v1 declared={declared_v1} actual={len(phase1_types)}; '
       f'total_types declared={declared_all} actual={len(all_types)}' if not count_ok
       else f'{len(phase1_types)} phase 1 types and {len(all_types)} in all, matches')
+
+# ---------------------------------------------------------------------------
+# 2.1a — Founding nodes (owner, 2026-10-29): six nodes first, then Harbor Country
+#        (Southwest Michigan) as the network destination.
+# ---------------------------------------------------------------------------
+FOUNDING_SIX = ['blue_island', 'beverly', 'gresham_ashburn', 'evergreen_park', 'oak_lawn', 'mt_greenwood']
+corridors_all = cd.get('founding_corridors', [])
+six_found = [c.get('corridor_id') for c in corridors_all if c.get('node_set') == 'founding_six']
+check('founding_six_nodes_exact', sorted(six_found) == sorted(FOUNDING_SIX),
+      f'expected {sorted(FOUNDING_SIX)}, found {sorted(six_found)}' if sorted(six_found) != sorted(FOUNDING_SIX)
+      else 'blue_island, beverly, gresham_ashburn, evergreen_park, oak_lawn, mt_greenwood')
+
+bad_set = [c.get('corridor_id') for c in corridors_all if c.get('node_set') not in ('founding_six', 'network_destination')]
+check('every_corridor_has_a_node_set', not bad_set,
+      f'node_set must be founding_six or network_destination: {bad_set}' if bad_set
+      else 'every corridor is a founding node or the network destination')
+
+harbor = next((c for c in corridors_all if c.get('corridor_id') == 'harbor_country'), {})
+check('harbor_country_is_network_destination', harbor.get('node_set') == 'network_destination',
+      f'node_set={harbor.get("node_set")!r}' if harbor.get('node_set') != 'network_destination'
+      else 'harbor_country follows the six as the network destination')
+
+net_dest = sorted(c.get('corridor_id') for c in corridors_all if c.get('node_set') == 'network_destination')
+check('only_harbor_country_is_network_destination', net_dest == ['harbor_country'],
+      f'expected only harbor_country, found {net_dest}' if net_dest != ['harbor_country']
+      else 'harbor_country is the only network destination')
+
+# A founding node's description is the owner's to write. A placeholder must not ship as if it were one.
+undescribed = [c.get('corridor_id') for c in corridors_all
+               if c.get('node_set') == 'founding_six'
+               and 'to be written by the owner' in str(c.get('role_description', '')).lower()]
+check('founding_nodes_have_descriptions', not undescribed,
+      f'still the placeholder: {undescribed}' if undescribed
+      else 'every founding node has a description written from the owner\'s own words')
 
 # ---------------------------------------------------------------------------
 # 2.1b — Phase 2 types (owner decision: add parade and holy_day_gathering;

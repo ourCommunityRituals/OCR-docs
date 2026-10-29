@@ -9,7 +9,7 @@
 #
 # Location: OCR-docs repository root
 # Version: 1.0.0
-# Last Updated: 2026-04-15
+# Last Updated: 2026-10-29
 # Classification: CONFIDENTIAL — TRADE SECRET
 # ============================================================================
 
@@ -58,7 +58,14 @@ hierarchy:
       example: "Chicago–Harbor Country network"
 
 # ============================================================================
-# FOUNDING FIVE CORRIDORS
+# FOUNDING SIX NODES, THEN THE HARBOR COUNTRY NETWORK DESTINATION
+# Owner, 2026-10-29: Blue Island, Beverly, Gresham/Ashburn, Evergreen Park,
+# Oak Lawn and Mt. Greenwood are the six founding nodes. Harbor Country
+# (Southwest Michigan) follows as the network destination.
+# What ties the six together (owner, 2026-10-29): a cross-sectional family-and-
+# friend structure across Chicagoland. Families in these nodes own property or
+# vacation in Southwest Michigan and travel across Wisconsin, Illinois, Indiana
+# and Michigan all the time.
 # ============================================================================
 founding_corridors:
 
@@ -101,6 +108,7 @@ founding_corridors:
         lat_max: 41.85
         lon_min: -88.05
         lon_max: -87.45
+    node_set: founding_six
     status: active
 
   - corridor_id: beverly
@@ -113,6 +121,23 @@ founding_corridors:
       The anchor corridor. Deepest personal roots. 25+ years of lived
       geographic observation. The corridor the platform was born from.
     color_hex: "#1D9E75"
+    node_set: founding_six
+    status: planned
+
+  - corridor_id: gresham_ashburn
+    community_name: "Gresham/Ashburn"
+    # region and sub_region are inferred from how this file labels the other
+    # Chicago nodes; the owner has not stated them. To confirm.
+    region: "SW Chicago"
+    sub_region: "Southwest Chicago corridor"
+    metro: "Chicagoland"
+    role: unassigned
+    role_description: >
+      Inner-Chicago family-and-friend travel with the Mexican American and
+      African American communities of Gresham, Evergreen Park, Beverly and
+      Blue Island. Draft from the owner's description (2026-10-29), for the
+      owner to confirm. The node's role is not yet assigned.
+    node_set: founding_six
     status: planned
 
   - corridor_id: evergreen_park
@@ -125,6 +150,7 @@ founding_corridors:
       Chosen for geographic impact. Black/white/Hispanic corridor
       intersection. Demographic complexity proves platform flexibility.
     color_hex: "#7F77DD"
+    node_set: founding_six
     status: planned
 
   - corridor_id: oak_lawn
@@ -135,6 +161,23 @@ founding_corridors:
     role: flagship_corridor
     role_description: "Adjacent suburb. Natural expansion from Blue Island/EP."
     color_hex: "#D4537E"
+    node_set: founding_six
+    status: planned
+
+  - corridor_id: mt_greenwood
+    community_name: "Mt. Greenwood"
+    # region and sub_region are inferred from how this file labels the other
+    # Chicago nodes; the owner has not stated them. To confirm.
+    region: "SW Chicago"
+    sub_region: "Southwest Chicago corridor"
+    metro: "Chicagoland"
+    role: unassigned
+    role_description: >
+      Family-and-friend travel out to the near and far south suburbs, shared
+      with Beverly, Evergreen Park, Blue Island and Oak Lawn. Draft from the
+      owner's description (2026-10-29), for the owner to confirm. The node's
+      role is not yet assigned.
+    node_set: founding_six
     status: planned
 
   - corridor_id: harbor_country
@@ -149,6 +192,7 @@ founding_corridors:
       Poster → pre-event → QR funneling to partner sponsors
       (lodging, breweries, wineries, dispensaries).
     color_hex: "#BA7517"
+    node_set: network_destination
     status: planned
 
 # ============================================================================
@@ -170,6 +214,8 @@ research_comparators:
 # FLYWHEEL
 # ============================================================================
 flywheel:
+  # NOTE (2026-10-29): this sequence predates the six-node list. The owner has
+  # not yet placed Gresham/Ashburn and Mt. Greenwood in it.
   description: >
     Blue Island → behavioral saturation evidence → flagship corridors.
     AJ cases are Blue Island-specific only. Evidence from Blue Island
