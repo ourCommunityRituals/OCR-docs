@@ -1,6 +1,6 @@
 # Decision: Supported languages across the OCR product line
 
-> **Status:** DECIDED (owner, 2026-10-29). The language list is set. Rollout order and timing are open.
+> **Status:** DECIDED (owner, 2026-10-29). The language list, timing, rollout order and translation method are set (see "Owner answers"). Chicago leads, with 24 languages (see "First region").
 > **Decided by:** Matt (owner)
 > **Applies to:** every OCR product with a public surface (OSE, OW, OSM, OA, and later spokes)
 
@@ -50,18 +50,62 @@ These languages are close behind the top 12 overall, or among the largest in one
 
 ## Consequences
 
-- **This changes a prior scope line.** `ourSharedEvents/docs/mvp/MVP_SCOPE.md` lists "i18n/localization" under OUT OF SCOPE (v2+). This decision says which languages, not when. Whether i18n stays v2+ is still open (below).
+- **This changes a prior scope line.** `ourSharedEvents/docs/mvp/MVP_SCOPE.md` lists "i18n/localization" under OUT OF SCOPE (v2+). This decision says which languages. The owner kept i18n at v2+ (below), so there is no conflict.
 - **Right-to-left layout is required.** Arabic and Urdu (and Persian, on the watch list) need RTL support in `@ocr/ui`. That is design-system work in the spine repo and follows `packages/ui/design-system/` rules.
 - **Fonts must cover Chinese, Korean, Arabic, Devanagari and Urdu scripts.** Input text stays ≥ 16 px (invariant).
 - **Translation never touches identity or counts.** Translated strings change wording only. They never change what a count means, and the under-5 floor wording ("Fewer than 5") is translated, never replaced with a number.
 
-## Open questions for the owner
+## Owner answers (2026-10-29)
 
-1. **Rollout order:** all 12 at once, or in waves (for example Spanish first, then by corridor)?
-2. **Timing:** does i18n stay v2+ per MVP_SCOPE, or move earlier?
-3. **Per-corridor languages:** can a corridor turn on a watch-list language (for example Hmong in Minneapolis) before it reaches the national list?
-4. **Who translates:** professional translators, community volunteers, or machine translation reviewed by a person? (The OSE runtime is LLM-free, so translations are produced ahead of time, never at request time.)
-5. **Chinese:** ship Simplified and Traditional both, or one first?
+1. **Timing:** i18n stays v2+, as `ourSharedEvents/docs/mvp/MVP_SCOPE.md` already says. Nothing in MVP scope changes. (The owner answered "number one", meaning the first option offered: stay v2+.)
+2. **Rollout order:** city by city, driven by demand. The first region is the **Chicago reach**, defined below. It must be fully covered.
+3. **Who translates:** machine translation first for every language. Spanish and Arabic then get a paid human reviewer, a native speaker from the owner's local network. Every other language has no outside reviewer for now. The owner handles those alone, with machine translation as the only check. Experience on earlier sites showed that machine translation alone was not good enough for Spanish. Translations are made ahead of time, never at request time, because the OSE runtime is LLM-free.
+
+## First region: the Chicago reach
+
+The owner's definition is everywhere Chicago's pull reaches, roughly 10 million people:
+
+- **Greater Chicagoland:** Cook, DuPage, Lake (IL), Will, Kane, McHenry, Kendall, DeKalb, Grundy and Kankakee counties
+- **Northwest Indiana:** Lake, Porter and LaPorte counties
+- **Southwest Michigan:** Berrien, Cass, Van Buren, St. Joseph and Kalamazoo counties
+- **Southern Wisconsin:** Kenosha, Racine, Walworth, Rock and Milwaukee counties
+- **West to the Quad Cities:** Rock Island (IL) and Scott (IA) counties, with the I-88 corridor between them
+
+The county list is a working draft of the owner's description. The owner confirms or edits it.
+
+**Chicago leads, so the Chicago reach ships with every language in the national 12 plus these regional languages** (owner, 2026-10-29). Where they are spoken comes from the same unverified ACS estimate; pull B16001 by county to confirm.
+
+- **Polish:** Chicago, Northwest Indiana, Milwaukee. Likely the #3 language in the region.
+- **Gujarati:** Chicago's west and northwest suburbs
+- **Ukrainian:** Chicago
+- **Greek:** Chicago
+- **Serbian / Croatian / Bosnian:** Chicago, Northwest Indiana, Milwaukee
+- **Hmong:** Milwaukee
+- **Burmese, Karen, Swahili and Kinyarwanda:** the Quad Cities, from refugee resettlement
+
+That makes 24 languages for the Chicago reach: the national 12 plus 12 regional ones (Polish, Gujarati, Ukrainian, Greek, Serbian, Croatian, Bosnian, Hmong, Burmese, Karen, Swahili, Kinyarwanda). This also settles the per-corridor question: a region can turn on languages the national list does not have. The regional languages use machine translation only, the same as the other non-Spanish, non-Arabic languages.
+
+## Language selector (owner, 2026-10-29)
+
+**Today:** no OCR surface has a language selector or any i18n code. The OSE pages hard-code `<html lang="en">` (33 of them: `grep -rho '<html[^>]*lang="[a-z-]*"' workers web` in ourSharedEvents), and the ourWKRP templates do too.
+
+**What the owner wants:**
+
+- A language selector in the **top-right corner** of every page, in the shared `Header` component (`@ocr/ui`), so every product gets it.
+- **Order:** English first (the default), Spanish second, then every other language the region supports. In the Chicago reach that is the other 22.
+- **Flow:** choosing a language switches the whole site to that language at once.
+
+**Rules the build must follow:**
+
+- **Each language is listed in its own name** (Español, العربية, Polski, 中文), so a reader can find theirs without reading English.
+- **Remembering the choice cannot use a cookie.** Invariant 4 allows no cookies on public surfaces except `ose_anon`. Carry the choice in the URL (for example `?lang=es` or `/es/…`), or keep it in the browser's local storage. The URL is better because a shared link keeps its language.
+- **Right-to-left mirrors the layout.** In Arabic and Urdu the whole page flips, so the selector moves to the top-left.
+- **The design system still applies:** touch targets ≥ 44 px, text ≥ 16 px, colours only from `packages/tokens`.
+
+## Still open
+
+1. **Chinese:** ship Simplified and Traditional both, or one first?
+2. **County list:** confirm or edit the Chicago-reach counties above.
 
 ---
 
