@@ -127,6 +127,8 @@ categories:
   - type_id: open_mic
     type_name: Open Mic Night
     uec_code: MC-006
+    status: duplicate
+    duplicate_of: MC-005
     product_origin:
     - ose
     - wkrp
@@ -280,6 +282,8 @@ categories:
   - type_id: community_health_fair
     type_name: Community Health Fair
     uec_code: WH-001
+    status: excluded_regime
+    excluded_reason: 'Excluded by owner ruling 2026-10-28 (no health-care types). HIPAA-adjacent; OSE declines HIPAA (ADR-018).'
     product_origin:
     - ose
     regulatory_pools:
@@ -325,6 +329,8 @@ categories:
   - type_id: health_screening
     type_name: Community Health Screening
     uec_code: WH-005
+    status: excluded_regime
+    excluded_reason: 'Excluded by owner ruling 2026-10-28 (no health-care types). HIPAA pool event; OSE declines HIPAA (ADR-018).'
     product_origin:
     - ose
     description: HIPAA-pool event. Free or sliding-scale screening.
@@ -334,6 +340,8 @@ categories:
     - CHECK-IN
 - category_id: youth_education
   category_name: Youth & Education
+  status: declined
+  declined_reason: 'COPPA and SOPPA are declined regimes in OSE (ADR-018); owner ruling 2026-10-28 allows no youth, school or student types. regulatory_default stays coppa only because the schema enum has no declined value.'
   uec_color: '#378ADD'
   description: School programs, youth activities, family events.
   regulatory_default: coppa
@@ -344,6 +352,8 @@ categories:
   - type_id: school_program
     type_name: School Program
     uec_code: YE-001
+    status: excluded_regime
+    excluded_reason: 'Excluded by owner ruling 2026-10-28 (no youth, school or student types). SOPPA; OSE declines SOPPA (ADR-018).'
     product_origin:
     - ose
     regulatory_pools:
@@ -356,6 +366,8 @@ categories:
   - type_id: youth_league
     type_name: Youth League
     uec_code: YE-002
+    status: excluded_regime
+    excluded_reason: 'Excluded by owner ruling 2026-10-28 (no youth types). COPPA; OSE declines COPPA (ADR-018).'
     product_origin:
     - osp
     - ose
@@ -380,6 +392,8 @@ categories:
   - type_id: after_school
     type_name: After-School Program
     uec_code: YE-004
+    status: excluded_regime
+    excluded_reason: 'Excluded by owner ruling 2026-10-28 (no youth, school or student types). COPPA and SOPPA; OSE declines both (ADR-018).'
     product_origin:
     - ose
     regulatory_pools:
@@ -391,6 +405,8 @@ categories:
   - type_id: youth_tournament
     type_name: Youth Tournament
     uec_code: YE-005
+    status: excluded_regime
+    excluded_reason: 'Excluded by owner ruling 2026-10-28 (no youth types). COPPA; OSE declines COPPA (ADR-018).'
     product_origin:
     - osg
     - ose
@@ -439,6 +455,8 @@ categories:
   - type_id: farmers_market
     type_name: Farmers Market
     uec_code: CC-005
+    status: duplicate
+    duplicate_of: CR-005
     product_origin:
     - ose
     description: Recurring vendor market. Multi-sponsor.
@@ -505,6 +523,7 @@ validation:
 - rule: regulatory_pools on the event must be a subset of the event_type's regulatory_pools.
 - rule: product_origin must include the product_id writing the event.
 - rule: QR color must match the category's uec_color.
+- rule: A type with status duplicate (see duplicate_of) or excluded_regime is not offered for new events. Its code stays reserved, so events already written under it remain valid.
 valid_scan_codes:
   ENTER:
     hex: '#1A6B2F'
