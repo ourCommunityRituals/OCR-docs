@@ -20,7 +20,7 @@ This directory contains the machine-readable governance contracts for the OurCom
 |---|---|---|
 | `product-registry.yaml` | Every product line registered with identity layer, regulatory pools, tier availability, data contracts, and pipeline activation phase. | 1 (Repo Health), 2 (Data Contract), 3 (Regulatory Pool), 4 (Dataset Routing), 5 (Phase Maturity) |
 | `tier-gates.yaml` | Feature and data visibility matrix by tier and phase. Defines what Free, Mid, and Premium customers can see and do at each build phase. | 5 (Phase Maturity), 6 (Product Tier) |
-| `corridor-definitions.yaml` | NCR hierarchy definitions. Founding five corridors. Research comparators. Flywheel sequence. | 2 (Data Contract — corridor_id validation) |
+| `corridor-definitions.yaml` | NCR hierarchy definitions. The six founding nodes, then Harbor Country as the network destination. Research comparators. Flywheel sequence. | 2 (Data Contract — corridor_id validation) |
 | `event-taxonomy.yaml` | All event types with UEC codes, category colors, product origins, and regulatory classifications. | 2 (Data Contract — event_type/uec_code validation), 3 (Regulatory Pool) |
 | `bigquery-schemas/general.json` | BigQuery table schemas for the General regulatory pool. | 2 (Data Contract), 4 (Dataset Routing) |
 | `bigquery-schemas/hipaa.json` | BigQuery table schemas for the HIPAA regulatory pool. Includes de-identification pipeline spec. | 2, 3, 4 |
