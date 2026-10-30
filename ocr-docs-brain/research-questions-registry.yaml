@@ -53,7 +53,7 @@ questions:
       for community event behavior, or do results change materially when
       aggregated at different levels? (MAUP sensitivity)
     data_required: [scan_aggregates, census_tract_overlay]
-    minimum_sample: "200+ events across all 5 founding corridors"
+    minimum_sample: "200+ events across the founding nodes listed in corridor-definitions.yaml (sample size to be confirmed by the owner)"
     earliest_phase: phase3
     status: open
     note: "This is the MAUP test. Must be run before any hierarchy-dependent publication."

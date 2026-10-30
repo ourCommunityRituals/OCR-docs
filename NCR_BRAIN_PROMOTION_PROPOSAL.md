@@ -4,6 +4,7 @@
 **Date:** 2026-05-18
 **Author:** Co-Architect (working session with mzdan)
 **Sister proposal:** `OCR_DOCS_REORG_PROPOSAL.md` (structural cleanup)
+**Note (2026-10-29) [historical record]:** this proposal was written when there were five founding corridors. The roster is now owned by `ocr-docs-brain/corridor-definitions.yaml` (six founding nodes, then Harbor Country). The text below is left as written.
 **Scope:** What this proposes — promoting NCR governance from OSE-internal docs into the brain. What it does NOT do — touch any brain file without founder sign-off, change any code, or merge any of the artifacts referenced.
 
 ---

@@ -198,7 +198,8 @@ def shared_pacts():
          inv1 and inv1.get('status') == 'live',
          f'status={inv1.get("status") if inv1 else "NOT FOUND"}')
 
-    # All consumers expect at least 5 founding corridors
+    # All consumers expect a minimum number of corridors in the file. This is a floor, not
+    # the roster: the roster is owned by corridor-definitions.yaml.
     cd = load('corridor-definitions.yaml')
     corridors = cd.get('founding_corridors', [])
     pact('shared', 'minimum_5_corridors', len(corridors) >= 5,
