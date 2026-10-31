@@ -13,6 +13,9 @@ on:
       # in ocr-docs-brain/tests too; trigger on the workflow it guards so a
       # regression to unconditional close+recreate is caught here.
       - '.github/workflows/nightly-sync-check.yml'
+      # check_adr_edges.py reads the fleet ADRs' Enforced-by headers, so an
+      # ADR edit must run the edge check too.
+      - 'docs/adr/**'
   push:
     branches: [main]
     paths:
@@ -27,6 +30,9 @@ on:
       # in ocr-docs-brain/tests too; trigger on the workflow it guards so a
       # regression to unconditional close+recreate is caught here.
       - '.github/workflows/nightly-sync-check.yml'
+      # check_adr_edges.py reads the fleet ADRs' Enforced-by headers, so an
+      # ADR edit must run the edge check too.
+      - 'docs/adr/**'
   workflow_dispatch:
 
 concurrency:
@@ -59,3 +65,11 @@ jobs:
       - name: Run Brain script self-tests
         shell: bash
         run: python3 ocr-docs-brain/tests/run_script_tests.py
+
+      # Two-sided ADR <-> invariant edge: every invariant's references.adr and
+      # every ADR's Enforced-by declaration must agree, and the two debt lists
+      # in adr-edge-ratchet.json may only shrink. Brain-internal, so it runs
+      # here and not in check_brain_contract.py (which each spoke runs).
+      - name: Check ADR to invariant edges
+        shell: bash
+        run: python3 ocr-docs-brain/scripts/check_adr_edges.py --brain ocr-docs-brain --repo-root . --ratchet ocr-docs-brain/adr-edge-ratchet.json

@@ -26,6 +26,7 @@ doppler.yaml
 phantom-scan-report.json
 conformance-report.json
 *conformance-report.json
+adr-edge-report.json
 *.log
 .sync.log
 

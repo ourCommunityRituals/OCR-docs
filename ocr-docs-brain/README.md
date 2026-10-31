@@ -86,6 +86,41 @@ Nine repos → Three raw pools → One aggregate intelligence layer → One RAG
 
 ---
 
+## ADR to invariant edge
+
+An invariant and the ADR behind it point at each other, and `scripts/check_adr_edges.py` checks that both sides agree on every brain CI run (`brain-validate.yml`).
+
+**Qualified IDs.** An ADR is named `<scope>:ADR-NNN`: `fleet:ADR-002` is in `OCR-docs/docs/adr/`, `ose:ADR-009` is in `ourSharedEvents/docs/adr/`.
+The scopes are listed under `adr_scopes` in `product-registry.yaml`.
+The fleet scope is read straight from `docs/adr/`; every other scope is read from its committed index in `adr-indexes/`, which holds only ADR ids, status and declarations, never code.
+
+**Invariant side.** `references.adr` in `architectural-invariants.yaml` is a list of qualified IDs, for example `adr: [ose:ADR-009]`.
+Other ADR-flavoured keys (`adr_coordination`, `adr_tier_axis`, `ose_adr` and the like) are commentary, not edges.
+
+**ADR side.** An ADR declares its invariants with `**Enforced-by:** invariant #N, #M` (or `**Enforced-by:** none - <reason>`) in its first 30 lines; OSE's `## Enforced by invariants` section is read too; an `Invariants touched:` bullet is not, because it names invariants an ADR touches, not ones it is enforced by.
+The forms are set out in `docs/adr/README.md` under "Numbering".
+
+**The rules.**
+
+- E1 unresolved: an invariant names an ADR whose scope is not in `adr_scopes`, or whose number is not in that scope.
+- E2 bare: a `references.adr` value is not a qualified ID (an old path string counts).
+- E3 one-sided: an invariant lists an ADR that has declared its invariants, and that ADR does not name it back.
+- E4 one-sided: an ADR names an invariant that does not exist or does not list the ADR back (a retired invariant may be named, but is not required to list it).
+- E5 undeclared: a fleet ADR has no declaration and is not on the ratchet, or is on the ratchet but now has one.
+- E6 ratchet: a live invariant has no ADR and is not on the ratchet, or is on the ratchet but now has one, or the ratchet holds an id above its ceiling.
+- E7 status (report only, never fails): an invariant lists an ADR that is not `Accepted`.
+
+E3 and E4 skip ADRs with no declaration and say how many they skipped.
+The check prints one line per rule and writes `adr-edge-report.json` (not committed).
+
+**Clearing a ratchet entry.** `adr-edge-ratchet.json` holds the debt that predates the check: invariants with no ADR yet, and fleet ADRs with no `Enforced-by` yet.
+To clear one, assign the edge on both sides in the same change: add the qualified ID to the invariant's `references.adr` and name the invariant in the ADR's `Enforced-by` line, then remove the id from the ratchet.
+The check fails if an entry is left on the ratchet after its edge exists, so a stale entry cannot stay.
+A new invariant cannot join the invariant list (ids above `frozen_max_id` are rejected), but the check does not compare either list with the base branch, so a reviewer must reject any other addition to them.
+`frozen_max_id` is the ceiling: no invariant numbered above it can be added to the ratchet, so every new invariant must carry an ADR.
+
+---
+
 ## Related ADRs
 
 - ADR-001: Platform Architecture (Workers + D1 + Firebase)

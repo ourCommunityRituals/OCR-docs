@@ -173,7 +173,7 @@ invariants:
       ['general', 'hipaa', 'coppa'] segregates HIPAA/COPPA data flows
       physically from general, preventing cross-tier leakage downstream.
     references:
-      adr: docs/adr/ADR-001-anonymous-identity-architecture.md
+      adr: [ose:ADR-001]
       static_gate: workers/oursharedevents/tests/architecture.spec.ts
       pii_gate: workers/oursharedevents/tests/pii-invariant.spec.ts
       cookie_contract: workers/oursharedevents/src/lib/anonymous-id.ts
@@ -532,7 +532,7 @@ invariants:
       wkrp_anonymous_rung: "ourWKRP tests/e2e/anonymous-journey.spec.ts — asserts browsing never creates a contributor identity"
       wkrp_audit_alignment: "ourWKRP src/lib/audit.ts — actorId is an opaque contributor UUID or null, never a name"
       registry_contract: "product-registry.yaml → products[wkrp].identity_contract"
-      adr: "ADR-002 — the choice-infrastructure decision that indicatively reserved an explicit_identity invariant; #15/#16 were assigned elsewhere in the interim, so it lands here as #26"
+      adr: [fleet:ADR-002]  # the choice-infrastructure decision that indicatively reserved an explicit_identity invariant; #15/#16 were assigned elsewhere in the interim, so it lands here as #26
       activation_criterion: >
         Promote to live when the runtime complement is green: erasure and
         stripped-egress asserted against a deployed worker, and the
@@ -743,6 +743,7 @@ invariants:
       a70fcfe, with main's staging chain T1–T4 green in run 37858539330).
     references:
       standard: docs/standards/OCR_STANDARD_declinedRegimes.md
+      adr: [ose:ADR-018]
       ose_adr: docs/adr/ADR-018-declined-regulatory-regimes.md (OSE repo)
       ose_router: workers/oursharedevents/src/lib/pool-contract.ts (OSE repo)
       ose_gate: scripts/guard-declined-regimes.js + scripts/guard-declined-regimes.test.js (OSE repo)
@@ -853,7 +854,7 @@ invariants:
     references:
       resolver: workers/oursharedevents/src/lib/sponsor-resolver.ts
       structural_gate: tests/e2e/0-architecture/geo-resolution.structural.invariant.spec.ts
-      adr: docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md
+      adr: [ose:ADR-009]
       invariant_test: tests/e2e/0-architecture/geo-resolution.invariant.spec.ts
       migration_event_types: workers/oursharedevents/migrations/0019_create_sponsor_event_types.sql
       migration_service_areas: workers/oursharedevents/migrations/0020_create_sponsor_areas.sql
@@ -976,7 +977,7 @@ invariants:
     references:
       invariant_test: tests/e2e/0-architecture/ncr-accumulation.invariant.spec.ts
       structural_gate: tests/e2e/0-architecture/ncr-accumulation.structural.invariant.spec.ts
-      adr: docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md
+      adr: [ose:ADR-009]
       pii_gate: workers/oursharedevents/tests/pii-invariant.spec.ts
       companion_invariant: "Invariant #7 aggregate_only_reporting — SharedReport reads from scan_aggregates"
       companion_invariant_8: "Invariant #8 bounded_pii_retention — TTL applies to FORMS_DB only; NCR has no TTL by design"
@@ -1105,7 +1106,7 @@ invariants:
       CI until the snapshot is explicitly updated and the version is bumped.
     references:
       snapshot: workers/oursharedevents/src/api-schema-snapshots/public-events.snapshot.json
-      adr: docs/adr/ADR-016-api-v2-response-contract.md
+      adr: [ose:ADR-016]
       handler: workers/oursharedevents/src/handlers/events.ts
       structural_gate: >
         tests/e2e/0-architecture/api-response-schema.invariant.spec.ts
@@ -1474,7 +1475,7 @@ invariants:
       customer_artifact: "brand-voice guidelines §2 (Voice Constant — neighborhood-rooted) + landing copy commitment language"
       brand_positioning: "false-market framing (per founder operating-system message 2026-05-17 — anonymous-but-aggregated as third option vs personal-data tracking OR no tracking)"
       template_pattern: "invariant #1 anonymous_id (rich-form template) + #10 deprecation_lock (rich live activation pattern)"
-      adr: "docs/adr/ADR-013-local-sponsor-covenant-display-priority.md"
+      adr: [ose:ADR-013, ose:ADR-010, ose:ADR-017]
       adr_tier_axis: "docs/adr/ADR-010-templates-breadth-tiers-depth.md — tiers=depth axis; #5's tier-equity guarantee sits on it (templates never gate, tiers gate)"
       adr_depth_enforcement: "docs/adr/ADR-017-sharedreport-depth-enforcement.md — server-side SharedReport depth enforcement; explicitly cites Invariant #5 (pricing governs display depth, never data collection)"
       activation_pr_substrate: "OSE PR #249 (L0 structural + L1 worker HTTP integration); OSE PR #251 (T3 network-staging Newman)"
@@ -1646,6 +1647,7 @@ invariants:
       unguessable UUIDs). T4 spec should verify response includes brand_id
       so consumers can reject off-brand payloads.
     references:
+      adr: [ose:ADR-009]
       adr_table_source: "docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md — introduced node_hierarchy + corridors (migration 0010); #9 isolates those multi-tenant tables per brand_id"
       schema_migrations: >
         workers/oursharedevents/migrations/0001_create_events.sql
@@ -2769,7 +2771,7 @@ invariants:
       structural_test: tests/e2e/0-architecture/ci-approval-gate-safety.invariant.spec.ts
       ci_workflow: .github/workflows/oursharedevents-ci.yml (lint shard — test:guard-pr-secrets then guard:pr-secrets)
       codeowners_lock: .github/CODEOWNERS (/.github/workflows/ + scanner + allowlist + spec + ADR-020)
-      adr: docs/adr/ADR-020-copilot-ci-human-approval-gate.md (OSE repo)
+      adr: [ose:ADR-020]
       activation_pr: "OSE — feat(ci-security): check-pr-secret-exposure guard + ADR-020 (commit 9efe73d); brain #28 minted this PR"
       first_finding: "security-regression.yml reached staging with CF_ACCESS_* on every plain PR; gated to non-PR + full-pipeline/* on landing"
       template_pattern: "invariant #10 deprecation_lock (meta-gate rich-form template)"
@@ -4230,6 +4232,149 @@ enrichment_history:
       (d) is added. The open legal readings under legal_note (OCR-60) are not
       part of the criterion and stay open. status_summary: live 16 -> 17,
       partial 11 -> 10.
+
+  - invariant_id: 1
+    invariant_name: anonymous_id
+    from_state: >-
+      references.adr was a path string (docs/adr/ADR-001-anonymous-identity-architecture.md)
+      that did not say which repo it meant
+    to_state: >-
+      references.adr: [ose:ADR-001]
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to a qualified ID so the ADR to invariant
+      edge check (check_adr_edges.py) can resolve it. Documentation-only; status
+      unchanged, status_summary unchanged.
+
+  - invariant_id: 2
+    invariant_name: hyperlocal_geo_resolution
+    from_state: >-
+      references.adr was a path string (docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md)
+      that did not say which repo it meant
+    to_state: >-
+      references.adr: [ose:ADR-009]
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to a qualified ID so the ADR to invariant
+      edge check can verify it against OSE ADR-009's existing "Enforced by
+      invariants" section. Documentation-only; status unchanged, status_summary
+      unchanged.
+
+  - invariant_id: 4
+    invariant_name: ncr_data_accumulation
+    from_state: >-
+      references.adr was a path string (docs/adr/ADR-009-ncr-v2-geographic-hierarchy.md)
+      that did not say which repo it meant
+    to_state: >-
+      references.adr: [ose:ADR-009]
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to a qualified ID so the ADR to invariant
+      edge check can verify it against OSE ADR-009's existing "Enforced by
+      invariants" section. Documentation-only; status unchanged, status_summary
+      unchanged.
+
+  - invariant_id: 5
+    invariant_name: tier_equity
+    from_state: >-
+      references.adr was a path string naming ADR-013 only; ADR-010 and ADR-017
+      were named only in the prose keys adr_tier_axis and adr_depth_enforcement
+    to_state: >-
+      references.adr: [ose:ADR-013, ose:ADR-010, ose:ADR-017]; adr_tier_axis and
+      adr_depth_enforcement kept unchanged as commentary
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to qualified IDs for the ADR to invariant
+      edge check, which verifies ADR-010 and ADR-017 against their existing
+      "Enforced by invariants" sections. ADR-013 is Superseded and is kept
+      because the entry names it; the check reports it as a status GAP and the
+      owner decides whether to drop it. Documentation-only; status unchanged,
+      status_summary unchanged.
+
+  - invariant_id: 9
+    invariant_name: tenant_isolation
+    from_state: >-
+      no references.adr; ADR-009 named only in the prose key adr_table_source
+    to_state: >-
+      references.adr: [ose:ADR-009]; adr_table_source kept unchanged as
+      commentary
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      A qualified adr reference was added for the ADR to invariant edge check,
+      because OSE ADR-009's "Enforced by invariants" section already declares #9
+      and the edge must hold on both sides. Documentation-only; status unchanged,
+      status_summary unchanged.
+
+  - invariant_id: 16
+    invariant_name: api_response_schema_stability
+    from_state: >-
+      references.adr was a path string (docs/adr/ADR-016-api-v2-response-contract.md)
+      that did not say which repo it meant
+    to_state: >-
+      references.adr: [ose:ADR-016]
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to a qualified ID so the ADR to invariant
+      edge check can verify it against OSE ADR-016's existing "Enforced by
+      invariants" section. Documentation-only; status unchanged, status_summary
+      unchanged.
+
+  - invariant_id: 26
+    invariant_name: explicit_identity
+    from_state: >-
+      references.adr was a bare "ADR-002" in prose, a number that exists in both
+      the fleet and the OSE ADR sequences
+    to_state: >-
+      references.adr: [fleet:ADR-002] (the prose kept as an inline comment)
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to a qualified ID for the ADR to invariant
+      edge check, naming the fleet ADR-002 (identity-profile-keyed invariants),
+      which now declares "Enforced-by: invariant #26". Documentation-only; status
+      unchanged, status_summary unchanged.
+
+  - invariant_id: 28
+    invariant_name: ci_approval_gate_secret_surface
+    from_state: >-
+      references.adr was a path string
+      (docs/adr/ADR-020-copilot-ci-human-approval-gate.md (OSE repo))
+    to_state: >-
+      references.adr: [ose:ADR-020]
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      The adr reference was converted to a qualified ID so the ADR to invariant
+      edge check can resolve it. Documentation-only; status unchanged,
+      status_summary unchanged.
+
+  - invariant_id: 29
+    invariant_name: declined_regulatory_regimes
+    from_state: >-
+      no references.adr; OSE ADR-018 named only in the prose key ose_adr
+    to_state: >-
+      references.adr: [ose:ADR-018]; ose_adr kept unchanged as commentary
+    date: "2026-10-31"
+    pr_refs:
+      - "OCR-docs — this PR (ADR qualified IDs + ADR↔invariant edge check)"
+    rationale: >
+      A qualified adr reference was added so the ADR to invariant edge check can
+      resolve the ADR this invariant is governed by. Documentation-only; status
+      unchanged, status_summary unchanged.
 
 status_summary:
   live: 17    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI), #29 declined_regulatory_regimes (OSE-1674 + OW-159 — gate green in both)

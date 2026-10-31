@@ -52,6 +52,31 @@ There is no collision because the path disambiguates: `ourSharedEvents/docs/adr/
 
 Numbers are assigned at write time, never reserved. Once an ADR is on `main`, **its number never changes**, even if it's later superseded or deprecated.
 
+### Qualified IDs
+
+A reference to an ADR outside its own file names its scope as well as its number: `<scope>:ADR-NNN`.
+`fleet:ADR-NNN` is an ADR in this directory (`OCR-docs/docs/adr/`), and `ose:ADR-NNN` is one in `ourSharedEvents/docs/adr/`.
+The scope is lower-case and the number is exactly three digits, so `fleet:ADR-002` and `ose:ADR-002` are two different decisions.
+The scopes and where each one's ADRs live are listed under `adr_scopes` in `ocr-docs-brain/product-registry.yaml`.
+The qualifier changes no number and no filename; it only says which sequence a reference means.
+
+### Declaring the invariants an ADR is enforced by
+
+The link between an ADR and a brain invariant is a two-sided edge: the invariant lists the ADR in `references.adr` as a qualified ID, and the ADR names the invariant.
+The canonical declaration is one header line, within the first 30 lines of the ADR: `**Enforced-by:** invariant #N, #M`.
+Every `#N` on that line is read as an invariant number, so keep PR or ticket numbers off it.
+An ADR that no invariant enforces says so with a reason instead: `**Enforced-by:** none - <one-line reason>`.
+OSE's existing `## Enforced by invariants` section, whose bullets start `- **Invariant #N`, is also read.
+An `Invariants touched:` header bullet is not read: it names invariants an ADR touches or sources, not ones it is enforced by.
+No other text in an ADR counts, so a passing mention of an invariant number in the body is never an edge.
+`ocr-docs-brain/scripts/check_adr_edges.py` checks both sides in the brain's CI; how it works is in `ocr-docs-brain/README.md`.
+
+A new invariant from #30 on must carry an ADR in its `references.adr`.
+The invariants and fleet ADRs that predate this rule and have no edge yet are listed in `ocr-docs-brain/adr-edge-ratchet.json`, and a reviewer rejects any change that adds an entry to it.
+The check itself only stops invariant ids above `frozen_max_id` from joining the list; it does not compare either list with the base branch.
+
+The Status table above is hand-maintained and is a known copy of the ADR headers, so the `**Status:**` line in each ADR file wins where the two disagree.
+
 ## When to write a FLEET ADR (not a per-repo one)
 
 Write a fleet ADR when the decision satisfies **at least two**:
