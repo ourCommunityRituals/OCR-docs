@@ -5,6 +5,17 @@ schema_version: 1.0.0
 org: OurCommunityRituals
 legal_entity: OurCommunityRituals LLC
 github_org: https://github.com/OurCommunityRituals
+# ADR scopes: the <scope> in a qualified ADR ID (<scope>:ADR-NNN), read by
+# scripts/check_adr_edges.py. The fleet index is built in memory from adr_dir;
+# every other scope reads the committed index file it names.
+# ow (ourWKRP) has no ADR directory yet, so it has no scope here.
+adr_scopes:
+  fleet:
+    adr_dir: docs/adr
+  ose:
+    repo: ourSharedEvents
+    adr_dir: docs/adr
+    index: ocr-docs-brain/adr-indexes/ose.json
 oureventring:
   description: 'BigQuery RAG data warehouse. The gravity well. Every product line is a data collection
     surface feeding this single destination. Write-from-day-one, read-later.

@@ -1,0 +1,5 @@
+{
+  "frozen_max_id": 29,
+  "invariants_without_adr": [3, 6, 7, 8, 10, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27],
+  "adrs_undeclared": ["fleet:ADR-001", "fleet:ADR-003", "fleet:ADR-004", "fleet:ADR-005", "fleet:ADR-006", "fleet:ADR-007", "fleet:ADR-008", "fleet:ADR-009", "fleet:ADR-010", "fleet:ADR-011", "fleet:ADR-012"]
+}

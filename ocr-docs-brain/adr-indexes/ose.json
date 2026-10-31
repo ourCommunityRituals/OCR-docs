@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "scope": "ose",
+  "adrs": [
+    {
+      "id": "ose:ADR-001",
+      "number": 1,
+      "file": "ADR-001-anonymous-identity-architecture.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-002",
+      "number": 2,
+      "file": "ADR-002-static-invariant-gates.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-006",
+      "number": 6,
+      "file": "ADR-006-audit-access-bearer-pattern.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-009",
+      "number": 9,
+      "file": "ADR-009-ncr-v2-geographic-hierarchy.md",
+      "status": "Accepted",
+      "declared": true,
+      "enforced_by": [
+        2,
+        4,
+        9
+      ],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-010",
+      "number": 10,
+      "file": "ADR-010-templates-breadth-tiers-depth.md",
+      "status": "Accepted",
+      "declared": true,
+      "enforced_by": [
+        5
+      ],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-011",
+      "number": 11,
+      "file": "ADR-011-shared-report-wkrp-consumer-boundary.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-012",
+      "number": 12,
+      "file": "ADR-012-uec-build-time-consumption.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-013",
+      "number": 13,
+      "file": "ADR-013-local-sponsor-covenant-display-priority.md",
+      "status": "Superseded",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-014",
+      "number": 14,
+      "file": "ADR-014-ai-sanitization-sanctioned-seam.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-015",
+      "number": 15,
+      "file": "ADR-015-invariant2-tier-sort-named-slot-retirement.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-016",
+      "number": 16,
+      "file": "ADR-016-api-v2-response-contract.md",
+      "status": "Accepted",
+      "declared": true,
+      "enforced_by": [
+        16
+      ],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-017",
+      "number": 17,
+      "file": "ADR-017-sharedreport-depth-enforcement.md",
+      "status": "Accepted",
+      "declared": true,
+      "enforced_by": [
+        5
+      ],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-018",
+      "number": 18,
+      "file": "ADR-018-declined-regulatory-regimes.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-020",
+      "number": 20,
+      "file": "ADR-020-copilot-ci-human-approval-gate.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-021",
+      "number": 21,
+      "file": "ADR-021-production-read-only-test-data.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-022",
+      "number": 22,
+      "file": "ADR-022-event-is-the-base-brand-is-optional.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-023",
+      "number": 23,
+      "file": "ADR-023-public-entity-tenants-entity-decides.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-024",
+      "number": 24,
+      "file": "ADR-024-ose-anon-cookie-and-invariant-4.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    }
+  ]
+}

@@ -4,6 +4,9 @@
 **Date:** YYYY-MM-DD
 **Deciders:** [Names or roles — e.g., "mzdan + Co-Architect"]
 **Scope:** Fleet-wide
+**Enforced-by:** invariant #N, #M
+
+<!-- Enforced-by: name every brain invariant that enforces this decision (`invariant #N, #M`), or write `none - <one-line reason>`; each named invariant must list this ADR as `fleet:ADR-NNN` in its `references.adr`, or check_adr_edges.py fails. Every #N on this line is read as an invariant number, so keep PR or ticket numbers off it. -->
 
 ## Context
 

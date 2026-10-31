@@ -4,6 +4,7 @@
 **Date:** 2026-05-21
 **Deciders:** mzdan + Co-Architect
 **Scope:** Fleet-wide
+**Enforced-by:** invariant #26
 
 > **Provenance.** Drafted then hardened twice on 2026-05-21. A 5-loop CCR run
 > (Critical · Conservative · Recursive) caught that the first draft keyed
