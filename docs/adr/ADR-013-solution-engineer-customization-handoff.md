@@ -75,6 +75,38 @@ the propagated org standard mandates a path no repo uses.
 
 ---
 
+## Phase gate: this does not activate at launch (owner, 2026-11-11)
+
+`[Matt]` From the 2026-11-11 session:
+
+> The initial launch is only for the locals and the anchors. So think like bars, restaurants, and
+> local establishments in the community, and not enterprise. Then that will give me time to get some
+> income, get everything lined up, and then get the entire system super solid for enterprise, and
+> then make the next level jump and be prepared for them.
+
+`[Claude]` Layer 1 customers have no solution engineers, want no snapshot, and will never ask for the
+collections. **No SE handoff machinery is built, promised, or sprinted on until layer 2.** An agent
+or session that finds this ADR is reading a decision scheduled for later, not a backlog item.
+
+What layer 1 must avoid, because each is cheap now and painful to retrofit:
+
+1. **Collections stay file-based and in-repo.** Already true (282 requests under `bruno/`). Do not
+   migrate to a hosted workspace for convenience.
+2. **Invariant enforcement stays mechanical.** Already true. This is the certification asset at
+   layer 2, not a cost incurred then.
+3. **Any demo or snapshot instance is seeded with synthetic data, never cloned from a live
+   corridor.** Not yet a rule, and no snapshot exists yet, so adopting it now costs one fixture file.
+   Retrofitting it after demo fixtures exist means auditing every one.
+
+Nothing else about layer 1 is constrained by this ADR.
+
+**The commercial and legal work this ADR depends on is also deferred by the owner**: IP counsel,
+trademark on the OCR marks, whether the certification can be structured as a conformance mark, and
+licence terms on the collections and snapshot. Those are layer-2 questions and are not open items
+for layer 1.
+
+---
+
 ## Open decision (NOT MADE)
 
 **How wide is the customization surface a customer SE may change?**
