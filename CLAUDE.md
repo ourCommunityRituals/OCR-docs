@@ -78,6 +78,17 @@ ADRs (`docs/adr/`), `docs/OCR_VISION.md`, standards (`docs/standards/`), the bra
 - **Numbers are claims.** Any count or measurement written into a governance artifact carries its method (the command, or the file and line), so the reviewer can re-derive it.
 - **Enforcement.** `.github/CODEOWNERS` routes these paths to the human reviewer account. It binds once branch protection has "Require review from Code Owners" turned on, which is an owner setting.
 
+## Environment: staging, not the owner's computer
+
+A standing order from the owner (2026-11-14) for every session.
+
+- **Staging is the environment of record.** Work is run and checked against staging (`stg.oursharedevents.com`, `stg.ourwkrp.com`). A result counts when it is seen on staging, or in the CI that deploys to it.
+- **Never the owner's own computer.** Do not ask the owner to run, build, seed or check anything on their machine, and do not plan work that depends on it. A throwaway worker inside a CI job or a session's own container is a test rig: it can support a result, and it does not stand in for staging.
+- **One exception: a private showcase instance.** Its data file and built pages stay private. They are never committed, loaded into staging or published until the owner says the people named in them have agreed.
+- **This grants nothing else.** Staging changes only through CI after a merge to `main`. Who merges, who deploys and who holds credentials are unchanged, and production is not staging.
+
+---
+
 ## Knowledge homes & reconciliation
 
 Every truth has one home; reconciliation keeps the homes agreeing and promotes shared truths into the brain so every spoke inherits them.
@@ -110,6 +121,6 @@ To avoid drift, Claude should not duplicate these from VISION.md here:
 
 ---
 
-*Last updated: 2026-10-21 (v3: invariants list replaced by a pointer to the brain)*
+*Last updated: 2026-11-14 (v4: the owner's standing order on environment; v3, 2026-10-21, replaced the invariants list by a pointer to the brain)*
 *Owner: Matt*
-*Status: edited 2026-10-21, awaiting human review.*
+*Status: edited 2026-11-14, awaiting human review.*
