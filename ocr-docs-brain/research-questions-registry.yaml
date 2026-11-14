@@ -165,10 +165,11 @@ questions:
       Do community programs (OSG games, ORS record stories) that run as
       recurring events show measurable attendance growth over time, and
       does that growth differ across corridors?
-    data_required: [scan_aggregates, event_series_logs]
+    data_required: [scan_aggregates, event_series_export]
     minimum_sample: "10+ sessions of a recurring program across 2+ corridors"
     earliest_phase: phase2
     status: open
+    note: "A recurring program is the events on one confirmed OSE event series (OSE ADR-029). event_series_export is the OSE BigQuery table of confirmed series; no dataset named event_series_logs exists (checked 2026-11-14: grep of OSE and of this brain)."
 
   - id: ED-002
     discipline: education

@@ -28,6 +28,13 @@ monitors:
     description: >
       Tests whether scan counts at recurring events are serially correlated
       across sessions. Weekly bocce nights likely show high autocorrelation.
+      A recurring event is the set of events on one confirmed OSE event series
+      (OSE ADR-029). The test assumes evenly spaced sessions, so it applies to
+      series whose cadence is weekly or biweekly. It does not apply as written
+      to monthly (28 to 35 day gaps), daily-weekdays (a weekend gap) or
+      as-announced (no schedule). Where a series was promoted from a trial, its
+      early instances may have a different day or hour; test from the first
+      instance that matches the declared schedule.
     scope: per_recurring_event
     frequency: quarterly
     threshold: "Flag event series if p < 0.05 on Ljung-Box Q test"
