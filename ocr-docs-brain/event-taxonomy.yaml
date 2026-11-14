@@ -8,6 +8,15 @@ total_types_v1: 47
 total_types: 50
 total_activities: 116
 roadmap_target: 180
+recurrence_note: >
+  A type's description may say "recurring" (bocce_league, dinner_series). That
+  is a hint about the type, never a rule about an event. Two other facts say
+  whether a given event recurs, and each has one home. (1) Intent: one-off,
+  pop-up, programme or trial. It is chosen when an event is linked to a
+  frequency in ourWKRP, and it lives on that link in ourWKRP; OSE does not
+  store it (owner's showcase plan, 2026-11-12). (2) Series: a confirmed OSE
+  event series is OSE's only fact that events belong together across time
+  (OSE ADR-029). Nothing derives one of these from another.
 uec_color_system:
   description: 'QR codes are generated with category-specific colors. The color IS the first layer of information. A blue
     QR at a bar means something different than a green QR at a school.
