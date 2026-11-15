@@ -39,7 +39,7 @@ Architecture is the Triangle + the invariants in the brain + 4 governance files 
 
 **The Triangle.** `Sponsor → Event ← Customer` with `SharedReport` derived. Any entity plugs into any corner. The Triangle enforces HOW entities participate, not WHAT they are.
 
-**The invariants.** The list lives in `ocr-docs-brain/architectural-invariants.yaml` (schema 1.2.0): 29 numbered invariants in six groups, of which 17 are live, 10 partial and 2 retired. Method: parse the file and count `invariants[]` by `status`; the ids run 1 to 29. Numbers are never reused or renumbered, and a retired entry keeps its number. Read that file for each invariant's current text and status. This document does not copy it, so it cannot drift from it.
+**The invariants.** The list lives in `ocr-docs-brain/architectural-invariants.yaml` (schema 1.2.0): 30 numbered invariants in six groups, of which 17 are live, 11 partial and 2 retired. Method: parse the file and count `invariants[]` by `status`; the ids run 1 to 30. Numbers are never reused or renumbered, and a retired entry keeps its number. Read that file for each invariant's current text and status. This document does not copy it, so it cannot drift from it.
 
 **The four governance files per repo.** Every repo maintains `CLAUDE.md`, `docs/OCR_VISION.md`, `README.md`, `SKILL.md`.
 

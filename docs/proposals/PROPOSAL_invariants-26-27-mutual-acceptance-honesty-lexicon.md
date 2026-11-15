@@ -1,5 +1,21 @@
 # Brain amendment — Articles #26 and #27
 
+> **STATUS, 2026-11-15: superseded in part. Do not apply this file as written.**
+>
+> - **The numbers below are taken.** The registry gave #26 to `explicit_identity` and #27 to
+>   `no_biometric_identifiers`. Numbers are never reused. Method: parse
+>   `ocr-docs-brain/architectural-invariants.yaml` and read ids 26 and 27.
+> - **The honesty lexicon (drafted below as "#27") is registered as #30**, `honesty_lexicon`, status
+>   partial, with an allowance clause this draft did not have (OSE-2035). Read the registry entry, not
+>   the draft below.
+> - **Sponsor placement mutual acceptance (drafted below as "#26") has no entry of its own.** Two-sided
+>   acceptance is described inside #25 `sponsor_share_covenant`. Whether it needs its own number is
+>   still open, and is not decided by the #30 change.
+> - **The candidate in checklist item 3 (a uniform count floor article) is still a candidate.** The
+>   number "#28" it names is taken too.
+>
+> The text below is kept as the record of what was drafted on 2026-08-26.
+
 Staged for `OCR-docs/ocr-docs-brain/architectural-invariants.yaml`.
 
 > **HARD PRECONDITION (verified 2026-08-26, CCR loop 3):** articles #23–#25 are
