@@ -281,6 +281,15 @@
       "declared": false,
       "enforced_by": [],
       "none_reason": null
+    },
+    {
+      "id": "ose:ADR-037",
+      "number": 37,
+      "file": "ADR-037-what-a-migration-dry-run-may-print.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
     }
   ]
 }

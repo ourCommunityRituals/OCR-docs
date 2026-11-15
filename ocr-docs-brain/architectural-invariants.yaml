@@ -4574,7 +4574,7 @@ enrichment_history:
     date: "2026-11-15"
     pr_refs:
       - "OCR-docs — this PR"
-      - "ourSharedEvents#1293 — the dry-run output rules and OSE ADR-037 (open when this entry was written)"
+      - "ourSharedEvents#1293 — the dry-run output rules and OSE ADR-037 (merged 2026-11-15 as 1fabfa7)"
     rationale: >
       Found in the migration dry-run loop-back (OSE-2016, OSE-2085). OSE runs
       read-only SQL against its databases in CI and prints the answer to the
@@ -4586,7 +4586,7 @@ enrichment_history:
       production or from the identified database would have been published in
       a log, outside every gate this invariant names. Nothing was: the files
       that ran select counts of test data. OSE's fix prints counts only and
-      applies the under-5 floor there (OSE ADR-037, Proposed). The shared
+      applies the under-5 floor there (OSE ADR-037, Accepted 2026-11-15). The shared
       point for every spoke: anything a workflow prints from a database is a
       published output and is held to the same rules as a report. An
       independent security read of the first fix found it could be bypassed
