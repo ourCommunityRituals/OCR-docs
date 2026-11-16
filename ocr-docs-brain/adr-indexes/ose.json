@@ -173,6 +173,123 @@
       "declared": false,
       "enforced_by": [],
       "none_reason": null
+    },
+    {
+      "id": "ose:ADR-025",
+      "number": 25,
+      "file": "ADR-025-density-aware-resolution.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-026",
+      "number": 26,
+      "file": "ADR-026-analytic-layer-privacy-jurisdiction.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-027",
+      "number": 27,
+      "file": "ADR-027-landing-list-cap-and-more.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-028",
+      "number": 28,
+      "file": "ADR-028-calendar-addresses-and-the-edge.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-029",
+      "number": 29,
+      "file": "ADR-029-declared-event-series.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-030",
+      "number": 30,
+      "file": "ADR-030-campaign-stays-in-its-brand-and-is-public-by-consent.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-031",
+      "number": 31,
+      "file": "ADR-031-page-rules-from-the-route-table.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-032",
+      "number": 32,
+      "file": "ADR-032-attendance-mode-and-the-lexicon.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-033",
+      "number": 33,
+      "file": "ADR-033-public-area-map.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-034",
+      "number": 34,
+      "file": "ADR-034-booths-sessions-and-participation-mode.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-035",
+      "number": 35,
+      "file": "ADR-035-street-map-one-bucket.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-036",
+      "number": 36,
+      "file": "ADR-036-street-layer-as-the-base-map.md",
+      "status": "Proposed",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
+    },
+    {
+      "id": "ose:ADR-037",
+      "number": 37,
+      "file": "ADR-037-what-a-migration-dry-run-may-print.md",
+      "status": "Accepted",
+      "declared": false,
+      "enforced_by": [],
+      "none_reason": null
     }
   ]
 }

@@ -2819,6 +2819,105 @@ invariants:
       fleet-borne. Numbers 26 (explicit_identity) and 27 (no_biometric_identifiers)
       were reserved by in-flight proposals when this was minted, so it takes 28 per
       the naming spine.
+  # ── #30 HONESTY LEXICON ───────────────────────────────────────────────────
+  # Minted 2026-11-15 from the attendance_mode loop-back (OSE-2012 / OSE-2033 /
+  # OSE-2035). The doctrine was drafted on 2026-08-26 as "article #27" in
+  # docs/proposals/PROPOSAL_invariants-26-27-…; numbers 26 and 27 were then
+  # given to explicit_identity and no_biometric_identifiers, and numbers are
+  # never reused, so it lands as #30.
+  - id: 30
+    name: honesty_lexicon
+    label: "#30 — Honesty Lexicon"
+    group: commercial_governance
+    group_order: 4
+    title: Honesty Lexicon
+    status: partial
+    test_file: schema-lexicon.spec.ts
+    lives_in:
+      - ose
+    enforces: >
+      No persistence-layer identifier (table, column, index, view, trigger)
+      carries a term that claims a count of PEOPLE when the system counts
+      SIGNALS, nor ad-tech audience vocabulary: attendance, impression(s),
+      visit(s), reach, unique, turnout, eyeball(s), people, view(s). The
+      honest replacement names the measurement fact (a display is an ad that
+      was rendered; a return is a device seen again). The test is the
+      meaning: a name is banned for what it claims, and the word list is how
+      the claim is caught. Two kinds of exception exist and they are not the
+      same thing. An EXEMPTION is debt: it is tracked per identifier with the
+      ticket that removes it, and a stale exemption fails the gate. An
+      ALLOWANCE is a decision: a whole identifier that holds a banned token
+      and cannot make the banned claim may be allowed when (1) its value is
+      one of a fixed set of words, enforced at the database, so it can never
+      hold a number, (2) it is named in an ADR, and (3) the match is the
+      exact identifier, so no longer or shorter name passes with it. An
+      allowance has no removal ticket. The allowed word still stays off every
+      rendered page.
+    applies_to:
+      - ose
+      - wkrp
+    depends_on:
+      - aggregate_only_reporting
+    protective_statement: >
+      A surface lint that stops at the boundary while storage speaks the
+      banned words is aspirational and gets routed around by accident: every
+      ORM type, export header, log line and error message inherits column
+      names. The platform's position is that it underclaims by construction;
+      the lexicon is where that promise is enforceable and not editorial.
+      The allowance clause exists because a word list alone cannot tell
+      "attendance" (how many came) from "attendance mode" (in person, online
+      or both). Without a named, tested path for the second, the choice is to
+      weaken the list or to rename a field away from the term its standard
+      (schema.org) and its readers use. With it, the list stays whole and
+      each exception is a recorded decision that a gate holds narrow.
+    enforcement_statement: >
+      PARTIAL (2026-11-15). (a) OSE SCHEMA LINT, LIVE: tests/schema-lexicon.spec.ts
+      reads the built schema (sqlite_master and PRAGMA table_info) against
+      BANNED_SCHEMA_TERMS in src/lib/schema-lexicon.ts (born red OSE-801,
+      2026-08-20). EXEMPT_IDENTIFIERS is empty since migrations 0102 and 0103
+      renamed the last two exempt names (OSE-931, OSE-932). (b) OSE PAYLOAD
+      KEYS, LIVE: findBannedPayloadKeys in the same module walks the keys of
+      report payloads (OSE-818); EXEMPT_PAYLOAD_KEYS is empty. (c) OSE
+      ALLOWANCE, LIVE: ALLOWED_IDENTIFIERS holds one name, attendance_mode
+      (OSE ADR-032, Accepted 2026-11-14). The structural gate
+      tests/e2e/0-architecture/lexicon-allowance.invariant.spec.ts, listed in
+      the T0 invariants step, fails if a name is added without its ADR, if an
+      allowed column has no CHECK that limits it to words, or if the banned
+      list or the exemption lists change. A count-shaped name is published
+      only through a count-floor function or as one of a fixed set of words
+      (tests/count-floor-publication.derived.spec.ts), and no rendered event
+      page contains the allowed word. (d) OW FACET, PRESENT BUT NOT NAMED
+      HERE: ourWKRP tests/security/count-floor.invariant.spec.ts bans the
+      lexicon in its count-publishing handlers. It is a different file name,
+      so this entry's lives_in is ose only and the conformance check asks OW
+      for no artifact. NOT GATED, recorded: (1) API field names outside
+      report payloads, code comments and report copy are governed editorially
+      by the nomenclature rule "a term must never claim more than the
+      underlying count supports"; attendance_mode is itself a public JSON
+      key. (2) Both spokes cite the doctrine under another number: OSE's
+      living source says "#25" and OW's spec header says "#27". Neither is
+      this invariant's number.
+    references:
+      ose_lint: "workers/oursharedevents/src/lib/schema-lexicon.ts + tests/schema-lexicon.spec.ts (OSE repo)"
+      ose_allowance_gate: "tests/e2e/0-architecture/lexicon-allowance.invariant.spec.ts (OSE repo)"
+      ose_adr: "docs/adr/ADR-032-attendance-mode-and-the-lexicon.md (OSE repo, Accepted 2026-11-14)"
+      adr:
+        - "ose:ADR-032"
+      ose_doc: "docs/architecture/HONESTY-LEXICON.md (OSE repo)"
+      ow_facet: "tests/security/count-floor.invariant.spec.ts (ourWKRP)"
+      proposal: "docs/proposals/PROPOSAL_invariants-26-27-mutual-acceptance-honesty-lexicon.md (the 2026-08-26 draft, as article #27)"
+      linear: "OSE-801 (schema lint), OSE-818 (payload keys), OSE-931 + OSE-932 (exemptions removed), OSE-2012 + OSE-2033 (the allowance), OSE-2034 (its gate), OSE-2035 (this entry)"
+      companion_invariants: >
+        #7 aggregate_only_reporting: the lexicon is how a published count is
+        named; #7 is what may be published. #25 sponsor_share_covenant: the
+        number OSE's source wrongly cites for this doctrine.
+    activation_criterion: >
+      Promote to live when (1) the owner has ruled whether public API field
+      names join the gated scope, and the entry says which; (2) OW's facet is
+      either a spec this entry can name for lives_in, or is recorded as out
+      of scope with the reason; and (3) the living source in both spokes
+      cites #30 (applied migration files stay as they are, #19 append-only).
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # Enrichment History — append-only record of lean → rich (and other material)
@@ -4436,12 +4535,70 @@ enrichment_history:
       F2); owner decision 2026-11-14. This entry is true once the OSE change
       is on main; merge this PR after it. Status unchanged, status_summary
       unchanged.
+  - invariant_id: 30
+    invariant_name: honesty_lexicon
+    from_state: >-
+      does not exist in the registry (drafted 2026-08-26 as article #27 in
+      docs/proposals; numbers 26 and 27 went to other invariants)
+    to_state: >-
+      rich partial (2026-11-15: new invariant; commercial_governance
+      group_order 4; lives_in ose; applies_to ose + wkrp; carries the
+      allowance clause)
+    date: "2026-11-15"
+    pr_refs:
+      - "OCR-docs — this PR (brain entry, status_summary, CLAUDE.md and VISION counts, proposal note)"
+      - "ourSharedEvents#1211 — attendance_mode, the allowance list and its gate (merged as 2f4fbf18)"
+      - "ourSharedEvents#1239 — OSE ADR-032 Accepted (merged as 85aefee)"
+    rationale: >
+      Loop-back from the attendance_mode work (OSE-2012). The lexicon bans the
+      word "attendance" in schema names, and the owner named a field
+      attendance_mode, which holds one of three words and never a number. The
+      registry had no lexicon entry at all: OSE's source cited it as #25
+      (sponsor_share_covenant) and OW's as #27 (no_biometric_identifiers). So
+      there was no law to say what an exception is, and the only escape the
+      draft knew was a debt exemption with a removal ticket, which this is
+      not. The owner accepted the allowance on 2026-11-14 (OSE-2033, OSE
+      ADR-032). This entry registers the doctrine under the next free number
+      and writes the allowance down as a second, narrower kind of exception.
+      Minted partial, as #29 was, with the open points in the activation
+      criterion. status_summary: partial 10 → 11, total 29 → 30, rich_form
+      28 → 29. Checked before the edit and after it:
+      check_brain_contract.py for ose and wkrp, and ocr-docs-brain/tests/run_all.py.
+  - invariant_id: 7
+    invariant_name: aggregate_only_reporting
+    from_state: >-
+      what a product publishes was read as its pages, its API and its reports
+    to_state: >-
+      the same, with one more surface named: the CI log and job summary of a
+      public repository. No status change.
+    date: "2026-11-15"
+    pr_refs:
+      - "OCR-docs — this PR"
+      - "ourSharedEvents#1293 — the dry-run output rules and OSE ADR-037 (merged 2026-11-15 as 1fabfa7)"
+    rationale: >
+      Found in the migration dry-run loop-back (OSE-2016, OSE-2085). OSE runs
+      read-only SQL against its databases in CI and prints the answer to the
+      job summary. ourSharedEvents, ourWKRP and OCR-docs are public
+      repositories (method: gh api repos/ourCommunityRituals/<repo> --jq
+      .visibility, read 2026-11-15), so that summary is published to anyone.
+      The first version of the step checked that a statement only read; it did
+      not check what was read. A count under 5, or a row value, from
+      production or from the identified database would have been published in
+      a log, outside every gate this invariant names. Nothing was: the files
+      that ran select counts of test data. OSE's fix prints counts only and
+      applies the under-5 floor there (OSE ADR-037, Accepted 2026-11-15). The shared
+      point for every spoke: anything a workflow prints from a database is a
+      published output and is held to the same rules as a report. An
+      independent security read of the first fix found it could be bypassed
+      with quoted identifiers, one way far enough to write; that is closed in
+      the same OSE change. Recorded here so the next spoke that queries a
+      database in CI starts from this. status_summary unchanged by this entry.
 
 status_summary:
   live: 17    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI), #29 declined_regulatory_regimes (OSE-1674 + OW-159 — gate green in both)
-  partial: 10  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW), #28 ci_approval_gate_secret_surface (live in OSE; fleet-live when the OA client-fork template carries it)
+  partial: 11  # #5 tier_equity / Local Sponsor Covenant (OSE-349 CF Access token blocker), #7 aggregate_only_reporting (T3 staging blocked), #9 tenant_isolation (T4 multi-brand seeding not yet written), #14 mobile_workability (multi-product CI rollout pending), #20 standards_propagation_completeness (partial — index created, inv20 checks wired), #23 red_team_coverage (threat ledger + born-red harness pending OSE-564), #24 auditability (conformance report generator pending OSE-560), #26 explicit_identity (structural half in CI; runtime complement is the promotion criterion), #27 no_biometric_identifiers (holds fleet-wide by construction; live when the absence gate is green in both OSE + OW), #28 ci_approval_gate_secret_surface (live in OSE; fleet-live when the OA client-fork template carries it), #30 honesty_lexicon (schema lint, payload keys and the allowance gate live in OSE; live when the API-field scope is ruled, the OW facet is named or scoped out, and both spokes cite #30)
   planned: 0
   retired: 2  # #11 self_hosted_runner_bash_resolution, #12 runner_pool_readiness_probe (retired 2026-09-02, OSE-1194 — self-hosted runner fleet decommissioned; CI on GitHub-hosted ubuntu-latest)
-  total: 29
-  rich_form: 28 # #1-#19, #21-#29 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
+  total: 30
+  rich_form: 29 # #1-#19, #21-#30 have enforcement_statement; #20 lean (partial, no enforcement_statement yet)
   lean_form: 1  # #20 standards_propagation_completeness (partial, lean — enforcement_statement pending)
