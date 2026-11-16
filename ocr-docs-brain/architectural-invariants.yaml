@@ -2832,7 +2832,9 @@ invariants:
     group_order: 4
     title: Honesty Lexicon
     status: partial
-    test_file: schema-lexicon.spec.ts
+    # A path, not a bare file name: OSE's own registry check reads a bare name
+    # as a gate under tests/e2e/0-architecture/, and this spec is a worker test.
+    test_file: tests/schema-lexicon.spec.ts (OSE repo — workers/oursharedevents/tests/, live, OSE-801 born red)
     lives_in:
       - ose
     enforces: >
