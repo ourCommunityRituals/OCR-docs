@@ -26,6 +26,7 @@ This directory contains the machine-readable governance contracts for the OurCom
 | `bigquery-schemas/hipaa.json` | BigQuery table schemas for the HIPAA regulatory pool. Includes de-identification pipeline spec. | 2, 3, 4 |
 | `bigquery-schemas/coppa.json` | BigQuery table schemas for the COPPA regulatory pool. Includes consent records and aggregation thresholds. | 2, 3, 4 |
 | `bigquery-schemas/aggregate.json` | The fourth layer. What the RAG reads. De-identified contributions from all three pools. | 2, 3, 4, 6 |
+| `bigquery-schemas/README.md` | What that folder holds, and where the tables a product writes today are defined (the product's code; pointers, no copied columns). | None: read by people |
 
 ---
 
