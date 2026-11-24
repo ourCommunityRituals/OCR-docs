@@ -100,6 +100,8 @@ PHASE2_EXPECTED = {
     'parade': ('SS-006', 'seasonal_special'),
     'holy_day_gathering': ('CR-008', 'community_ritual'),
     'recreational_league': ('GR-007', 'games_recreation'),
+    # OSE ADR-040 decision 12 (owner, 2026-11-24; OCR-229)
+    'scan_to_vote': ('GR-008', 'games_recreation'),
 }
 phase2_found = {}
 for cat in categories:

@@ -397,9 +397,18 @@ products:
     erasure_module: src/lib/erasure.ts
     # Repo-side structural gate for all four walls (invariant #26 test_file).
     invariant_spec: tests/security/explicit-identity.invariant.test.ts
-  description: 'Community free space. Spotify fists-of-5 compete for top playlist. QR code votes tallied
-    at end of night. Winner takes home the belt. All free. Cultural reclaiming against AI. Legal clearance
-    path to Empty Bottle, Reckless.
+  # Description per OSE ADR-040 decision 12 and the owner's choices of
+  # 2026-11-24 (OSE-2222, OCR-229). Music is one part of OW behind the
+  # MUSIC_ENABLED switch (OW-224); the identity_contract above is unchanged,
+  # because switching music off removes no file.
+  description: 'The named, plant-your-flag side. Community free space where a person signs in and stands
+    for what they do (athlete, artist, volunteer, business owner), each with its own page and sponsor
+    opportunities, and can still attend OSE events anonymously. A profile is solo (one artist or one
+    business owner) or a team that groups together for a fun competition, by the person''s choice.
+    The anonymous public votes on site by scanning the room''s code (OSE ADR-040, scan_to_vote GR-008).
+    Music is one part that can be switched off (MUSIC_ENABLED): when on, fists-of-5 teams compete for
+    top playlist, QR votes are tallied at the end of the night and the winner takes home the belt
+    (playlist_battle MC-003). All free. Cultural reclaiming against AI.
 
     '
   regulatory_pools:
