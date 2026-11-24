@@ -18,7 +18,7 @@
     "link:../packages/",
     "workspace:../packages/"
   ],
-  "permitted_seam": "GET /api/events/:id/music (HTTP fetch — WKRP exposes, OSE calls; not a module import)",
+  "permitted_seam": "The HTTP seams listed in invariant #22 references.permitted_seams (E5 music, E6 SharedReport batch, E7 showcase public reads, E8 vote link; see data-edges.yaml). HTTP only, never a module import.",
   "docs_url": "https://github.com/OurCommunityRituals/OCR-docs/blob/main/ocr-docs-brain/docs/references/OCR_DEPENDENCY_crossRepo.md",
   "scan_dirs": ["src", "workers"],
   "scan_extensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"],

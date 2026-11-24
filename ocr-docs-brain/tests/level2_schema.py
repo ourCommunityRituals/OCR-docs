@@ -991,6 +991,26 @@ for _q in _de.get('open_questions', []):
     _bad = [x for x in _q.get('about', []) if x not in _edge_ids]
     check(f'data_edges_question_refs:{_q.get("id")}', not _bad, f'unknown {_bad}' if _bad else 'ok')
 
+# Invariant #22's permitted seams must equal the live OSE-WKRP data edges, so a
+# link between the anonymous and the named side cannot be built without being
+# listed, and a listed seam cannot point at nothing (owner ruling 2026-11-24).
+_i22 = next((i for i in inv.get('invariants', []) if i.get('id') == 22), {})
+_seams = (_i22.get('references') or {}).get('permitted_seams')
+check('inv22_permitted_seams_is_list', isinstance(_seams, list) and bool(_seams),
+      f'{_seams!r}')
+_seams = set(_seams or [])
+_ose_wkrp = {
+    _e.get('id') for _e in _de.get('edges', [])
+    if _e.get('kind') == 'data' and _e.get('status') != 'retired'
+    and {_e.get('from'), _e.get('to') if not isinstance(_e.get('to'), list) else None} == {'ose', 'wkrp'}
+}
+_unlisted = sorted(_ose_wkrp - _seams)
+_dangling = sorted(_seams - _ose_wkrp)
+check('inv22_seams_cover_ose_wkrp_edges', not _unlisted,
+      f'OSE-WKRP data edges not in #22 permitted_seams: {_unlisted}' if _unlisted else f'{sorted(_ose_wkrp)}')
+check('inv22_seams_are_ose_wkrp_edges', not _dangling,
+      f'#22 permitted_seams that are not live OSE-WKRP data edges: {_dangling}' if _dangling else 'ok')
+
 # ---------------------------------------------------------------------------
 # REPORT
 # ---------------------------------------------------------------------------
