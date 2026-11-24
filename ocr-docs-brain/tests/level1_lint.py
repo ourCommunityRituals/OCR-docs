@@ -25,6 +25,7 @@ REQUIRED_YAML = [
     'corridor-definitions.yaml',
     'event-taxonomy.yaml',
     'architectural-invariants.yaml',
+    'data-edges.yaml',
 ]
 REQUIRED_JSON = [
     'bigquery-schemas/general.json',

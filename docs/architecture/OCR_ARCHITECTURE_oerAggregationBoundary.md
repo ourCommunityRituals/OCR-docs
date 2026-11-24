@@ -36,6 +36,8 @@ OER is the BigQuery RAG (retrieval-augmented generation) intelligence layer for 
        │ ✗  module import (prohibited — Invariant #22)
 ```
 
+**Every link between products is listed in `ocr-docs-brain/data-edges.yaml`** (added 2026-11-24), with its status and what enforces it. That list is an index; the rules for what may cross stay in this document.
+
 **The boundary is unidirectional at the data layer.** Products push qualifying data to OER. OER answers cross-product questions. Products consume OER answers through OER's own API — they never bypass OER to reach a sibling product's database.
 
 The **one documented exception** at the HTTP layer is the music API seam: `GET /api/events/:id/music` (WKRP exposes, OSE calls via HTTP fetch). This seam is frozen, covered by a Pact contract test (OSE-423), and explicitly permitted by Invariant #22. No new HTTP seams may be opened between product repos without a corresponding brain PR that adds them to Invariant #22's permitted seam list.
