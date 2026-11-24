@@ -82,7 +82,7 @@ Nine repos → Three raw pools → One aggregate intelligence layer → One RAG
 
 - [ ] HIPAA de-identification pipeline activation
 - [ ] COPPA aggregation pipeline activation
-- [ ] OurWKRP Spotify competition format (IP clearance)
+- [ ] OurWKRP Spotify competition format (IP clearance) — music is behind OW's MUSIC_ENABLED switch (off at launch, OSE-2222), so this no longer blocks OW
 - [ ] BAA template selection
 - [ ] COPPA parental consent mechanism design
 

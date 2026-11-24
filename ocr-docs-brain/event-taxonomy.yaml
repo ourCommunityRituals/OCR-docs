@@ -1,11 +1,12 @@
 # Event taxonomy — canonical classification. UEC coded.
-# Updated: schema v1.4.0 — added phase 2 types (parade, holy_day_gathering, recreational_league), the activities list, and total_types.
+# Updated: schema v1.5.0 — added the phase 2 type scan_to_vote (GR-008), OSE ADR-040 decision 12, OCR-229.
+# Earlier: schema v1.4.0 — added phase 2 types (parade, holy_day_gathering, recreational_league), the activities list, and total_types.
 # total_types_v1 is the Phase 1 seed and never changes: it is the count OSE migration 0024 and the deck share.
 # total_types counts every type defined here, whatever its phase, and is checked against the file.
 
-schema_version: 1.4.0
+schema_version: 1.5.0
 total_types_v1: 47
-total_types: 50
+total_types: 51
 total_activities: 116
 roadmap_target: 180
 recurrence_note: >
@@ -129,7 +130,7 @@ categories:
     uec_code: MC-003
     product_origin:
     - wkrp
-    description: Fists-of-5 Spotify competition. QR votes. Belt awarded.
+    description: Fists-of-5 playlist competition. QR votes. Belt awarded. The music flavor of scan_to_vote (GR-008); runs only where OW's music switch (MUSIC_ENABLED) is on.
     scan_codes_add:
     - LIVE
   - type_id: live_music
@@ -249,6 +250,16 @@ categories:
     scan_codes_add:
     - LIVE
     - CHECK-IN
+  - type_id: scan_to_vote
+    type_name: Scan to Vote
+    uec_code: GR-008
+    phase: 2
+    product_origin:
+    - ose
+    - wkrp
+    description: People at the event scan the room's code and vote on the entries the organizer sets up (a painting, a float, a dish, a business's display), never on a person unless they opted in as a presenter. On site only; support from elsewhere is a donation. Entries stand solo or as teams. Labels pass the off-limits list. OSE ADR-040 decision 12.
+    scan_codes_add:
+    - LIVE
 - category_id: food_drink
   category_name: Food & Drink
   uec_color: '#BA7517'
