@@ -95,6 +95,7 @@ OSE emits **aggregate behavioral data only**. No individual-row payloads cross t
 | Poster deployment signals | `event_id`, `corridor_id`, `deployment_count` | Per event × corridor | No exact lat/lon |
 | Sponsor tier signals | `event_id`, `sponsor_tier`, `sponsor_area`, `active_count` | Per event × tier × area | No sponsor identity |
 | SharedReport summary | `event_id`, `total_scans`, `total_registrations`, `avg_rating` | Per event | Aggregate only |
+| Corridor flow (NCR, proposed, section 4.1.2) | `week`, `source_cell`, `destination_cell`, `uec_code`, `scans` | Per week × source res 7 cell × destination res 7 cell × event type | Not yet emitted. Scans on posters only; each part floored, row under 5 withheld, rounded down to 5; no person-level field |
 
 **Fields that may never emit from OSE:**
 - `anon_id` (individual anon visitor identifiers)
@@ -125,6 +126,24 @@ The rule:
 How OW uses it: OW joins its events to OSE's by these two keys and brings its own counts. OSE sends no per-event counts for it to join. Per-venue and per-night counts for chambers and leagues are produced inside OSE (admin and SharedReport), not in OER.
 
 Still to do before this is live behaviour, none of it in this document: the `events_backup` schema change, the allowlist and the L0 gate (`OSE-1617`), and the `architectural-invariants.yaml` `enrichment_history` entry required by section 8, step 3, which belongs in the `OSE-1617` product PR together with the emission contract test (section 8, step 4).
+
+### 4.1.2 Proposed amendment: weekly corridor flow for the NCR layers (OSE-2216)
+
+**Status of this subsection:** proposed, awaiting the PO's review. It is **not** current behaviour, and nothing emits this row until the PO approves this amendment and OSE-2216 merges with its contract test.
+
+Why: the Node, Corridor and Ring layers (OCR_VISION section 9, OSE ADR-009) need scan traffic between corridors over time. ourEventRings already computes them from rows of exactly this shape (ourEventRings PR #4, OSE-2215). The PO ruled on 2026-11-23 that OSE counts traffic per QR code, never people.
+
+The rule:
+
+1. **One new dataset, exactly these fields:** `week` (the Monday that starts it), `source_cell` (the H3 res 7 cell where a poster hangs), `destination_cell` (the res 7 cell of that poster's event), `uec_code`, `scans`.
+2. **Corridor grain on both ends.** Both cells are res 7. A finer cell is rejected, never trimmed (OCR_VISION section 9). Rule 4 of section 4.1.1 holds: no event id, venue key or event key is on this row, so no count is at event or venue grain.
+3. **Scans on posters only.** The source is OSE's `scan_placement_events` (a poster id and an hour). No phone id, cookie, user agent, return or distinct-visitor count is read, and none crosses. `corridor_density_baseline` and the returns export are not inputs.
+4. **Floored from published parts (OSE ADR-026 rule B).** Each part, one poster in one hour, is floored before any sum (`floorTotalOfParts`); a row whose total is under 5 is withheld, and every emitted `scans` is rounded down to a multiple of 5.
+5. **Append only.** One set of rows per week, never rewritten, so trends can reach back as far as the data goes.
+6. **Readers.** Under OSE ADR-026 rule A, which is still proposed, readers are internal and named. A public page may show only shapes derived from these rows, never a count (PO, 2026-11-23: the /map layers show shapes only; numbers stay in the admin corridor view).
+7. **Classification (section 8, step 1):** Class A, aggregate. The same flows are already computed and floored inside OSE for the admin corridor dashboard (`/api/v2/admin/dashboards/corridor`, OSE-1656).
+
+Still to do before this is live behaviour, none of it in this document: the OSE export job and its emission contract test (section 8, step 4) in OSE-2216, and the `architectural-invariants.yaml` `enrichment_history` entry (section 8, step 3) in that product PR.
 
 ### 4.2 OW / WKRP — OurWKRP (named-with-attribution class)
 
@@ -294,6 +313,7 @@ Confirm the field does not appear in any row of the prohibited patterns table. I
 |------|--------|----|--------|
 | 2026-08-02 | Initial ratification — full boundary contract, 4 product emission contracts, prohibition matrix, governance protocol | OCR-docs PR #72 | OCR co-architect |
 | 2026-10-04 | Amendment, PO decision A1: event identity keys `venue_canonical_id` and `event_correlation_id` allowed on the event index row of listed events only; counts stay at corridor grain; no per-event or per-venue counts; returns export untouched. Edits the Location row (section 3), the event index row and the never-emit list (section 4.1), adds section 4.1.1 and one prohibition row (section 5). Decision and rule only; implemented by OSE-1615 and OSE-1617 | OCR-docs branch `docs/oer-boundary-a1` (draft PR) | Claude Code, for the PO |
+| 2026-11-24 | Proposed amendment for OSE-2216: a weekly corridor flow dataset (source res 7 cell, destination res 7 cell, event type, scans on posters, floored and rounded to 5) for the NCR layers; no person-level field; counts stay at corridor grain. Adds one row to section 4.1 and section 4.1.2. Awaiting PO review | OCR-docs branch `claude/project-thread-boyi9m` (draft PR) | Claude Code, for the PO |
 
 ---
 
