@@ -1,0 +1,310 @@
+# ============================================================================
+# OCR DATA EDGES — every allowed link between products
+# ============================================================================
+# One list of every link that carries data, code or rules from one OCR product
+# to another. A data link that is not listed here is not allowed.
+#
+# This file is an INDEX, not the contract. What may cross each data link, field
+# by field, stays in docs/architecture/OCR_ARCHITECTURE_oerAggregationBoundary.md
+# (OCR-ENF-24), and the invariants in architectural-invariants.yaml stay the
+# rules. Each edge points at those homes; it does not copy them.
+#
+# Why one list: the links were described in several places (the boundary doc,
+# invariants #17 and #22, OSE ADR-011, ADR-033 and ADR-040, ourWKRP code). Read
+# together on 2026-11-24 they did not agree: see `open_questions` at the end.
+#
+# How each `status` was read (2026-11-24, from the default branch of each repo):
+#   built          code for the link is on the repo's main branch
+#   served_only    one side serves it; no caller was found on the other side
+#   switched_off   built, and off by config in every environment
+#   contract_only  written in the boundary doc; no code on either side
+#   decided        an owner decision exists; not built
+#   proposed       written down, awaiting the owner
+# None of these says the link is running on staging. "Built" is code on main.
+#
+# Commits read: OCR-docs 70c8a0b, ourSharedEvents 9537680, ourWKRP 08841f4,
+# ourEventRings ea20fa1, ourCommunityRituals f6c6c3d.
+#
+# Edges carry dates so the graph keeps its history: `since` is when the link
+# was first written down or built, the earliest date found in the sources named
+# in `evidence` (some repo histories were re-imported, so a git date can be later
+# than the real start); `retired` (absent while the link stands) closes it. An edge is never deleted, only retired, and its id is never reused.
+# ============================================================================
+
+schema_version: 1.0.0
+last_verified: 2026-11-24
+
+# The nodes. `product_id` matches product-registry.yaml where the product is
+# registered. ourEventRings and the hub are not product records there, so they
+# carry their own ids here.
+nodes:
+  - id: ocr-docs
+    repo: ourCommunityRituals/OCR-docs
+    side: governance
+  - id: hub
+    repo: ourCommunityRituals/ourCommunityRituals
+    side: shared_code
+  - id: ose
+    repo: ourCommunityRituals/ourSharedEvents
+    side: anonymous
+  - id: osm
+    repo: ourCommunityRituals/ourSharedMagnets
+    side: anonymous
+  - id: wkrp
+    repo: ourCommunityRituals/ourWKRP
+    side: named
+  - id: oaw
+    repo: ourCommunityRituals/ourAirwaves
+    side: named
+  - id: osg
+    repo: ourCommunityRituals/ourSharedGames
+    side: pre_tech
+  - id: osp
+    repo: ourCommunityRituals/ourSharedPulse
+    side: pre_tech
+  - id: osr
+    repo: ourCommunityRituals/ourSharedRecords
+    side: pre_tech
+  - id: oer
+    repo: ourCommunityRituals/ourEventRings
+    side: intelligence
+
+# kind:
+#   data        rows or counts cross (the privacy-relevant kind)
+#   code        a shared package or pinned commit is consumed
+#   governance  rules, standards or checks flow from the brain
+# privacy_class (data edges only): A, B or X as defined in the boundary doc
+# section 3; "public" for a read of what a public page already shows.
+edges:
+
+  # ── Data: products to ourEventRings ────────────────────────────────────────
+  - id: E1
+    from: ose
+    to: oer
+    kind: data
+    what: >
+      Batch export to BigQuery: events_backup (the event index row),
+      corridor_density_baseline_export, event_series_export and
+      corridor_flow_export. A schema for corridor_returns_export exists; the
+      export code says that table receives nothing yet.
+    privacy_class: A
+    floor: Under-5 floor and corridor (res 7) grain per the boundary doc 4.1, 4.1.1 and 4.1.2
+    status: built
+    since: 2026-05-15
+    contract: OCR_ARCHITECTURE_oerAggregationBoundary.md section 4.1
+    enforced_by:
+      - "invariant #17 (oer-emission-boundary.invariant.spec.ts in OSE)"
+    evidence: >
+      ourSharedEvents workers/oursharedevents/bigquery/*.schema.json (5 files);
+      src/lib/shared-report-export.ts, src/lib/corridor-flow-export.ts,
+      src/cloud/bigquery.ts. `since` is the OSE-272 SharedReport export work
+      (transcripts, May 2026).
+
+  - id: E2
+    from: wkrp
+    to: oer
+    kind: data
+    what: Curation signals, community engagement counts and named profile signals.
+    privacy_class: B
+    floor: Aggregate only at aggregate level; revocation reaches OER within 24 h
+    status: contract_only
+    since: 2026-08-02
+    contract: OCR_ARCHITECTURE_oerAggregationBoundary.md section 4.2
+    enforced_by: []
+    evidence: Boundary doc 4.2. No BigQuery export found in ourWKRP src.
+
+  - id: E3
+    from: oaw
+    to: oer
+    kind: data
+    what: Deployment registry telemetry (deployment id, corridor, tier, activation date).
+    privacy_class: A
+    floor: No client data crosses
+    status: contract_only
+    since: 2026-08-02
+    contract: OCR_ARCHITECTURE_oerAggregationBoundary.md section 4.3
+    enforced_by: []
+    evidence: Boundary doc 4.3. ourAirwaves holds documents only.
+
+  - id: E4
+    from: osm
+    to: oer
+    kind: data
+    what: As written in the boundary doc for OSM.
+    privacy_class: A
+    floor: As the boundary doc sets
+    status: contract_only
+    since: 2026-08-02
+    contract: OCR_ARCHITECTURE_oerAggregationBoundary.md (OSM section)
+    enforced_by: []
+    evidence: Boundary doc scope line lists OSM. ourSharedMagnets holds documents only.
+
+  # ── Data: between ourSharedEvents and ourWKRP (HTTP only) ──────────────────
+  - id: E5
+    from: wkrp
+    to: ose
+    kind: data
+    direction_note: ourWKRP serves; OSE was meant to call it.
+    what: "GET /api/events/:eventId/music on ourWKRP: an event's sets, top tracks and floored counts."
+    privacy_class: B
+    floor: Floored counts; no listener identity
+    status: served_only
+    since: 2026-08-02
+    contract: "invariant #22 permitted_seam; boundary doc section 2"
+    enforced_by:
+      - "invariant #22 (check_cross_repo_imports.py)"
+      - "Pact at the music seam (OSE-423)"
+    evidence: >
+      ourWKRP src/router.ts line 368 serves it. No caller found in
+      ourSharedEvents workers/oursharedevents/src (searched for "/music",
+      "ourwkrp" and "WKRP" at 9537680).
+
+  - id: E6
+    from: ose
+    to: wkrp
+    kind: data
+    direction_note: OSE serves; ourWKRP was meant to call it with a service token.
+    what: "POST /api/v2/events/shared-reports/batch on OSE: SharedReports for a batch of events."
+    privacy_class: A
+    floor: The SharedReport's own floors (OSE ADR-017)
+    status: served_only
+    since: 2026-05-15
+    contract: OSE ADR-011 (SharedReport is the boundary ourWKRP consumes)
+    enforced_by:
+      - "WKRP_SERVICE_TOKEN, cross_product class, fails closed (OSE src/lib/shared-report-auth.ts)"
+    evidence: >
+      OSE src/router.ts line 2557 serves it. No caller found in ourWKRP src
+      (searched for "shared-reports" at 08841f4).
+
+  - id: E7
+    from: ose
+    to: wkrp
+    kind: data
+    direction_note: ourWKRP's private creator showcase reads OSE at build time.
+    what: >
+      Public reads at build time: /api/v2/events?brand=, /api/v2/events/:id,
+      its poster-bundle and sponsor-bundle (surface=public), the brand
+      calendar.ics, and /api/v2/map/areas (OSE ADR-033). Staging or a local
+      OSE only; never production.
+    privacy_class: public
+    floor: Only what OSE's public pages already show
+    status: built
+    since: 2026-11-12
+    contract: OSE ADR-033 (the area map as a public read of cells); public event projection (OSE AGENTS.md)
+    enforced_by:
+      - "OSE public read rate limit (lib/public-read-limit.ts)"
+      - "ourWKRP showcase stops the build on any text naming the creator"
+    evidence: ourWKRP showcase/lib/ose.mjs (header lists the reads; OSE_STAGING only).
+
+  - id: E8
+    from: wkrp
+    to: ose
+    kind: data
+    direction_note: ourWKRP opens a song on an OSE vote set when a DJ logs a play.
+    what: >
+      A song label only, sent to /api/v2/admin/events/:id/votables. No ourWKRP
+      id, DJ or contributor name crosses. ourWKRP keeps only the returned link.
+    privacy_class: A
+    floor: Votes are counters on objects, never rows about voters (OSE ADR-040)
+    status: switched_off
+    since: 2026-11-23
+    contract: OSE ADR-040; OW-219
+    enforced_by:
+      - "Cloudflare Access service token set by the owner"
+      - "OSE_VOTE_LINK = \"off\" in ourWKRP wrangler.toml"
+    evidence: ourWKRP src/lib/ose-vote-link.ts (added 2026-11-23); wrangler.toml line 109. OSE ADR-040 accepted 2026-11-18.
+
+  - id: E9
+    from: ose
+    to: oer
+    kind: data
+    direction_note: Lets ourWKRP join its events to OSE's inside OER by two identity keys.
+    what: venue_canonical_id and event_correlation_id on the event index row of a listed event.
+    privacy_class: A
+    floor: Keys only; no count at event or venue grain
+    status: decided
+    since: 2026-10-04
+    contract: OCR_ARCHITECTURE_oerAggregationBoundary.md section 4.1.1 (decision A1)
+    enforced_by: []
+    evidence: Boundary doc 4.1.1 says neither key is emitted yet (OSE-1615, OSE-1617).
+
+  - id: E10
+    from: oer
+    to: ose
+    kind: data
+    direction_note: The answer side of "products emit, OER answers".
+    what: Cross-product answers through an OER API.
+    privacy_class: A
+    floor: Readers internal and named (OSE ADR-026 rule A, proposed)
+    status: proposed
+    since: 2026-08-02
+    contract: "Boundary doc section 2; OSE ADR-026"
+    enforced_by: []
+    evidence: >
+      ourEventRings computes the NCR layers from rows shaped like
+      corridor_flow_export, read from CSV files (ncr/__main__.py); no API.
+
+  # ── Code: the shared design system ─────────────────────────────────────────
+  - id: C1
+    from: hub
+    to: [ose, wkrp, oer, oaw, osm, osg, osp, osr, ocr-docs]
+    kind: code
+    what: "@ocr/ui and the design check, pinned to an exact hub commit in .ocr-hub-ref."
+    status: built
+    since: 2026-07-01
+    contract: "Invariant #22 permits shared OCR packages (@ocr/ui, @ocr/flags)"
+    enforced_by:
+      - "scripts/ci-stage-ocr-workspace.sh refuses a pin not on hub main"
+    evidence: >
+      .ocr-hub-ref present on main in all nine listed repos (read 2026-11-24).
+      `since`: the shared design system reached OSE in July 2026 (transcripts
+      master-timeline).
+
+  # ── Governance: the brain to the spokes ────────────────────────────────────
+  - id: G1
+    from: ocr-docs
+    to: [ose, wkrp, oaw, osm, osg, osp, osr]
+    kind: governance
+    what: >
+      The brain conformance check reads this brain live from OCR-docs main,
+      and standards are copied into each spoke's .ocr-standards/.
+    status: built
+    since: 2026-09-12
+    contract: OCR_STANDARD_orgBrainSync.md
+    enforced_by:
+      - "brain-contract-check.yml in each listed spoke"
+      - "propagate-standards.yml and nightly-sync-check.yml in OCR-docs"
+    evidence: >
+      brain-contract-check workflow and .ocr-standards present on main in the
+      seven listed repos; absent in ourEventRings (read 2026-11-24). `since`:
+      first commit of propagate-standards.yml in OCR-docs.
+
+# Spokes with no data edge yet. A spoke adds its rows above before it writes
+# code that sends or reads another product's data.
+no_data_edges_yet:
+  - id: osg
+    note: Inherits OSE's anonymous model; its game data would flow through OSE, not beside it.
+  - id: osp
+    note: No anonymous id by design (human-delivered). It must never get a data edge to the anonymous side.
+  - id: osr
+    note: Archive and oral history; named by consent when built.
+
+# Disagreements found while building this list. Each needs an owner ruling;
+# this file does not settle them.
+open_questions:
+  - id: Q1
+    about: [E6, E7, E8]
+    question: >
+      Invariant #22 says the only permitted cross-repo data flow is the music
+      seam (E5). E6, E7 and E8 are HTTP links between OSE and ourWKRP that are
+      built or served. Add them to #22's permitted seams, or retire them?
+  - id: Q2
+    about: [E5]
+    question: >
+      The one permitted seam (E5) is served by ourWKRP but no OSE code calls
+      it. Keep it, or retire it?
+  - id: Q3
+    about: [G1]
+    question: >
+      ourEventRings has no brain conformance check and no .ocr-standards copy.
+      Should it join G1 now that it holds code?

@@ -941,6 +941,57 @@ else:
           'cross_repo_patterns.json not present (soft-pass; brain_script guard not armed)')
 
 # ---------------------------------------------------------------------------
+# DATA EDGES — data-edges.yaml (every allowed link between products)
+# ---------------------------------------------------------------------------
+# The list is an index; the boundary doc holds the field-level contract. These
+# checks keep the list well-formed so a link cannot be added half-described.
+import datetime as _dt
+_de = load('data-edges.yaml')
+for _k in ['schema_version', 'last_verified', 'nodes', 'edges']:
+    check(f'data_edges_top_key:{_k}', _k in _de, 'present' if _k in _de else 'missing')
+_registry_ids = {p.get('product_id') for p in pr.get('products', [])}
+_extra_nodes = {'hub', 'oer'}  # not product records in product-registry.yaml
+_node_ids = [n.get('id') for n in _de.get('nodes', [])]
+check('data_edges_node_ids_unique', len(_node_ids) == len(set(_node_ids)),
+      f'{len(_node_ids)} nodes')
+for _n in _node_ids:
+    _ok = _n in _registry_ids or _n in _extra_nodes
+    check(f'data_edges_node_registered:{_n}', _ok,
+          'in product-registry.yaml' if _n in _registry_ids else
+          ('brain-local node' if _ok else 'not in product-registry.yaml and not hub/oer'))
+_EDGE_REQ = ['id', 'from', 'to', 'kind', 'what', 'status', 'since', 'contract', 'enforced_by', 'evidence']
+_KIND = ['data', 'code', 'governance']
+_STATUS = ['built', 'served_only', 'switched_off', 'contract_only', 'decided', 'proposed', 'retired']
+_PRIV = ['A', 'B', 'public']  # Class X never crosses (boundary doc section 3)
+_LIVE = {'built', 'served_only', 'switched_off'}
+_edge_ids = []
+for _e in _de.get('edges', []):
+    _id = _e.get('id', '?')
+    _edge_ids.append(_id)
+    _miss = [k for k in _EDGE_REQ if k not in _e]
+    check(f'data_edge_fields:{_id}', not _miss, f'missing {_miss}' if _miss else 'all present')
+    check(f'data_edge_id_form:{_id}', bool(re.match(r'^[ECG][0-9]+$', str(_id))),
+          'E=data, C=code, G=governance plus a number')
+    check(f'data_edge_kind:{_id}', _e.get('kind') in _KIND, str(_e.get('kind')))
+    check(f'data_edge_status:{_id}', _e.get('status') in _STATUS, str(_e.get('status')))
+    _since = _e.get('since')
+    check(f'data_edge_since_is_date:{_id}', isinstance(_since, _dt.date), str(_since))
+    _ends = [_e.get('from')] + (_e.get('to') if isinstance(_e.get('to'), list) else [_e.get('to')])
+    _bad = [x for x in _ends if x not in _node_ids]
+    check(f'data_edge_ends_are_nodes:{_id}', not _bad, f'unknown {_bad}' if _bad else 'ok')
+    if _e.get('kind') == 'data':
+        _pc = _e.get('privacy_class')
+        check(f'data_edge_privacy_class:{_id}', _pc in _PRIV,
+              f'{_pc!r} not in {_PRIV} (Class X never crosses)' if _pc not in _PRIV else _pc)
+        if _e.get('status') in _LIVE:
+            check(f'data_edge_live_has_enforcement:{_id}', bool(_e.get('enforced_by')),
+                  'a built link names what enforces it' if _e.get('enforced_by') else 'enforced_by is empty')
+check('data_edges_ids_unique', len(_edge_ids) == len(set(_edge_ids)), f'{len(_edge_ids)} edges')
+for _q in _de.get('open_questions', []):
+    _bad = [x for x in _q.get('about', []) if x not in _edge_ids]
+    check(f'data_edges_question_refs:{_q.get("id")}', not _bad, f'unknown {_bad}' if _bad else 'ok')
+
+# ---------------------------------------------------------------------------
 # REPORT
 # ---------------------------------------------------------------------------
 passed = sum(1 for _, s, _ in results if s == 'PASS')
