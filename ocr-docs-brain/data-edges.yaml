@@ -150,7 +150,7 @@ edges:
     floor: Floored counts; no listener identity
     status: served_only
     since: 2026-08-02
-    contract: "invariant #22 permitted_seam; boundary doc section 2"
+    contract: "invariant #22 permitted seam; boundary doc section 2"
     enforced_by:
       - "invariant #22 (check_cross_repo_imports.py)"
       - "Pact at the music seam (OSE-423)"
@@ -169,7 +169,7 @@ edges:
     floor: The SharedReport's own floors (OSE ADR-017)
     status: served_only
     since: 2026-05-15
-    contract: OSE ADR-011 (SharedReport is the boundary ourWKRP consumes)
+    contract: "OSE ADR-011 (SharedReport is the boundary ourWKRP consumes); invariant #22 permitted seam"
     enforced_by:
       - "WKRP_SERVICE_TOKEN, cross_product class, fails closed (OSE src/lib/shared-report-auth.ts)"
     evidence: >
@@ -190,7 +190,7 @@ edges:
     floor: Only what OSE's public pages already show
     status: built
     since: 2026-11-12
-    contract: OSE ADR-033 (the area map as a public read of cells); public event projection (OSE AGENTS.md)
+    contract: "OSE ADR-033 (the area map as a public read of cells); public event projection (OSE AGENTS.md); invariant #22 permitted seam"
     enforced_by:
       - "OSE public read rate limit (lib/public-read-limit.ts)"
       - "ourWKRP showcase stops the build on any text naming the creator"
@@ -204,11 +204,13 @@ edges:
     what: >
       A song label only, sent to /api/v2/admin/events/:id/votables. No ourWKRP
       id, DJ or contributor name crosses. ourWKRP keeps only the returned link.
+      The vote itself stays on OSE and on site: a voter scans the room's code
+      at the event (OSE ADR-040 decisions 6 and 12).
     privacy_class: A
     floor: Votes are counters on objects, never rows about voters (OSE ADR-040)
     status: switched_off
     since: 2026-11-23
-    contract: OSE ADR-040; OW-219
+    contract: "OSE ADR-040 (decision 12: any event type, on site only); OW-219; invariant #22 permitted seam"
     enforced_by:
       - "Cloudflare Access service token set by the owner"
       - "OSE_VOTE_LINK = \"off\" in ourWKRP wrangler.toml"
@@ -291,18 +293,13 @@ no_data_edges_yet:
 
 # Disagreements found while building this list. Each needs an owner ruling;
 # this file does not settle them.
+# Answered by the owner on 2026-11-24 (Q1 and Q2 of OCR-docs#187): every
+# built link between OSE and ourWKRP is allowed, because voting works across
+# any event type, on site only. E5 to E8 are now invariant #22's permitted
+# seams (architectural-invariants.yaml, references.permitted_seams), and level 2
+# fails if that list and the OSE–ourWKRP data edges here disagree. The music
+# seam (E5) is kept.
 open_questions:
-  - id: Q1
-    about: [E6, E7, E8]
-    question: >
-      Invariant #22 says the only permitted cross-repo data flow is the music
-      seam (E5). E6, E7 and E8 are HTTP links between OSE and ourWKRP that are
-      built or served. Add them to #22's permitted seams, or retire them?
-  - id: Q2
-    about: [E5]
-    question: >
-      The one permitted seam (E5) is served by ourWKRP but no OSE code calls
-      it. Keep it, or retire it?
   - id: Q3
     about: [G1]
     question: >

@@ -2459,11 +2459,16 @@ invariants:
       - ose
     enforces: >
       No module-level import (import/require/file:/workspace: dependency)
-      may cross the OSE / WKRP / OAW repo boundary. The only permitted
-      cross-repo data flow is the OER aggregation boundary: the HTTP API
-      seam at GET /api/events/:id/music (WKRP exposes, OSE calls via HTTP
-      fetch). Shared OCR packages (@ocr/flags, @ocr/ui under packages/)
-      are explicitly permitted — they are designed cross-product packages.
+      may cross the OSE / WKRP / OAW repo boundary. Data crosses between
+      OSE and WKRP only over the HTTP seams listed in references.permitted_seams,
+      each an edge in data-edges.yaml (owner, 2026-11-24): E5 the music read,
+      E6 the SharedReport batch, E7 the showcase's public reads, and E8 the
+      vote link. A vote stays on-site only: it needs a scan of the room's
+      code at the event (OSE ADR-040 decision 12). A data link between OSE
+      and WKRP that is not on that list is not allowed, and level 2 of the
+      brain tests fails when the two lists disagree. Shared OCR packages
+      (@ocr/flags, @ocr/ui under packages/) are explicitly permitted — they
+      are designed cross-product packages.
     applies_to:
       - ose
       - wkrp
@@ -2478,10 +2483,12 @@ invariants:
       module-level import across this boundary would silently couple the
       two identity models at the code level, making it trivially easy to
       introduce an inadvertent identity leakage path that bypasses the HTTP
-      API boundary and its CORS controls. The HTTP API seam
-      (GET /api/events/:id/music) is the one documented boundary; it is
-      covered by Pact contract testing (OSE-423) and CORS origin controls
-      in WKRP's privacy.ts. Module imports would bypass both.
+      API boundary and its CORS controls. The HTTP seams in
+      references.permitted_seams are the documented boundary: each is
+      named in data-edges.yaml with its privacy class and what enforces it
+      (Pact at the music seam, OSE-423; a fail-closed service token on the
+      SharedReport batch and the vote link; OSE's public read limits on the
+      showcase reads). Module imports would bypass all of them.
     enforcement_statement: >
       L0 SCRIPT GATE — scripts/check-cross-repo-imports.sh in the OSE repo
       scans workers/**/*.ts, workers/**/*.js, and both package.json files
@@ -2507,7 +2514,8 @@ invariants:
       ci_workflow: .github/workflows/brain-contract-check.yml (OSE repo — step invokes the live-read brain guard)
       legacy_local_script: scripts/check-cross-repo-imports.sh (OSE repo — superseded by the live-read brain guard; retirement tracked as follow-up)
       audit_doc: docs/security/INVARIANT_22_CROSS_REPO_IMPORT_ISOLATION.md (OSE repo)
-      permitted_seam: "GET /api/events/:id/music — WKRP exposes, OSE calls via HTTP"
+      permitted_seams: [E5, E6, E7, E8]  # edge ids in data-edges.yaml; level 2 checks this list against it
+      permitted_seam_owner_ruling: "Matt, 2026-11-24: every built OSE–WKRP link is permitted, since voting works across any event type, on site only"
       pact_coverage: "OSE-423 F2.3 — Pact at the frozen music seam"
       activation_pr: "OSE PR #291 — feat(security): Invariant #22 cross-repo isolation audit + CI gate (OSE-388, OSE-389)"
       brain_script_pr: "OSE-1288 / F13 — PR-1a (canonical brain guard), PR-1b (conformance wiring + enforcement_kind flip + live-read mode plane)"
@@ -4624,6 +4632,28 @@ enrichment_history:
       export-grain.invariant.spec.ts) derives the new exporter and table, and
       it was watched failing when a poster id was added to the SELECT list.
       status_summary unchanged by this entry.
+
+  - invariant_id: 22
+    invariant_name: cross_repo_import_isolation
+    from_state: >-
+      one permitted HTTP seam, GET /api/events/:id/music
+    to_state: >-
+      four permitted HTTP seams, listed by edge id in references.permitted_seams
+      (E5 music, E6 SharedReport batch, E7 showcase public reads, E8 vote
+      link), checked against data-edges.yaml by level 2. No status change.
+    date: "2026-11-24"
+    pr_refs:
+      - "OCR-docs#187 — data-edges.yaml and its open question Q1"
+      - "OCR-docs — this PR"
+    rationale: >
+      data-edges.yaml (OCR-docs#187) found three built or served HTTP links
+      between OSE and WKRP that #22 did not list. The owner ruled on
+      2026-11-24 that they belong in the allowed list, because voting now
+      works across any event type, on site only, and a listed link with named
+      enforcement is safer than an unlisted one. The music seam (E5) is kept.
+      Listing a seam permits HTTP only; module imports stay forbidden, so the
+      guard and its patterns are unchanged. status_summary unchanged by this
+      entry.
 
 status_summary:
   live: 17    # #1 anonymous_id, #2 hyperlocal_geo_resolution, #3 uec_encoding, #4 ncr_data_accumulation, #6 inert_monetization_hooks, #8 bounded_pii_retention, #10 deprecation_lock, #13 brain_enforcement_location, #15 cors_allowlist_immutability, #16 api_response_schema_stability, #17 oer_emission_boundary, #18 slug_permanence, #19 migration_monotonicity, #21 shared_report_schema_stability, #22 cross_repo_import_isolation, #25 sponsor_share_covenant (OSE-661/670 — covenant enforced in code + CI), #29 declined_regulatory_regimes (OSE-1674 + OW-159 — gate green in both)

@@ -40,7 +40,7 @@ OER is the BigQuery RAG (retrieval-augmented generation) intelligence layer for 
 
 **The boundary is unidirectional at the data layer.** Products push qualifying data to OER. OER answers cross-product questions. Products consume OER answers through OER's own API — they never bypass OER to reach a sibling product's database.
 
-The **one documented exception** at the HTTP layer is the music API seam: `GET /api/events/:id/music` (WKRP exposes, OSE calls via HTTP fetch). This seam is frozen, covered by a Pact contract test (OSE-423), and explicitly permitted by Invariant #22. No new HTTP seams may be opened between product repos without a corresponding brain PR that adds them to Invariant #22's permitted seam list.
+The **documented exceptions** at the HTTP layer are the four seams between ourSharedEvents and ourWKRP that Invariant #22 permits (owner, 2026-11-24): E5, the music read `GET /api/events/:id/music` (WKRP exposes; frozen, covered by a Pact contract test, OSE-423); E6, the SharedReport batch `POST /api/v2/events/shared-reports/batch` (OSE exposes, behind a fail-closed service token); E7, the private showcase's public reads of OSE, staging only; and E8, the vote link, which sends OSE a song label only and keeps every vote on OSE and on site (OSE ADR-040 decision 12). Each is described in `ocr-docs-brain/data-edges.yaml`. No new HTTP seam may be opened between product repos without a brain PR that adds it to `data-edges.yaml` and to Invariant #22's `permitted_seams`; level 2 of the brain tests fails when the two disagree.
 
 ---
 

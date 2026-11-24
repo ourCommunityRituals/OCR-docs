@@ -8,8 +8,9 @@ Why this exists
 Invariant #22 forbids module-level coupling across the OSE / WKRP / OAW (and
 the other product) repo boundaries. The anonymous pole (OSE) and the named
 pole (WKRP) carry opposite identity invariants; a module import across the
-boundary would couple the two identity models in code, bypassing the one
-documented HTTP seam (GET /api/events/:id/music) and its CORS controls.
+boundary would couple the two identity models in code, bypassing the
+documented HTTP seams (invariant #22 references.permitted_seams, each an edge
+in data-edges.yaml) and the controls on them.
 
 IMPORTANT — this is NECESSARY BUT NOT SUFFICIENT. It blocks *module imports*.
 It does NOT prove the HTTP seam's payload is clean (that is a separate
@@ -193,8 +194,8 @@ class Violation:
         return (f'  VIOLATION [{self.kind}] {self.path}:{self.line_no}\n'
                 f'    {self.snippet}\n'
                 f'    → {self.hint}\n'
-                f'    permitted: @ocr/* packages + the HTTP seam '
-                f'GET /api/events/:id/music. See {docs_url}')
+                f'    permitted: @ocr/* packages + the HTTP seams listed in '
+                f'invariant #22 (data-edges.yaml). See {docs_url}')
 
 
 def scan_source_line(path, i, line, scopes, hosts):
@@ -354,8 +355,8 @@ def run(repo: Path, product_id: str, brain: Path):
     for v in violations:
         print(v.render(docs_url))
     print(f'\nInvariant #{INVARIANT_ID} prohibits module-level imports across '
-          f'product repos. The only permitted cross-repo data flow is the HTTP '
-          f'seam. enforcement_mode={mode}.')
+          f'product repos. The only permitted cross-repo data flows are the HTTP '
+          f'seams listed in invariant #22. enforcement_mode={mode}.')
     if mode == 'block':
         return 1
     print('enforcement_mode=warn — reporting only, not failing. '
