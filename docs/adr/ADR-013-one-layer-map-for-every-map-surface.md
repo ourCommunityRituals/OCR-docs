@@ -25,9 +25,10 @@ the owner's (2026-11-25), bottom to top:
 The owner also asked that the stack order and the meaning of each layer live **in the data**, so an
 agent can read the map as well as a person can see it.
 
-The OSE SharedReport is getting this stack now (ose:ADR-041, in progress; not duplicated here),
+The OSE SharedReport is getting this stack now (ose:ADR-041, OSE draft PR 1557; not duplicated here),
 with rings drawn empty until the owner decides whether reports may show ring shapes under
-ose:ADR-026.
+ose:ADR-026. The owner's options for that question are written up at
+<https://claude.ai/artifact/XeWyHNmMj61u3Cbh1cnivx>.
 
 ### Every map in the fleet today (read 2026-11-25, default branches)
 
@@ -100,10 +101,10 @@ registry, and a surface can draw only registered layers:
 | 90 | `report.cells` | rings | This report's floored scan cells, drawn over the stack | people-count | the SharedReport's own floored counts |
 | 95 | `labels` | all | Place names | geometry | place names |
 
-The step is one of the four the owner walks through (base, hexagons, corridors, rings). The nine
-layers OSE's SharedReport is building now (`src/lib/ncr/layer-stack.ts`, ose:ADR-041, in progress)
-use these ids, steps and classes, ranked 1 to 9 in the same order; their ranks become the
-registry's numbers above when the report moves onto the component. The numbers leave room to add layers without renumbering. Every drawn map carries the stack
+The step is one of the four the owner walks through (base, hexagons, corridors, rings). OSE's
+SharedReport layer stack (`src/lib/ncr/layer-stack.ts`, ose:ADR-041, OSE draft PR 1557) already
+uses these ids, steps, classes and numbers for its nine layers, so moving the report onto the
+component changes no layer. The numbers leave room to add layers without renumbering. Every drawn map carries the stack
 it actually drew as data: each layer is a `<g data-layer="…" data-step="…" data-order="…" data-class="…">`, and
 the SVG's `<metadata>` holds one JSON object listing the surface, the as-of week, and each layer's
 id, step, order, meaning, class and whether it was shown or withheld (and why: "below the floor", "not
@@ -226,7 +227,7 @@ rule 10 and ose:ADR-033's limits forbid, and it adds a cost the free-forever gua
 
 - `docs/standards/OCR_STANDARD_hexMaps.md`
 - fleet:ADR-006, fleet:ADR-008, fleet:ADR-010, fleet:ADR-011
-- ose:ADR-017, ose:ADR-025, ose:ADR-026, ose:ADR-033, ose:ADR-035, ose:ADR-036, ose:ADR-041 (in progress)
+- ose:ADR-017, ose:ADR-025, ose:ADR-026, ose:ADR-033, ose:ADR-035, ose:ADR-036, ose:ADR-041 (OSE draft PR 1557)
 - `@ocr/ui` guidelines `30-uec-and-maps.md`, `60-map-archetypes-and-venues.md`,
   `70-pre-maps-and-rotating-displays.md`
 - OER draft PR 6 (`ncr/layers.py`, `tools/prototype/ncr-layer-map.html`)
