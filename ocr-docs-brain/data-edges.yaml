@@ -246,6 +246,70 @@ edges:
       ourEventRings computes the NCR layers from rows shaped like
       corridor_flow_export, read from CSV files (ncr/__main__.py); no API.
 
+  # ── Data: ourAirwaves, the self-serve front door (proposed 2026-11-25) ────
+  # OA configures OSE and OW pages through their APIs, never their databases.
+  # Configuration and the use of a brand's own allowance cross; people never do.
+
+  - id: E11
+    from: oaw
+    to: ose
+    kind: data
+    direction_note: OA writes; OSE checks and stores.
+    what: >
+      A brand's looks (the skin .md format), its tier limits, and an opaque OA actor id for OSE's audit log, sent with a brand-scoped OA service token. No name or email of the OA user crosses.
+    privacy_class: A
+    floor: No person data crosses; OSE refuses any look that breaks its rails
+    status: proposed
+    since: 2026-11-25
+    contract: "docs/proposals/PROPOSAL_ourAirwaves-self-serve.md sections 4, 6 and 7"
+    enforced_by: []
+    evidence: Proposal only. ourAirwaves holds no code (read 2026-11-25).
+
+  - id: E12
+    from: oaw
+    to: wkrp
+    kind: data
+    direction_note: OA writes; ourWKRP checks and stores.
+    what: >
+      A brand's or contributor's looks (the skin .md format) and tier limits, sent with a brand-scoped OA service token.
+    privacy_class: B
+    floor: Named side; ourWKRP refuses any look that breaks its rails
+    status: proposed
+    since: 2026-11-25
+    contract: "docs/proposals/PROPOSAL_ourAirwaves-self-serve.md sections 4, 6 and 7"
+    enforced_by: []
+    evidence: Proposal only. ourAirwaves holds no code (read 2026-11-25).
+
+  - id: E13
+    from: ose
+    to: oaw
+    kind: data
+    direction_note: OA reads back what it configured.
+    what: >
+      The brand's current looks and how much of each limit is used (for example 7 of 10 poster designs). No attendee data and no attendee counts; a SharedReport stays on OSE and OA only links to it.
+    privacy_class: A
+    floor: Configuration and allowance use only; never a count of people
+    status: proposed
+    since: 2026-11-25
+    contract: "docs/proposals/PROPOSAL_ourAirwaves-self-serve.md section 7"
+    enforced_by: []
+    evidence: Proposal only.
+
+  - id: E14
+    from: wkrp
+    to: oaw
+    kind: data
+    direction_note: OA reads back what it configured.
+    what: >
+      The brand's current looks and how much of each limit is used.
+    privacy_class: B
+    floor: Configuration and allowance use only
+    status: proposed
+    since: 2026-11-25
+    contract: "docs/proposals/PROPOSAL_ourAirwaves-self-serve.md section 7"
+    enforced_by: []
+    evidence: Proposal only.
+
   # ── Code: the shared design system ─────────────────────────────────────────
   - id: C1
     from: hub
