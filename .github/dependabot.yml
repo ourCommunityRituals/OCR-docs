@@ -1,0 +1,12 @@
+# Keeps pinned actions current (OCR-231). Workflows and composite actions pin
+# by full commit SHA with the tag as a comment; Dependabot proposes the new SHA
+# as a reviewed PR when the tag moves.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ['*']

@@ -72,7 +72,7 @@ jobs:
       standards_changed: ${{ steps.changes.outputs.standards }}
       changed_files: ${{ steps.list.outputs.files }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 2
 
@@ -142,13 +142,13 @@ jobs:
 
       - name: Checkout OCR-docs
         if: steps.scope.outputs.in_scope == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           path: ocr-docs
 
       - name: Checkout target repo
         if: steps.scope.outputs.in_scope == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ${{ env.ORG }}/${{ matrix.repo }}
           token: ${{ secrets.OCR_PROPAGATE_WRITE }}

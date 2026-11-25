@@ -45,84 +45,92 @@ jobs:
 
     steps:
       - name: Checkout OCR-docs (this repo)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           path: ocr-docs
 
       - name: Checkout workspace root (ourCommunityRituals)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourCommunityRituals
           path: workspace-root
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
 
       # Each app repo gets its own checkout under ./app-repos/<name>.
       # Cloning them all upfront is cheap (shallow + sparse) and keeps
       # the audit script call simple.
       - name: Checkout app repo — ourSharedEvents
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourSharedEvents
           path: app-repos/ourSharedEvents
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
 
       - name: Checkout app repo — ourSharedMagnets
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourSharedMagnets
           path: app-repos/ourSharedMagnets
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
 
       - name: Checkout app repo — ourWKRP
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourWKRP
           path: app-repos/ourWKRP
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
         continue-on-error: true  # planned repo; may not exist yet
 
       - name: Checkout app repo — ourAirwaves
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourAirwaves
           path: app-repos/ourAirwaves
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
         continue-on-error: true  # planned repo
 
       - name: Checkout app repo — ourSharedGames
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourSharedGames
           path: app-repos/ourSharedGames
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
         continue-on-error: true  # pre-tech repo
 
       - name: Checkout app repo — ourSharedRecords
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourSharedRecords
           path: app-repos/ourSharedRecords
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
         continue-on-error: true  # pre-tech repo
 
       - name: Checkout app repo — ourSharedPulse
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ourCommunityRituals/ourSharedPulse
           path: app-repos/ourSharedPulse
           ref: main
           token: ${{ secrets.OCR_SPOKES_READ }}
+          persist-credentials: false
         continue-on-error: true  # pre-tech repo
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.11'
 
@@ -154,14 +162,14 @@ jobs:
 
       - name: Upload audit report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: brain-location-audit
           path: audit-report.json
 
       - name: Comment on PR with violation summary
         if: steps.audit.outcome == 'failure' && github.event_name == 'pull_request'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const fs = require('fs');
