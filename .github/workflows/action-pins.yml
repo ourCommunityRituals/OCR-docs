@@ -1,0 +1,42 @@
+# action-pins.yml
+# ----------------------------------------------------------------------------
+# Every action OCR-docs runs is pinned by commit, and a read token used for a
+# checkout is never written to disk (OCR-231; CCR security sweep 2026-11-25).
+# The self-test runs first: each rule must catch its planted fault, or the
+# check on the real files is not trusted.
+# ----------------------------------------------------------------------------
+name: Action pins
+
+on:
+  pull_request:
+    paths:
+      - '.github/**'
+      - 'tests/check_action_pins.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/**'
+      - 'tests/check_action_pins.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pins:
+    name: actions pinned by commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Install pyyaml
+        run: pip install --disable-pip-version-check pyyaml==6.0.2
+      - name: Self-test (each rule catches its planted fault)
+        run: python3 tests/check_action_pins.py --self-test
+      - name: Check the real workflows and composite actions
+        run: python3 tests/check_action_pins.py
