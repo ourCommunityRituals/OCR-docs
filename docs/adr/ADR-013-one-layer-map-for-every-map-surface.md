@@ -87,7 +87,8 @@ registry, and a surface can draw only registered layers:
 
 | Order | Layer id | Step | Meaning (the sentence an agent reads) | Privacy class | Source |
 |------:|----------|------|---------------------------------------|---------------|--------|
-| 10 | `base.towns` | base | Towns and community areas, light tints, neighbours differ | geometry | OER jurisdictions |
+| 10 | `base.towns` | base | Towns, light tints, neighbours differ | geometry | OER jurisdictions |
+| 15 | `base.areas` | base | Community areas inside a city (a separate geography from towns), off by default | geometry | OER jurisdictions |
 | 20 | `base.streets` | base | Streets, see-through, under everything | geometry | OSE `loadStreetLayer` only |
 | 25 | `base.transit` | base | Rail and transit lines | geometry | OER |
 | 30 | `hex.7` | hexagons | Small areas: the res-7 hyperlocal grid | geometry | H3 |
