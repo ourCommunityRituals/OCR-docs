@@ -45,12 +45,12 @@ jobs:
 
     steps:
       - name: Checkout OCR-docs (this repo)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           path: ocr-docs
 
       - name: Checkout workspace root (ourCommunityRituals)
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourCommunityRituals
           path: workspace-root
@@ -62,7 +62,7 @@ jobs:
       # Cloning them all upfront is cheap (shallow + sparse) and keeps
       # the audit script call simple.
       - name: Checkout app repo — ourSharedEvents
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourSharedEvents
           path: app-repos/ourSharedEvents
@@ -71,7 +71,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout app repo — ourSharedMagnets
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourSharedMagnets
           path: app-repos/ourSharedMagnets
@@ -80,7 +80,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout app repo — ourWKRP
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourWKRP
           path: app-repos/ourWKRP
@@ -90,7 +90,7 @@ jobs:
         continue-on-error: true  # planned repo; may not exist yet
 
       - name: Checkout app repo — ourAirwaves
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourAirwaves
           path: app-repos/ourAirwaves
@@ -100,7 +100,7 @@ jobs:
         continue-on-error: true  # planned repo
 
       - name: Checkout app repo — ourSharedGames
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourSharedGames
           path: app-repos/ourSharedGames
@@ -110,7 +110,7 @@ jobs:
         continue-on-error: true  # pre-tech repo
 
       - name: Checkout app repo — ourSharedRecords
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourSharedRecords
           path: app-repos/ourSharedRecords
@@ -120,7 +120,7 @@ jobs:
         continue-on-error: true  # pre-tech repo
 
       - name: Checkout app repo — ourSharedPulse
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ourCommunityRituals/ourSharedPulse
           path: app-repos/ourSharedPulse
@@ -130,7 +130,7 @@ jobs:
         continue-on-error: true  # pre-tech repo
 
       - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: '3.11'
 
@@ -162,7 +162,7 @@ jobs:
 
       - name: Upload audit report
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: brain-location-audit
           path: audit-report.json
