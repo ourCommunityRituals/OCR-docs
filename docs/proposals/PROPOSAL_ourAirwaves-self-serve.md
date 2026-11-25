@@ -93,6 +93,22 @@ Starting limits, **for Matt to confirm** (all numbers are a first guess):
 | Brands per account | 1 | 3 | No set limit |
 | People per brand | 2 | 10 | No set limit |
 
+### 6.1 Tiers for every corner of the Triangle
+
+Matt, 2026-11-25: the tiers keep the client and service relationship balanced at every level, from a
+startup to an enterprise, and they apply to all three corners: sponsor, event and attendee. The table
+above is the event (organizer, venue) corner. The other two, as a first guess for Matt:
+
+| Corner | Free (generous) | Mid | Premium |
+|---|---|---|---|
+| **Event** (organizer, venue) | As in the table above | As above | As above |
+| **Sponsor** | A sponsor account; the standard sponsor card on events that accepted it (two-sided consent, as today); a link to each event's public SharedReport | Own sponsor looks on the sponsor card and sponsor home; the sponsor view of SharedReports (Level 2); up to 25 events at once | Sponsor looks across every event; cross-corridor reach and trends (Level 3) |
+| **Attendee, named side (OW)** | A profile by name with the standard and ready-made looks | Custom profile arrangement; more saved looks | A creator page set up as its own branded deployment (the old OA role, at the scale of one person) |
+| **Attendee, anonymous side (OSE)** | Everything, always, with no account. An anonymous attendee never signs in to OA and never gets less for not paying. | — | — |
+
+The anonymous attendee has no row in OA by design: an account would be a "who", and OSE publishes
+only "how many". An attendee who wants a page plants their flag on OW, by choice.
+
 Things that are **never** tier-gated, at any level (invariants #5, #7, #8, #9, #24, OSE AGENTS.md 7):
 security, audit, isolation and retention; the under-5 floor ("Fewer than 5", never a smaller number);
 contrast and colours (design tokens); the required parts of each surface; plain titles and UEC colours
@@ -139,6 +155,9 @@ E11 to E14 are not OSE–OW edges, so invariant #22's `permitted_seams` check is
   ready-made looks become free, and custom arrangements are what Mid buys. Generous to start.
 - **D6 Where limits are enforced.** Recommended: each product enforces its own, written by OA; with no
   word from OA a product uses the Free limits.
+- **D7 Tiers for sponsors and attendees.** Confirm the sponsor and attendee rows in section 6.1.
+  Recommended: anonymous attendees never have an OA account and never pay; the attendee tiers apply only
+  to named profiles on OW.
 
 *Sources: ourAirwaves CLAUDE.md; ourSharedEvents PR #1555 and ourWKRP PR #139 (routes read from their
 router diffs, 2026-11-25); `ocr-docs-brain/data-edges.yaml`; `ocr-docs-brain/tier-gates.yaml`;
