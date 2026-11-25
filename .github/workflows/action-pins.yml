@@ -12,11 +12,13 @@ on:
     paths:
       - '.github/**'
       - 'tests/check_action_pins.py'
+      - 'tests/check_workflow_injection.py'
   push:
     branches: [main]
     paths:
       - '.github/**'
       - 'tests/check_action_pins.py'
+      - 'tests/check_workflow_injection.py'
   workflow_dispatch:
 
 permissions:
@@ -40,3 +42,7 @@ jobs:
         run: python3 tests/check_action_pins.py --self-test
       - name: Check the real workflows and composite actions
         run: python3 tests/check_action_pins.py
+      - name: Injection self-test (CCR F17)
+        run: python3 tests/check_workflow_injection.py --self-test
+      - name: No caller text in run scripts; exact repo scope (CCR F17)
+        run: python3 tests/check_workflow_injection.py

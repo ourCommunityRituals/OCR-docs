@@ -128,17 +128,27 @@ jobs:
     steps:
       - name: Check if repo is in scope
         id: scope
+        # CCR F17: the dispatch input reaches the shell only as an env var,
+        # never through ${{ }} in the script, so it cannot inject commands into
+        # a job that later holds OCR_PROPAGATE_WRITE. Names match exactly
+        # (case-insensitive) against the comma-separated list, not as a substring.
+        env:
+          INPUT_REPOS: ${{ github.event.inputs.repos }}
+          REPO: ${{ matrix.repo }}
         run: |
-          INPUT_REPOS="${{ github.event.inputs.repos }}"
-          REPO="${{ matrix.repo }}"
-
-          if [ -z "$INPUT_REPOS" ]; then
-            echo "in_scope=true" >> "$GITHUB_OUTPUT"
-          elif echo "$INPUT_REPOS" | grep -q "$REPO"; then
-            echo "in_scope=true" >> "$GITHUB_OUTPUT"
+          in_scope=false
+          if [ -z "${INPUT_REPOS//[[:space:],]/}" ]; then
+            in_scope=true
           else
-            echo "in_scope=false" >> "$GITHUB_OUTPUT"
+            IFS=',' read -ra wanted <<< "$INPUT_REPOS"
+            for name in "${wanted[@]}"; do
+              name="$(printf '%s' "$name" | tr -d '[:space:]')"
+              if [ "${name,,}" = "${REPO,,}" ]; then
+                in_scope=true
+              fi
+            done
           fi
+          echo "in_scope=$in_scope" >> "$GITHUB_OUTPUT"
 
       - name: Checkout OCR-docs
         if: steps.scope.outputs.in_scope == 'true'
