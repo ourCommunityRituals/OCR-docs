@@ -11,15 +11,12 @@ code, not data. propagate-standards.yml once put `github.event.inputs.repos`
 straight into a step of a job that later holds OCR_PROPAGATE_WRITE, a token
 that writes to every spoke. Such values must reach `run:` through `env:`.
 
-Not yet covered: `inputs.*` of a reusable workflow or composite action
-written into `run:` (docs-ci.yml and five composite actions do this today).
-Their callers are workflows in our own repos, so they are hardened as a
-separate follow-up rather than here.
-
 Rules, over .github/workflows/*.yml and .github/actions/*/action.yml:
   1. no `run:` script contains a ${{ }} expression naming `github.event.`
-     (dispatch inputs, PR and issue text, commit messages) or
-     `github.head_ref`;
+     (dispatch inputs, PR and issue text, commit messages), `github.head_ref`,
+     or `inputs.` (a reusable workflow's or composite action's caller input;
+     deploy-spoke and the other composites run inside every spoke's pipeline,
+     CCR F20);
   2. propagate-standards.yml's scope step selects a repo only on an exact name
      match against the comma-separated list (a substring is not a match), and
      a blank list selects every repo.
@@ -39,7 +36,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 EXPR = re.compile(r'\$\{\{(.*?)\}\}', re.S)
-UNTRUSTED = re.compile(r'\b(github\.event\.|github\.head_ref)')
+UNTRUSTED = re.compile(r'\b(github\.event\.|github\.head_ref|inputs\.)')
 
 
 def _steps(doc):
@@ -173,6 +170,7 @@ def self_test():
             failures += 1
 
     expect('dispatch input in run', injection_findings('t.yml', {'jobs': {'a': {'steps': [{'run': 'echo "${{ github.event.inputs.repos }}"'}]}}}))
+    expect('caller input in composite run', injection_findings('a.yml', {'runs': {'steps': [{'run': 'npx wrangler deploy --env "${{ inputs.environment }}"'}]}}))
     expect('PR title in composite run', injection_findings('a.yml', {'runs': {'steps': [{'run': 'echo ${{ github.event.pull_request.title }}'}]}}))
     expect('head_ref in run', injection_findings('t.yml', {'jobs': {'a': {'steps': [{'run': 'git checkout ${{ github.head_ref }}'}]}}}))
     clean = injection_findings('t.yml', {'jobs': {'a': {'steps': [{'run': 'echo "$X ${{ matrix.repo }}"', 'env': {'X': '${{ inputs.phase }}'}}]}}})

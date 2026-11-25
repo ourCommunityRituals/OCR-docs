@@ -53,7 +53,10 @@ runs:
 
     - name: Run identity contract checks
       shell: bash
+      env:
+        IN_WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        IN_IDENTITY_MODE: ${{ inputs.identity_mode }}
       run: |
         python3 "${{ steps.ap.outputs.dir }}/identity_contract_check.py" \
-          --repo "${{ inputs.working-directory }}" \
-          --identity-mode "${{ inputs.identity_mode }}"
+          --repo "${IN_WORKING_DIRECTORY}" \
+          --identity-mode "${IN_IDENTITY_MODE}"

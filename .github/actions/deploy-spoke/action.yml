@@ -58,12 +58,14 @@ runs:
   steps:
     - name: Validate environment
       shell: bash
+      env:
+        IN_ENVIRONMENT: ${{ inputs.environment }}
       run: |
-        case "${{ inputs.environment }}" in
+        case "${IN_ENVIRONMENT}" in
           staging|production)
-            echo "Deploy target: ${{ inputs.environment }}" ;;
+            echo "Deploy target: ${IN_ENVIRONMENT}" ;;
           *)
-            echo "::error::environment must be 'staging' or 'production', got '${{ inputs.environment }}'"
+            echo "::error::environment must be 'staging' or 'production', got '${IN_ENVIRONMENT}'"
             exit 1 ;;
         esac
 
@@ -79,14 +81,17 @@ runs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        IN_WRANGLER_VERSION: ${{ inputs.wrangler-version }}
+        IN_ENVIRONMENT: ${{ inputs.environment }}
+        IN_WORKER_NAME: ${{ inputs.worker-name }}
       run: |
         WRANGLER="wrangler"
-        if [ -n "${{ inputs.wrangler-version }}" ]; then
-          WRANGLER="wrangler@${{ inputs.wrangler-version }}"
+        if [ -n "${IN_WRANGLER_VERSION}" ]; then
+          WRANGLER="wrangler@${IN_WRANGLER_VERSION}"
         fi
-        ARGS=(deploy --env "${{ inputs.environment }}")
-        if [ -n "${{ inputs.worker-name }}" ]; then
-          ARGS+=(--name "${{ inputs.worker-name }}")
+        ARGS=(deploy --env "${IN_ENVIRONMENT}")
+        if [ -n "${IN_WORKER_NAME}" ]; then
+          ARGS+=(--name "${IN_WORKER_NAME}")
         fi
         echo "+ npx --yes $WRANGLER ${ARGS[*]}"
         npx --yes "$WRANGLER" "${ARGS[@]}"
@@ -94,8 +99,10 @@ runs:
     - name: Post-deploy health check
       id: health
       shell: bash
+      env:
+        IN_HEALTH_CHECK_URL: ${{ inputs.health-check-url }}
       run: |
-        URL="${{ inputs.health-check-url }}"
+        URL="${IN_HEALTH_CHECK_URL}"
         if [ -z "$URL" ]; then
           echo "::notice::no health-check-url provided — skipping post-deploy health check"
           exit 0
@@ -123,34 +130,39 @@ runs:
       env:
         CLOUDFLARE_API_TOKEN: ${{ inputs.cloudflare-api-token }}
         CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare-account-id }}
+        IN_ENVIRONMENT: ${{ inputs.environment }}
+        IN_WRANGLER_VERSION: ${{ inputs.wrangler-version }}
+        IN_WORKER_NAME: ${{ inputs.worker-name }}
       run: |
-        echo "::warning::health check failed — rolling ${{ inputs.environment }} back to the previous deployment"
+        echo "::warning::health check failed — rolling ${IN_ENVIRONMENT} back to the previous deployment"
         WRANGLER="wrangler"
-        if [ -n "${{ inputs.wrangler-version }}" ]; then
-          WRANGLER="wrangler@${{ inputs.wrangler-version }}"
+        if [ -n "${IN_WRANGLER_VERSION}" ]; then
+          WRANGLER="wrangler@${IN_WRANGLER_VERSION}"
         fi
-        ARGS=(rollback --env "${{ inputs.environment }}" --message "automated rollback: health check failed for ${{ github.sha }}")
-        if [ -n "${{ inputs.worker-name }}" ]; then
-          ARGS+=(--name "${{ inputs.worker-name }}")
+        ARGS=(rollback --env "${IN_ENVIRONMENT}" --message "automated rollback: health check failed for ${{ github.sha }}")
+        if [ -n "${IN_WORKER_NAME}" ]; then
+          ARGS+=(--name "${IN_WORKER_NAME}")
         fi
         # GitHub Actions exports CI=true, so wrangler runs non-interactively.
         echo "+ npx --yes $WRANGLER ${ARGS[*]}"
         if npx --yes "$WRANGLER" "${ARGS[@]}"; then
-          echo "Rollback complete — previous deployment restored on ${{ inputs.environment }}"
+          echo "Rollback complete — previous deployment restored on ${IN_ENVIRONMENT}"
         else
           echo "::error::automated rollback FAILED — manual recovery required"
           echo "Run from the worker directory:"
-          echo "  npx wrangler deployments list --env ${{ inputs.environment }}"
-          echo "  npx wrangler rollback --env ${{ inputs.environment }} --message \"manual recovery\""
+          echo "  npx wrangler deployments list --env ${IN_ENVIRONMENT}"
+          echo "  npx wrangler rollback --env ${IN_ENVIRONMENT} --message \"manual recovery\""
           exit 1
         fi
 
     - name: Manual-recovery notice
       if: ${{ !cancelled() && steps.deploy.outcome == 'success' && steps.health.outcome == 'failure' && inputs.rollback-on-failure != 'true' }}
       shell: bash
+      env:
+        IN_ENVIRONMENT: ${{ inputs.environment }}
       run: |
-        echo "::error::health check failed and rollback-on-failure is disabled — the unhealthy version is still live on ${{ inputs.environment }}"
+        echo "::error::health check failed and rollback-on-failure is disabled — the unhealthy version is still live on ${IN_ENVIRONMENT}"
         echo "Manual recovery — run from the worker directory:"
-        echo "  npx wrangler deployments list --env ${{ inputs.environment }}"
-        echo "  npx wrangler rollback --env ${{ inputs.environment }} --message \"manual recovery\""
+        echo "  npx wrangler deployments list --env ${IN_ENVIRONMENT}"
+        echo "  npx wrangler rollback --env ${IN_ENVIRONMENT} --message \"manual recovery\""
         exit 1

@@ -27,8 +27,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Check required files exist
+        env:
+          IN_REQUIRED_FILES: ${{ inputs.required_files }}
         run: |
-          IFS=',' read -ra FILES <<< "${{ inputs.required_files }}"
+          IFS=',' read -ra FILES <<< "${IN_REQUIRED_FILES}"
           MISSING=0
           for FILE in "${FILES[@]}"; do
             FILE=$(echo "$FILE" | xargs)  # trim whitespace
