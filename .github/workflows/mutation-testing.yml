@@ -1,0 +1,51 @@
+# Mutation testing for the brain's gate scripts (tests/mutation/README.md).
+#
+# Every spoke checks out ocr-docs-brain/scripts and runs check_brain_contract.py
+# and check_cross_repo_imports.py as gates. Their self-tests say the gates work;
+# this checks the self-tests would notice if a gate stopped working. Each mutant
+# in tests/mutation/script-mutants.json writes one fault into a rule a gate
+# enforces, and its kill tests must fail. A survivor or an error fails the job.
+#
+# Runs in about 10 seconds. Not a required check (that is an owner setting).
+# Needs no secret, writes nothing.
+name: Mutation testing
+
+on:
+  pull_request:
+    paths:
+      - 'ocr-docs-brain/scripts/**'
+      - 'ocr-docs-brain/tests/**'
+      - 'tests/mutation/**'
+      - '.github/workflows/mutation-testing.yml'
+  schedule:
+    - cron: '41 5 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate-scripts:
+    name: Gate-script mutation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Brain pyramid deps
+        shell: bash
+        run: pip install --disable-pip-version-check pyyaml packaging
+      - name: Runner self-test
+        shell: bash
+        run: python3 tests/mutation/test_script_mutation.py
+      - name: Gate-script mutants (baseline, then each mutant)
+        shell: bash
+        run: python3 tests/mutation/script_mutation.py
