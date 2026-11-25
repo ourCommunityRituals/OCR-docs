@@ -45,6 +45,8 @@ runs:
     - name: Resolve brain + script paths
       id: paths
       shell: bash
+      env:
+        IN_BRAIN_PATH: ${{ inputs.brain-path }}
       run: |
         # On a Windows runner the action path arrives Windows-style: normalize
         # it to mixed-mode (C:/...) so it passes cleanly to native python.exe.
@@ -53,8 +55,8 @@ runs:
         p="${p//\\//}"
         root=$(cd "$p/../../.." && { pwd -W 2>/dev/null || pwd; })
         echo "script=$root/ocr-docs-brain/scripts/check_brain_contract.py" >> "$GITHUB_OUTPUT"
-        if [ -n "${{ inputs.brain-path }}" ]; then
-          echo "brain=${{ inputs.brain-path }}" >> "$GITHUB_OUTPUT"
+        if [ -n "${IN_BRAIN_PATH}" ]; then
+          echo "brain=${IN_BRAIN_PATH}" >> "$GITHUB_OUTPUT"
         else
           echo "brain=$root/ocr-docs-brain" >> "$GITHUB_OUTPUT"
         fi
@@ -70,12 +72,16 @@ runs:
 
     - name: Run brain conformance check
       shell: bash
+      env:
+        IN_REPO: ${{ inputs.repo }}
+        IN_PRODUCT_ID: ${{ inputs.product-id }}
+        IN_REPORT_PATH: ${{ inputs.report-path }}
       run: |
         python3 "${{ steps.paths.outputs.script }}" \
           --brain "${{ steps.paths.outputs.brain }}" \
-          --repo "${{ inputs.repo }}" \
-          --product-id "${{ inputs.product-id }}" \
-          --report-path "${{ inputs.report-path }}"
+          --repo "${IN_REPO}" \
+          --product-id "${IN_PRODUCT_ID}" \
+          --report-path "${IN_REPORT_PATH}"
 
     - name: Upload conformance report
       if: always()
