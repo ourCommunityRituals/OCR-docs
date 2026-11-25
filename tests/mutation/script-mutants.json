@@ -1,0 +1,125 @@
+{
+  "$comment": "Hand-written mutants for the brain's gate scripts, which every spoke checks out and runs. Each is one fault in a rule the gate exists to enforce; its kill tests must fail with it written in. Runner: tests/mutation/script_mutation.py. See tests/mutation/README.md.",
+  "mutants": [
+    {
+      "id": "cross-repo-module-import-ignored",
+      "rule": "An import from a sibling product's package scope is a violation (#22).",
+      "file": "ocr-docs-brain/scripts/check_cross_repo_imports.py",
+      "find": "if pat.search(line):",
+      "replace": "if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_cross_repo_imports.py"
+      ]
+    },
+    {
+      "id": "cross-repo-dynamic-import-passes",
+      "rule": "A computed import() or require() fails closed: it cannot be checked, so it counts as a violation.",
+      "file": "ocr-docs-brain/scripts/check_cross_repo_imports.py",
+      "find": "if not rest[:1] in ('\"', \"'\", '`'):",
+      "replace": "if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_cross_repo_imports.py"
+      ]
+    },
+    {
+      "id": "cross-repo-block-mode-passes",
+      "rule": "In block mode a violation fails the gate.",
+      "file": "ocr-docs-brain/scripts/check_cross_repo_imports.py",
+      "find": "    if mode == 'block':\n        return 1",
+      "replace": "    if mode == 'block':\n        return 0",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_cross_repo_imports.py"
+      ]
+    },
+    {
+      "id": "cross-repo-vacuous-pass",
+      "rule": "An active product with code outside the scanned folders cannot pass by having nothing scanned.",
+      "file": "ocr-docs-brain/scripts/check_cross_repo_imports.py",
+      "find": "Refusing to pass vacuously.',\n                  file=sys.stderr)\n            return 2",
+      "replace": "Refusing to pass vacuously.',\n                  file=sys.stderr)\n            return 0",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_cross_repo_imports.py"
+      ]
+    },
+    {
+      "id": "cross-repo-sibling-dependency-allowed",
+      "rule": "A package.json dependency that links a sibling product repo is a violation.",
+      "file": "ocr-docs-brain/scripts/check_cross_repo_imports.py",
+      "find": "if any(d in resolved.parts for d in sibling_dirs if d != repo.name):",
+      "replace": "if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_cross_repo_imports.py"
+      ]
+    },
+    {
+      "id": "cross-repo-tsconfig-alias-allowed",
+      "rule": "A tsconfig path alias that leaves the repo, other than into packages/, is a violation.",
+      "file": "ocr-docs-brain/scripts/check_cross_repo_imports.py",
+      "find": "if 'packages' not in resolved.parts:",
+      "replace": "if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_cross_repo_imports.py"
+      ]
+    },
+    {
+      "id": "brain-anonymous-leak-passes",
+      "rule": "An anonymous product that names a person (Firebase, Spotify or contributor ids) fails the identity contract.",
+      "file": "ocr-docs-brain/scripts/check_brain_contract.py",
+      "find": "        if leaks:",
+      "replace": "        if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_brain_contract.py"
+      ]
+    },
+    {
+      "id": "brain-missing-identity-contract-passes",
+      "rule": "A non-anonymous product with code must declare its identity contract (#26).",
+      "file": "ocr-docs-brain/scripts/check_brain_contract.py",
+      "find": "        if not contract:",
+      "replace": "        if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_brain_contract.py"
+      ]
+    },
+    {
+      "id": "brain-live-invariant-test-missing-passes",
+      "rule": "A live invariant whose test file is missing from the product fails conformance.",
+      "file": "ocr-docs-brain/scripts/check_brain_contract.py",
+      "find": "    if missing_live:",
+      "replace": "    if False:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_brain_contract.py"
+      ]
+    },
+    {
+      "id": "brain-unwired-gate-only-warns",
+      "rule": "A live invariant whose gate is not wired fails in block mode instead of only warning.",
+      "file": "ocr-docs-brain/scripts/check_brain_contract.py",
+      "find": "if eff_mode != 'block':",
+      "replace": "if True:",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_brain_contract.py"
+      ]
+    },
+    {
+      "id": "brain-required-tag-missing-passes",
+      "rule": "Every tag the brain requires for a product's writes must appear in its code.",
+      "file": "ocr-docs-brain/scripts/check_brain_contract.py",
+      "find": "    if missing:\n        return ('required_tags_used', FAIL",
+      "replace": "    if False:\n        return ('required_tags_used', FAIL",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_brain_contract.py"
+      ]
+    },
+    {
+      "id": "brain-exit-ignores-failures",
+      "rule": "A failed check makes the conformance run exit non-zero, so CI goes red.",
+      "file": "ocr-docs-brain/scripts/check_brain_contract.py",
+      "find": "sys.exit(0 if not failed else 1)",
+      "replace": "sys.exit(0)",
+      "kill": [
+        "ocr-docs-brain/tests/test_check_brain_contract.py"
+      ]
+    }
+  ]
+}
