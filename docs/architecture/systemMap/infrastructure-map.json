@@ -1741,5 +1741,61 @@
    ],
    "bend": {}
   }
- ]
+ ],
+ "audiences": {
+  "sales": {
+   "label": "Sales",
+   "pages": [
+    "people",
+    "pieces",
+    "products"
+   ],
+   "focus": [
+    "playlists",
+    "skins",
+    "uec",
+    "report",
+    "voting",
+    "oaw"
+   ],
+   "pitch": "What each customer gets, what makes it different (human curation, counts never names), and what they can customise."
+  },
+  "product": {
+   "label": "Product",
+   "pages": [
+    "products",
+    "pieces",
+    "people"
+   ],
+   "focus": [
+    "ose",
+    "wkrp",
+    "oaw",
+    "playlists",
+    "voting",
+    "skins",
+    "layout"
+   ],
+   "pitch": "What exists, what is decided but not built, and which shared pieces every product reuses."
+  },
+  "engineering": {
+   "label": "Engineering",
+   "pages": [
+    "runs",
+    "products"
+   ],
+   "focus": [
+    "t0",
+    "done",
+    "prod",
+    "liveswitch",
+    "cf-ose",
+    "guards",
+    "E1",
+    "E6",
+    "E7"
+   ],
+   "pitch": "How a change reaches staging, the allowed links and their privacy class, and the security gates."
+  }
+ }
 }

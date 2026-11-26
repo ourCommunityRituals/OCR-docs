@@ -72,6 +72,18 @@ engineering presentations. It is built so that is easy:
 - **Keep one source.** Add facts to the JSON, not to a copy inside a deck, so
   every view stays in step.
 
+### Audience presets: Sales, Product, Engineering
+
+`audiences` in the JSON names, for each audience, the pages to show in order,
+the boxes and links to tap while talking, and the one-line point to make. A
+deck or dashboard can read it; the page itself does not use it yet.
+
+| Audience | Pages, in order | Tap these | The point |
+| --- | --- | --- | --- |
+| Sales | `#people`, `#pieces`, `#products` | Curated playlists, Skins, UEC codes, SharedReport, Voting, ourAirwaves | What each customer gets, what makes it different (human curation, counts never names), and what they can customise |
+| Product | `#products`, `#pieces`, `#people` | ourSharedEvents, ourWKRP, ourAirwaves, Curated playlists, Voting, Skins, Layout rule | What exists, what is decided but not built, and which shared pieces every product reuses |
+| Engineering | `#runs`, `#products` | T0 Gate, Done, Production, Live switch, OSE Worker, Security gates, links E1, E6, E7 | How a change reaches staging, the allowed links and their privacy class, and the security gates |
+
 ## Files
 
 | File | Role |
