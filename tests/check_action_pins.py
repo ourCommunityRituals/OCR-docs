@@ -17,6 +17,10 @@ Rules, over .github/workflows/*.yml and .github/actions/*/action.yml:
      `docker://` references are exempt);
   2. a checkout given a `token:` sets `persist-credentials: false`, except the
      checkouts listed in PUSHES_WITH_CHECKOUT_TOKEN, which push with it.
+And over .github/dependabot.yml (CCR F5, 2026-11-26):
+  3. every update entry waits at least COOLDOWN_DAYS after a release before
+     proposing it (`cooldown: default-days`), so a hijacked or broken release
+     has time to be caught upstream before a PR offers it here.
 
 Usage:
   python3 tests/check_action_pins.py --self-test   # each rule fails on a planted fault
@@ -35,6 +39,9 @@ SHA = re.compile(r'@[0-9a-f]{40}$')
 # Checkouts that push with their token (file name -> number of such checkouts).
 # Listed exactly, so a new one cannot join silently.
 PUSHES_WITH_CHECKOUT_TOKEN = {'propagate-standards.yml': 1}
+
+# Days Dependabot waits after a release before proposing it (rule 3).
+COOLDOWN_DAYS = 7
 
 
 def _steps(doc):
@@ -73,6 +80,21 @@ def findings(text: str, name: str) -> list[str]:
     return out
 
 
+def cooldown_findings(text: str) -> list[str]:
+    doc = yaml.safe_load(text) or {}
+    updates = doc.get('updates') if isinstance(doc, dict) else None
+    if not isinstance(updates, list) or not updates:
+        return ['dependabot.yml: no update entries']
+    out = []
+    for u in updates:
+        eco = u.get('package-ecosystem', '?') if isinstance(u, dict) else '?'
+        cd = u.get('cooldown') if isinstance(u, dict) else None
+        days = cd.get('default-days') if isinstance(cd, dict) else None
+        if not isinstance(days, int) or isinstance(days, bool) or days < COOLDOWN_DAYS:
+            out.append(f'dependabot.yml: {eco} has no cooldown of at least {COOLDOWN_DAYS} days')
+    return out
+
+
 def self_test() -> int:
     good = 'jobs:\n  a:\n    steps:\n      - uses: actions/checkout@' + 'a' * 40 + ' # v4\n      - uses: ./.github/actions/x\n'
     cases = [
@@ -92,9 +114,24 @@ def self_test() -> int:
          'jobs:\n  a:\n    steps:\n' + ('      - uses: actions/checkout@' + 'a' * 40 + '\n        with:\n          token: x\n') * 2,
          'propagate-standards.yml', 1),
     ]
+    eco = "  - package-ecosystem: github-actions\n    directory: /\n    schedule:\n      interval: weekly\n"
+    cooldown_cases = [
+        ('a 7-day cooldown passes', 'version: 2\nupdates:\n' + eco + '    cooldown:\n      default-days: 7\n', 0),
+        ('a missing cooldown is caught', 'version: 2\nupdates:\n' + eco, 1),
+        ('a 3-day cooldown is caught', 'version: 2\nupdates:\n' + eco + '    cooldown:\n      default-days: 3\n', 1),
+        ('a quoted day count is caught', 'version: 2\nupdates:\n' + eco + "    cooldown:\n      default-days: '7'\n", 1),
+        ('one entry of two without it is caught',
+         'version: 2\nupdates:\n' + eco + '    cooldown:\n      default-days: 7\n' + eco, 1),
+        ('a file with no updates is caught', 'version: 2\n', 1),
+    ]
     bad = 0
     for label, text, name, want in cases:
         got = len(findings(text, name))
+        ok = got == want
+        bad += not ok
+        print(f"{'ok  ' if ok else 'FAIL'} {label} (findings {got}, want {want})")
+    for label, text, want in cooldown_cases:
+        got = len(cooldown_findings(text))
         ok = got == want
         bad += not ok
         print(f"{'ok  ' if ok else 'FAIL'} {label} (findings {got}, want {want})")
@@ -112,6 +149,8 @@ def main() -> int:
     out = []
     for f in files:
         out += findings(f.read_text(encoding='utf-8'), f.name if f.parent.name == 'workflows' else str(f.relative_to(root)))
+    dep = root / '.github' / 'dependabot.yml'
+    out += cooldown_findings(dep.read_text(encoding='utf-8')) if dep.exists() else ['.github/dependabot.yml is missing']
     for line in out:
         print(line)
     print(f'{len(files)} files checked, {len(out)} finding(s)')

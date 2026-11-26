@@ -7,6 +7,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Wait 7 days after a release before proposing it, so a hijacked or broken
+    # release has time to be caught upstream (CCR F5; tests/check_action_pins.py).
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ['*']
