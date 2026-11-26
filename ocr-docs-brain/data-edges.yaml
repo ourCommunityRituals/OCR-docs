@@ -32,7 +32,7 @@
 # ============================================================================
 
 schema_version: 1.0.0
-last_verified: 2026-11-24
+last_verified: 2026-11-26
 
 # The nodes. `product_id` matches product-registry.yaml where the product is
 # registered. ourEventRings and the hub are not product records there, so they
@@ -68,11 +68,34 @@ nodes:
   - id: oer
     repo: ourCommunityRituals/ourEventRings
     side: intelligence
+  # Agents (added 2026-11-26, security re-sweep base item 1). Not products:
+  # they are the actors that read and change the products. Brain-local ids.
+  - id: cloud-agents
+    repo: null
+    side: agent
+    note: Claude Code cloud sessions (project threads). GitHub, and any cloud credentials, reach them through the session proxy.
+  - id: ci-agents
+    repo: null
+    side: agent
+    note: Claude jobs inside GitHub Actions (PR review, @claude respond).
+  - id: workstation-agents
+    repo: null
+    side: agent
+    note: Claude Code on the owner's own machine, where the OSE policy-gate hook is installed.
+  - id: agent-memory
+    repo: null
+    side: agent
+    note: Shared team memory and the project files folder, written and read by every thread.
 
 # kind:
 #   data        rows or counts cross (the privacy-relevant kind)
 #   code        a shared package or pinned commit is consumed
 #   governance  rules, standards or checks flow from the brain
+#   agent       an agent can read, write or run something in the product, or
+#               holds a credential for it. Each agent edge says which
+#               credentials it carries (`credentials`). A live one names what
+#               limits it (`enforced_by`) or an open question that says nothing
+#               does yet.
 # privacy_class (data edges only): A, B or X as defined in the boundary doc
 # section 3; "public" for a read of what a public page already shows.
 edges:
@@ -345,6 +368,91 @@ edges:
       seven listed repos; absent in ourEventRings (read 2026-11-24). `since`:
       first commit of propagate-standards.yml in OCR-docs.
 
+  # ── Agents: who can act on the products (security re-sweep 2026-11-26) ────
+  # The data, code and governance edges above say what flows between products.
+  # These say which agents can change or read them, because most of the High
+  # findings in the 2026-11-25 sweep sat on links that were not listed anywhere.
+  - id: A1
+    from: cloud-agents
+    to: [ose, wkrp, ocr-docs, hub, oer, oaw, osm, osg, osp, osr]
+    kind: agent
+    what: >
+      Push to claude/* branches and open pull requests. A same-repository pull
+      request runs CI with repository secrets, so the "fork PRs get no secrets"
+      rule does not apply to agent branches.
+    credentials: GitHub token through the session proxy, scoped to the repositories the project grants; PRs are authored under the owner's login.
+    status: built
+    since: 2026-11-01
+    contract: "Each repo's CLAUDE.md (push only to the session branch; merges are a person's)"
+    enforced_by:
+      - "Claude review reads its instructions from the base branch (OSE claude-review.yml, ourWKRP claude-code-review.yml)"
+      - "@claude respond jobs load user settings only (--setting-sources user)"
+      - "OSE ci-integrity floor (.ci-integrity-baseline.json readUsesOnNewSecret)"
+      - "CODEOWNERS on workflow and agent paths (binds once code-owner review is on)"
+    evidence: >
+      Security sweeps 2026-11-25 (H1, M8) and 2026-11-26 (run 4), in the
+      transcripts project. `since` is the earliest project thread push read.
+
+  - id: A2
+    from: ci-agents
+    to: [ose, wkrp]
+    kind: agent
+    what: Review a pull request and answer @claude comments, posting to the PR.
+    credentials: ANTHROPIC_API_KEY repo secret; PR comment write; ourWKRP's @claude job also trades an OIDC token for the Claude GitHub App token.
+    status: built
+    since: 2026-08-01
+    contract: "OSE ADR-020 (CI approval gate); OW-227"
+    enforced_by:
+      - "trusted-actor gate on @claude (OWNER, MEMBER, COLLABORATOR)"
+      - "actions pinned by commit (ourWKRP action-pinning.invariant.spec.ts; OSE check-action-pins)"
+      - "ourWKRP claude-workflow-hardening.invariant.spec.ts"
+    evidence: >
+      ourSharedEvents .github/workflows/claude-review.yml; ourWKRP
+      .github/workflows/claude-code-review.yml and claude.yml (main, 2026-11-26).
+
+  - id: A3
+    from: workstation-agents
+    to: [ose, wkrp]
+    kind: agent
+    what: Run local commands, including ones started through a secret runner such as doppler run.
+    credentials: Whatever is signed in on that machine (Doppler, wrangler, gh).
+    status: built
+    since: 2026-09-01
+    contract: "OSE AGENTS.md, Human approval (an agent never deploys, writes remote D1 or reads secrets)"
+    enforced_by:
+      - "OSE .claude/hooks/policy-gate.mjs (reads through doppler run and op run; installed by the owner)"
+      - "ourWKRP .claude/settings.json (doppler asks; remote D1 and deploys denied)"
+    evidence: >
+      Owner standing order 2026-11-14 keeps agent work off the owner's machine,
+      which lowers likelihood. OSE-2230, OW-229.
+
+  - id: A4
+    from: cloud-agents
+    to: oer
+    kind: agent
+    what: Read the BigQuery analytic dataset.
+    credentials: "None wanted. A Google Cloud credential was still present in the cloud environment on 2026-11-26 (see Q4)."
+    status: decided
+    since: 2026-11-26
+    contract: "OSE ADR-026 rule A (who may read), not built"
+    enforced_by: []
+    evidence: >
+      Owner ruling 2026-11-26: "The only thing Google Cloud gets is BigQuery
+      access once I have data to pipe in from prod". The pipe gets its own
+      write-only account; agents read only after rule A is built.
+
+  - id: A5
+    from: cloud-agents
+    to: agent-memory
+    kind: agent
+    what: Read and write shared memory and project files that later threads follow, including lines recorded as owner decisions.
+    credentials: Session file access; no separate credential.
+    status: built
+    since: 2026-11-01
+    contract: "None yet (security sweep D7: an owner decision must link to the owner's own message)"
+    enforced_by: []
+    evidence: Security sweep 2026-11-25, finding M1. See Q5.
+
 # Spokes with no data edge yet. A spoke adds its rows above before it writes
 # code that sends or reads another product's data.
 no_data_edges_yet:
@@ -369,3 +477,18 @@ open_questions:
     question: >
       ourEventRings has no brain conformance check and no .ocr-standards copy.
       Should it join G1 now that it holds code?
+
+  - id: Q4
+    about: [A4]
+    question: >
+      The cloud agent environment still carries a Google Cloud and an AWS
+      credential (names seen 2026-11-26; values are proxy placeholders). Owner
+      ruling 2026-11-26: Google Cloud is for BigQuery only, from prod, and AWS
+      is not used (no AWS code in any OCR repo). Remove both from the
+      environment's Network secrets; then A4 stays `decided` with no credential.
+  - id: Q5
+    about: [A5]
+    question: >
+      Nothing checks that a line saved to shared memory as an owner decision
+      came from the owner. Adopt the rule that it must link to the owner's own
+      message (security sweep D7)?
