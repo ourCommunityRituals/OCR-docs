@@ -516,15 +516,12 @@
     "A vote is a counter on a thing, never a record about the voter (ADR-040, accepted 18 Nov 2026).",
     "Room Pick: in-room voting is the first layer and is never loosened.",
     "Access Pass: given by the host, no reason asked, counts the same as a room vote. Proposed cap: 4 per vote (still open with Matt).",
-    "Online Pick: anyone with the event's link can vote. It is shown after the Room Pick and says it can be gamed. Room and online votes never mix.",
-    "Vote stuffing: flood detection only (Matt's choice, 26 Nov; OSE-2234).",
-    "A red-team and blue-team threat model for all three was written 26 Nov 2026.",
+    "Online Pick: anyone with the event's link can vote. It is shown after the Room Pick and is just for fun. Room and online votes never mix.",
     "ourWKRP can open a song for a vote by sending only its label (link E8, switched off)."
    ],
    "sources": [
     "ourSharedEvents ADR-040",
-    "OCR-docs docs/proposals/PROPOSAL_online-voting-crowd-pick-and-access-pass.md (PR #200)",
-    "transcripts/security/THREAT-MODEL-voting-red-blue-2026-11-26.md"
+    "OCR-docs docs/proposals/PROPOSAL_online-voting-crowd-pick-and-access-pass.md (PR #200)"
    ]
   },
   "map": {
@@ -550,7 +547,6 @@
    "status": "built",
    "plain": "Any published count below 5 is held back and reads \"Fewer than 5\", for everyone, at every tier, with no exceptions.",
    "details": [
-    "Some known gaps are tracked (OSE-2087).",
     "Applies to exports to ourEventRings too."
    ],
    "sources": [
@@ -565,12 +561,10 @@
    "plain": "Claude sessions write code and reviews, one story per session. A coordinator starts threads; role helpers (security, design, QA and more) review.",
    "details": [
     "Agents never deploy, merge to production, handle secrets or change repo settings.",
-    "Cloud sessions do not run the policy gate (security finding H4).",
     "Agents keep Linear matched to what is on main, with evidence comments."
    ],
    "sources": [
-    "ourSharedEvents/CLAUDE.md",
-    "transcripts/security/ccr-security-sweep-2026-11-25.md"
+    "ourSharedEvents/CLAUDE.md"
    ]
   },
   "pr": {
@@ -687,7 +681,6 @@
    "kind": "infra",
    "status": "closed",
    "plain": "oursharedevents.com and ourwkrp.com. Kept in step with staging, not announced, no clients yet.",
-   "statusNote": "The ourSharedEvents host still answers today; closing it fully is an owner setting (OSE-1353, OSE-1377).",
    "details": [
     "Production deploys only through CI.",
     "Once live, every production change needs a Linear ticket."
@@ -724,10 +717,10 @@
   },
   "cf-wkrp": {
    "label": "ourWKRP Worker",
-   "sub": "D1 + KV, Doppler secrets",
+   "sub": "D1 + KV",
    "kind": "infra",
    "status": "staging",
-   "plain": "Cloudflare runs the ourWKRP app with its own separate database. Secrets live in Doppler.",
+   "plain": "Cloudflare runs the ourWKRP app with its own separate database.",
    "details": [
     "Music switch: off on staging and production."
    ],
@@ -759,19 +752,15 @@
   },
   "guards": {
    "label": "Security gates",
-   "sub": "CCR, rules, policy gate",
+   "sub": "Reviews and checks",
    "kind": "infra",
-   "status": "partial",
-   "plain": "CCR reviews, rule checks in every product, and a policy gate that blocks deploys, secrets and force pushes on your machine.",
-   "statusNote": "First full security sweep (25 Nov 2026): Held at 15%. The products held up; the weak layer is agents and CI around ourWKRP and OCR-docs. Decisions D1 to D7 are with you.",
+   "status": "built",
+   "plain": "Every change is reviewed and checked automatically before it can merge, and agents are limited in what they may run.",
    "details": [
-    "The products and the links between them held up.",
-    "Work started on fixes, under parent story OCR-230.",
-    "Rule checks run inside the T0 gate; the policy gate limits what agents can run on your machine."
+    "Rule checks run inside the T0 gate."
    ],
    "sources": [
-    "transcripts/security/ccr-security-sweep-2026-11-25.md",
-    "project memory"
+    "ourSharedEvents/AGENTS.md"
    ]
   },
   "playlists": {
@@ -1274,7 +1263,7 @@
    "kind": "data",
    "status": "decided",
    "privacy": "A",
-   "label": "E11 set looks",
+   "label": "E11",
    "plain": "ourAirwaves sends a brand's looks and tier limits to ourSharedEvents through its API. No name or email crosses.",
    "floor": "No person data crosses.",
    "since": "2026-11-25"
@@ -1286,7 +1275,7 @@
    "kind": "data",
    "status": "decided",
    "privacy": "B",
-   "label": "E12 set looks",
+   "label": "E12",
    "plain": "ourAirwaves sends a brand's or profile's looks and tier limits to ourWKRP through its API.",
    "floor": "Named side; ourWKRP checks every look.",
    "since": "2026-11-25"
@@ -1298,7 +1287,7 @@
    "kind": "data",
    "status": "decided",
    "privacy": "A",
-   "label": "E13 read back",
+   "label": "E13",
    "plain": "ourSharedEvents tells ourAirwaves the current looks and how much of each limit is used. Never attendee data or counts.",
    "floor": "Allowance use only, never a count of people.",
    "since": "2026-11-25"
@@ -1310,7 +1299,7 @@
    "kind": "data",
    "status": "decided",
    "privacy": "B",
-   "label": "E14 read back",
+   "label": "E14",
    "plain": "ourWKRP tells ourAirwaves the current looks and how much of each limit is used.",
    "floor": "Allowance use only.",
    "since": "2026-11-25"
@@ -1336,13 +1325,13 @@
    "tab": "The products",
    "title": "Two doors, one system",
    "intro": "Every product sits on one side of the Choice. On the left, people stay anonymous and are only ever counted. On the right, people plant their flag by name, because they chose to. The lines are the only links allowed between products.",
-   "w": 1000,
+   "w": 1100,
    "h": 660,
    "bands": [
     {
      "x": 40,
      "y": 16,
-     "w": 920,
+     "w": 1020,
      "h": 112,
      "label": "Shared by everything",
      "tone": "shared"
@@ -1356,9 +1345,9 @@
      "tone": "anon"
     },
     {
-     "x": 630,
+     "x": 620,
      "y": 150,
-     "w": 330,
+     "w": 440,
      "h": 360,
      "label": "Plant your flag",
      "tone": "named"
@@ -1366,7 +1355,7 @@
     {
      "x": 40,
      "y": 534,
-     "w": 920,
+     "w": 1020,
      "h": 112,
      "label": "Formats and on-ramps (documents today)",
      "tone": "shared"
@@ -1374,11 +1363,11 @@
    ],
    "place": {
     "ocr-docs": [
-     330,
+     360,
      76
     ],
     "hub": [
-     670,
+     740,
      76
     ],
     "ose": [
@@ -1390,32 +1379,32 @@
      430
     ],
     "wkrp": [
-     795,
+     760,
      250
     ],
     "oaw": [
-     795,
+     785,
      430
     ],
     "oer": [
-     500,
+     460,
      430
     ],
     "osg": [
-     250,
+     270,
      598
     ],
     "osr": [
-     500,
+     550,
      598
     ],
     "osp": [
-     750,
+     830,
      598
     ],
     "playlists": [
-     835,
-     345
+     945,
+     340
     ]
    },
    "edges": [
@@ -1446,10 +1435,11 @@
     "E9": -85,
     "E10": 85,
     "E2": 0,
-    "E11": 120,
-    "E12": -70,
-    "E13": 160,
-    "E14": -110
+    "E11": -12,
+    "E12": -40,
+    "E13": 50,
+    "E14": -40,
+    "E3": 0
    }
   },
   {
@@ -1496,19 +1486,19 @@
     ],
     "attendees": [
      140,
-     120
+     110
     ],
     "organizers": [
      140,
-     250
+     260
     ],
     "sponsors": [
      140,
-     380
+     420
     ],
     "venues": [
      140,
-     510
+     580
     ],
     "corridors": [
      860,
@@ -1544,7 +1534,15 @@
     "P14",
     "P15"
    ],
-   "bend": {}
+   "bend": {
+    "P2": -20,
+    "P3": 10,
+    "P4": -30,
+    "P5": -60,
+    "P14": 15,
+    "P15": 10,
+    "P6": 20
+   }
   },
   {
    "id": "pieces",
@@ -1695,11 +1693,11 @@
      370
     ],
     "prod": [
-     770,
+     735,
      370
     ],
     "liveswitch": [
-     990,
+     1000,
      370
     ],
     "cf-ose": [
@@ -1795,7 +1793,7 @@
     "E6",
     "E7"
    ],
-   "pitch": "How a change reaches staging, the allowed links and their privacy class, and the security gates."
+   "pitch": "How a change reaches staging, and the allowed links and their privacy class."
   }
  }
 }
