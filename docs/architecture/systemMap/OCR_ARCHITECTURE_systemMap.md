@@ -91,7 +91,7 @@ private and out of this repo.
 | --- | --- | --- | --- |
 | Sales | `#people`, `#pieces` | Curated playlists, Skins, UEC codes, SharedReport, Voting, ourAirwaves | What the system does for each customer and where it is available, in plain words |
 | Product | `#products`, `#pieces`, `#people` | ourSharedEvents, ourWKRP, ourAirwaves, Curated playlists, Voting, Skins, Layout rule | What exists, what is decided but not built, and which shared pieces every product reuses |
-| Engineering | `#runs`, `#products` | T0 Gate, Done, Production, Live switch, OSE Worker, Security gates, links E1, E6, E7 | How a change reaches staging, the allowed links and their privacy class, and the security gates |
+| Engineering | `#runs`, `#products` | T0 Gate, Done, Production, Live switch, OSE Worker, Security gates, links E1, E6, E7 | How a change reaches staging, and the allowed links and their privacy class |
 
 ## Files
 
