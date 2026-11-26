@@ -15,11 +15,11 @@ vectors."
 Then: "Is there another way to include online users in voting in a safe manner?" Of the four options
 offered, he said yes to writing up two together:
 
-1. **A separate online result, the Online Pick**, always shown apart from the official **Live Room**.
-2. **An Access pass**: a small, capped, logged way for someone who cannot be in the room to vote in the
-   Live Room.
+1. **A separate online result, the Online Pick**, always shown apart from the official **Room Pick**.
+2. **An Access Pass**: a small, capped, logged way for someone who cannot be in the room to vote in the
+   Room Pick.
 
-Matt, same day: "I am one of the accessibility passes, so this hit for me." So the Access pass is
+Matt, same day: "I am one of the accessibility passes, so this hit for me." So the Access Pass is
 designed from the voter's side first: dignified, low friction, no need to explain or prove anything,
 and never a second-class vote.
 
@@ -27,9 +27,9 @@ and never a second-class vote.
 
 These hold for everything below. Nothing in this proposal loosens them.
 
-- **The Live Room is the official result, and it needs the room.** A Live Room vote still needs a
+- **The Room Pick is the official result, and it needs the room.** A Room Pick vote still needs a
   scan of the room's vote code (ADR-040 decision 6), now the rotating code chosen for OSE-2234 (PR OSE#1562).
-  The only other way in is the Access pass in section 4, which is capped and logged.
+  The only other way in is the Access Pass in section 4, which is capped and logged.
 - **Never who, only how many** (OSE invariant 1). No new path stores a name, an email, a reason, a
   device id, an address or a location.
 - **The under-5 floor** (OSE invariant 2). No new number below 5 is published, and the count of access
@@ -46,24 +46,24 @@ These hold for everything below. Nothing in this proposal loosens them.
 ### What it is
 
 An optional second vote, run beside the room's, that anyone online can join. It has its own result. It
-never touches the Live Room, and the Live Room never touches it.
+never touches the Room Pick, and the Room Pick never touches it.
 
 ### The rules
 
 1. **Two channels, never mixed.** A vote set has a channel, `room` or `crowd`, fixed when it is made.
-   The Live Room is the `room` set. The Online Pick is a second set on the same event, on the same
+   The Room Pick is the `room` set. The Online Pick is a second set on the same event, on the same
    objects, with its own tallies, receipts, T and V. No query adds, compares or joins the two. No crowd
    number is ever a tiebreak, a weight, a bonus or a seed for the room. A gate test fails if any code path
    reads both channels' tallies, the way `votes-never-who` guards the vote tables today.
 2. **The belt and the champion follow the room only.** "The champion retains" means the room's champion.
    The Online Pick has no belt and no title that carries over.
 3. **Off by default, the host turns it on.** Per event. A sponsor cannot. The host's Voting card says what
-   it is in one line: "Lets people who aren't here vote for fun. It never changes the Live Room."
+   it is in one line: "Lets people who aren't here vote for fun. It never changes the Room Pick."
 4. **The same publishing rules.** Winner only, or "too close to call", after final, with its own secret
    T and V. No per-entry number, no count of crowd voters, nothing on the display before final.
-5. **Fixed words that no one can rename.** The labels "Live Room" and "Online Pick"
+5. **Fixed words that no one can rename.** The labels "Room Pick" and "Online Pick"
    are platform text, like the plain titles on codes. A skin, a host or a sponsor cannot relabel them,
-   hide the "for fun" note, or show the Online Pick above or larger than the Live Room. This is the
+   hide the "for fun" note, or show the Online Pick above or larger than the Room Pick. This is the
    rail that stops the marketing pull Matt warned about: the crowd result can never be dressed up as the
    real one.
 6. **How an online vote is counted.** The event page offers a "Vote in the Online Pick" link while the
@@ -73,32 +73,32 @@ never touches the Live Room, and the Live Room never touches it.
    be gamed. That's why it's for fun and never the official result."
 7. **Its own flood flag.** The crowd set gets its own flood counter (the OSE-2234 mechanism) at a higher
    threshold. A flooded crowd set shows "may be padded" beside its result. It never flags the room.
-8. **On-site still wins the night.** The Online Pick closes when the Live Room closes, so it cannot be
+8. **On-site still wins the night.** The Online Pick closes when the Room Pick closes, so it cannot be
    announced first, and both results come out together.
 
 ### Why this is safe for the room
 
 The room result is computed from room tallies only. A bot farm, a sponsor's mailing list or a host's
-friends can win the Online Pick, and the Live Room does not move. Section 5 checks each way that could
+friends can win the Online Pick, and the Room Pick does not move. Section 5 checks each way that could
 fail.
 
-## 4. Part two: the Access pass (vote in the Live Room from elsewhere)
+## 4. Part two: the Access Pass (vote in the Room Pick from elsewhere)
 
 ### What the voter sees
 
 1. They ask the host, any way they like (a text, a word in advance, a message on the event page). They
    never give a reason. No form asks for one, and the host is told not to ask.
-2. The host taps **"Give an Access pass"** on the Voting card. OSE shows a link and a QR code once. The
+2. The host taps **"Give an Access Pass"** on the Voting card. OSE shows a link and a QR code once. The
    host sends it however they like. OSE never learns who it went to.
 3. The voter opens the link when voting opens. They land on **the same voter page** as everyone in the
    room: the same list, the same house rule, the same buttons. One small line says: "You're voting with
-   an Access pass. Your vote counts the same as everyone in the room."
-4. Their vote is a normal Live Room vote: the same receipt, the same weight, the same tally. Nothing in
+   an Access Pass. Your vote counts the same as everyone in the room."
+4. Their vote is a normal Room Pick vote: the same receipt, the same weight, the same tally. Nothing in
    the tally or the result marks it as different. It is never a second-class vote.
 5. They can come back to the link all night, from any device. Each opening renews their pass, like a
    re-scan in the room. It always gives the same voter key, so it is always one voter.
 
-The words are "Access pass", never "disability pass". It fits illness, a seizure day, caregiving,
+The words are "Access Pass", never "disability pass". It fits illness, a seizure day, caregiving,
 mobility, distance, anything. The person decides whether they need it.
 
 ### How it works
@@ -121,7 +121,7 @@ mobility, distance, anything. The person decides whether they need it.
   recorded. The count of passes is never published, to anyone, because it is always under 5.
 - **No free text.** The pass has no name field, no note field and no reason field. So no health
   information can ever be typed into OSE.
-- **The report says only that passes were available.** After final, the result may say "Access passes
+- **The report says only that passes were available.** After final, the result may say "Access Passes
   were available for this vote" if the host had any to give. Never a number.
 
 ### Host abuse, and what stops it
@@ -140,7 +140,7 @@ A host could give passes to themselves or friends to push an entry. The rails:
 
 ## 5. Threat check (STRIDE + LINDDUN) on the new paths
 
-The three new paths are: **C** the Online Pick, **G** giving an Access pass, **R** redeeming one.
+The three new paths are: **C** the Online Pick, **G** giving an Access Pass, **R** redeeming one.
 
 ### STRIDE
 
@@ -169,7 +169,7 @@ The three new paths are: **C** the Online Pick, **G** giving an Access pass, **R
 | Non-repudiation | R | A voter cannot deny voting | No vote row, no vote time, receipts deleted at final (ADR-040 decision 1) |
 | Detecting | G | The page or result marks someone as a pass voter | Same page, same tally; the report never shows a count |
 | Data disclosure | G | Health information typed into OSE | There is nowhere to type it |
-| Unawareness | R, C | Voters do not know the rules | One line on each page: the Access pass counts the same; the Online Pick can be gamed |
+| Unawareness | R, C | Voters do not know the rules | One line on each page: the Access Pass counts the same; the Online Pick can be gamed |
 | Non-compliance | G | Special-category data (health) held by OCR | None is held. The request and the reason stay between the voter and the host |
 
 ### Score
@@ -179,22 +179,22 @@ runs on the ADR-040 decision 13 text before any code, as ADR-040 required for de
 
 ## 6. Questions for Matt
 
-1. **The Access pass cap.** Keep it at 4 per vote set, below the smallest margin? Or let it grow with
+1. **The Access Pass cap.** Keep it at 4 per vote set, below the smallest margin? Or let it grow with
    the room size (for example, a disability organization's own event)? Recommended: 4, with a platform
    review to raise it for a named event.
-2. **Who turns the Access pass on.** Recommended: on for every event by default, so a voter never has to
+2. **Who turns the Access Pass on.** Recommended: on for every event by default, so a voter never has to
    persuade a host to switch it on first. The other choice is off until the host turns it on.
 3. **A bot check on the Online Pick.** Recommended: none to start, because it adds a third-party check
    on a public page, and the Online Pick is labelled as gameable anyway. Add one later if crowd floods
    are common.
-4. **The names.** Decided by Matt, 2026-11-26: "Live Room", "Online Pick" and "Access pass".
+4. **The names.** Decided by Matt, 2026-11-26: "Room Pick", "Online Pick" and "Access Pass".
 
 ## 7. What happens after a yes
 
 1. OSE ADR-040 gains decision 13 with these rules, and decision 12's "remote or link voting is out" is
-   amended to say: still out for the Live Room, except the capped Access pass.
+   amended to say: still out for the Room Pick, except the capped Access Pass.
 2. A CCR (5 loops) on that text.
-3. Stories in Linear (team OSE): the channel column and the gate test; the crowd pass; the Access pass
+3. Stories in Linear (team OSE): the channel column and the gate test; the crowd pass; the Access Pass
    give, revoke and redeem; the report lines. Each born red, at both layers, checked on staging.
 4. Voting stays off everywhere (`VOTING_ENABLED = "off"`) until Matt turns it on.
 
