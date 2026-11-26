@@ -455,8 +455,10 @@ products:
   # code_present is false. Flip to `true` (or remove the line) when OAW
   # onboards real code per its phase plan.
   code_present: false
-  description: 'DJ and artist community sites paired with OurWKRP. QR scan tallying during sets for credit.
-    Portable reputation that accumulates over time for sponsorship and bigger venues.
+  description: 'The self-serve front door (owner decision 2026-11-26, docs/proposals/PROPOSAL_ourAirwaves-self-serve.md).
+    One named account per business, sponsor or creator sets up how its pages look on OurSharedEvents and
+    OurWKRP through their APIs, inside fixed rails, with tiers and limits for every corner of the Triangle.
+    Also the start of a full branded deployment, and of DJ and artist community sites paired with OurWKRP.
 
     '
   regulatory_pools:

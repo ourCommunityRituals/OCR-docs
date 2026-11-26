@@ -1,7 +1,7 @@
 # PROPOSAL — ourAirwaves becomes the self-serve app
 
-**Status:** proposed, not doctrine. Lives in `docs/proposals/`, so it does not propagate to spokes.
-**Proposed:** 2026-11-25 · **Owner:** Matt · **Decisions needed:** D1 to D6 at the end.
+**Status:** decided. Matt said yes to D1 to D7 on 2026-11-26 (04:01 UTC, project thread). Lives in `docs/proposals/`, so it does not propagate to spokes.
+**Proposed:** 2026-11-25 · **Decided:** 2026-11-26 · **Owner:** Matt
 
 ## 1. What Matt asked for
 
@@ -114,12 +114,12 @@ security, audit, isolation and retention; the under-5 floor ("Fewer than 5", nev
 contrast and colours (design tokens); the required parts of each surface; plain titles and UEC colours
 on every code.
 
-Note the conflict with today's `ocr-docs-brain/tier-gates.yaml`: its Free tier has
-`shared_reports: false`. A generous Free with a Level 1 SharedReport would change that file (D4).
+D4 is now in `ocr-docs-brain/tier-gates.yaml` (schema 1.2.0): Free has `shared_reports: true` and the
+new feature `shared_report_page: true`; the PDF, interactive report and sponsor view stay Mid.
 
 ## 7. New links for the link list (`data-edges.yaml`)
 
-Added in this PR as `status: proposed`. None is built. They name what crosses and how private it is.
+Added as `status: proposed` (2026-11-25), now `status: decided` (2026-11-26). None is built. They name what crosses and how private it is.
 
 | Id | From → to | What crosses | Privacy class |
 |---|---|---|---|
@@ -142,7 +142,7 @@ E11 to E14 are not OSE–OW edges, so invariant #22's `permitted_seams` check is
 3. ourAirwaves: the app (Cloudflare Worker + D1, the hub's design system), step 1 front door.
 4. ourAirwaves: step 2, its own editor with preview.
 
-## 9. Decisions for Matt
+## 9. Decisions (all answered yes by Matt, 2026-11-26)
 
 - **D1 Account home.** Recommended: OA owns the business account and sign-in for both products.
   Alternative: each product keeps its own sign-in and OA only links them.

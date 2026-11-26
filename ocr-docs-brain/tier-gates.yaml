@@ -1,7 +1,9 @@
 # Tier gates — governs feature availability and pricing.
 # Updated: schema v1.1.0 — added sponsor_type_overrides and platform_commitments.
 
-schema_version: 1.1.0
+# schema v1.2.0 (2026-11-26): Free gets the SharedReport page (shared_report_page), owner
+# decision D4 in docs/proposals/PROPOSAL_ourAirwaves-self-serve.md. Free stays generous on purpose.
+schema_version: 1.2.0
 tiers:
   free:
     display_name: Free
@@ -13,7 +15,7 @@ tiers:
     data_visibility:
       own_events: true
       own_scans: true
-      shared_reports: false
+      shared_reports: true
       cross_corridor: false
       predictive_insights: false
       aggregate_intelligence: false
@@ -22,6 +24,7 @@ tiers:
       event_listing: true
       qr_generation: true
       basic_dashboard: true
+      shared_report_page: true
       shared_report_pdf: false
       shared_report_interactive: false
       sponsor_views: false
@@ -46,6 +49,7 @@ tiers:
       predictive_insights: false
       aggregate_intelligence: false
     features:
+      shared_report_page: true
       event_creation: true
       event_listing: true
       qr_generation: true
@@ -73,6 +77,7 @@ tiers:
       predictive_insights: true
       aggregate_intelligence: true
     features:
+      shared_report_page: true
       event_creation: true
       event_listing: true
       qr_generation: true
