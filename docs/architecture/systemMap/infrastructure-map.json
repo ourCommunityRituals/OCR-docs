@@ -1,0 +1,1801 @@
+{
+ "meta": {
+  "title": "OCR System Map",
+  "checked": "2026-11-26",
+  "checkedNote": "Checked against the repos on 25 Nov 2026 and updated 26 Nov 2026 with the voting passes and the ourAirwaves and ourSharedMagnets config files. Product links copy OCR-docs data-edges.yaml.",
+  "scope": "Only the ourCommunityRituals repos. americanbocceco, zeventbook and MVP-EVENT-TOOLKIT are history only and are left out.",
+  "howToUpdate": "Edit this file, then run: python3 build-map.py. It writes infrastructure-map.html, which is republished to the same link."
+ },
+ "statuses": {
+  "staging": {
+   "label": "Working on staging",
+   "tone": "good",
+   "plain": "Built and checked on the staging site, which is where work counts."
+  },
+  "built": {
+   "label": "Built",
+   "tone": "good",
+   "plain": "The code exists on the main branch."
+  },
+  "partial": {
+   "label": "Partly built",
+   "tone": "warn",
+   "plain": "Some of it exists; some is still to do."
+  },
+  "decided": {
+   "label": "Decided, not built yet",
+   "tone": "info",
+   "plain": "You made the decision. The building comes later."
+  },
+  "docs": {
+   "label": "Documents only",
+   "tone": "quiet",
+   "plain": "Written down as plans and rules. No working app yet."
+  },
+  "off": {
+   "label": "Switched off",
+   "tone": "quiet",
+   "plain": "Built, but turned off on purpose. The code is kept."
+  },
+  "closed": {
+   "label": "Closed until you say go",
+   "tone": "warn",
+   "plain": "Ready and kept in step, but not open to the public."
+  },
+  "served": {
+   "label": "One side ready",
+   "tone": "warn",
+   "plain": "One product offers this link; the other is not using it yet."
+  },
+  "written": {
+   "label": "Written down, no code",
+   "tone": "quiet",
+   "plain": "The rules for this link exist. Nobody has built it."
+  },
+  "proposed": {
+   "label": "Proposed",
+   "tone": "quiet",
+   "plain": "Written down and waiting for your decision."
+  },
+  "you": {
+   "label": "Only you",
+   "tone": "you",
+   "plain": "Only you can do this. Agents never do it."
+  },
+  "planned": {
+   "label": "Planned, not live",
+   "tone": "info",
+   "plain": "The model is chosen. It is not built or offered yet, and some steps (like legal review) come first."
+  }
+ },
+ "privacy": {
+  "A": "Counts only. No person can be picked out.",
+  "B": "Named people who chose to be named, shown as totals.",
+  "public": "Only what the public pages already show."
+ },
+ "nodes": {
+  "ocr-docs": {
+   "label": "OCR-docs",
+   "sub": "The brain: the rules",
+   "kind": "product",
+   "side": "Shared by everything",
+   "status": "built",
+   "plain": "Holds your vision and the rules every product must follow. A change here reaches every product at once, so it needs your review.",
+   "details": [
+    "30 numbered rules (invariants): 17 live, 11 partly enforced, 2 retired. Counted from ocr-docs-brain/architectural-invariants.yaml on 25 Nov 2026.",
+    "Keeps the one list of allowed links between products (data-edges.yaml). A data link that is not on the list is not allowed.",
+    "Pushes its standards into each product and checks them every night.",
+    "Home of the CCR review method: Critical, Conservative, Recursive, with a 95% confidence gate."
+   ],
+   "sources": [
+    "OCR-docs/CLAUDE.md",
+    "ocr-docs-brain/architectural-invariants.yaml",
+    "ocr-docs-brain/data-edges.yaml"
+   ]
+  },
+  "hub": {
+   "label": "ourCommunityRituals",
+   "sub": "The hub: the shared look",
+   "kind": "product",
+   "side": "Shared by everything",
+   "status": "built",
+   "plain": "One design system for every product: the charcoal and creme colours, shared buttons and layouts, and feature switches. Every product pins an exact version of it.",
+   "details": [
+    "Colours come only from its tokens package. Pages never type in their own colours.",
+    "64 mockups of every screen live in packages/ui/design-system/canvas.",
+    "Each product's design check can only shrink that product's own styling debt, never grow it.",
+    "Also holds the network-plate dashboard and the cost records behind the free-forever idea."
+   ],
+   "sources": [
+    "transcripts/repos/ourCommunityRituals.md",
+    "ourCommunityRituals/CLAUDE.md"
+   ]
+  },
+  "ose": {
+   "label": "ourSharedEvents",
+   "sub": "Stay anonymous: events",
+   "kind": "product",
+   "side": "Stay anonymous",
+   "status": "staging",
+   "plain": "Where events live: event pages, the map, posters, TV screens, sponsor spots, voting and the after-event SharedReport. It counts people and never names them.",
+   "statusNote": "Built and tested on staging (stg.oursharedevents.com). Production is kept in step but closed until you turn on the live switch.",
+   "details": [
+    "One Cloudflare Worker with two databases that never join: the anonymous one (events, sponsors, scans) and the identified one (sign-ups, check-ins), where personal details are encrypted.",
+    "Never who, only how many. Any count under 5 shows as \"Fewer than 5\".",
+    "Place, not person. A location is a map hexagon, never an IP address or a phone's location.",
+    "No cookies on public pages, except one anonymous token.",
+    "About 50 event types to pick from: 47 seeded at the start, plus later ones such as Watch Party and Storytime.",
+    "Voting was switched on in staging only (PR #1552, Nov 2026)."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md",
+    "transcripts/repos/ourSharedEvents.md",
+    "ourSharedEvents git log at 9d0d1ae"
+   ]
+  },
+  "osm": {
+   "label": "ourSharedMagnets",
+   "sub": "Stay anonymous: the how-to",
+   "kind": "product",
+   "side": "Stay anonymous",
+   "status": "docs",
+   "plain": "The playbook and the developer door. API guides and the franchise playbook, so a new neighbourhood can run what Blue Island runs.",
+   "details": [
+    "The back half of a flywheel with ourAirwaves: Magnets explains how, Airwaves sets it up.",
+    "Will give custom overrides at local, anchor and enterprise levels for both sides (not built).",
+    "Its notes still say Postman and Newman. The products moved their API tests to Bruno in Sep 2026.",
+    "A data link to ourEventRings is written down (E4) but not built.",
+    "Config file (draft, 26 Nov 2026, ourSharedMagnets PR #55): config/magnets.config.yaml says which APIs it documents, that it tests against staging only, and that demo data uses made-up people only. Its own check has 16 tests."
+   ],
+   "sources": [
+    "ourSharedMagnets/CLAUDE.md",
+    "transcripts/repos/ourSharedMagnets.md",
+    "ourSharedMagnets PR #55 (draft)"
+   ]
+  },
+  "wkrp": {
+   "label": "ourWKRP",
+   "sub": "Plant your flag: ourSharedMosaics",
+   "kind": "product",
+   "side": "Plant your flag",
+   "status": "staging",
+   "plain": "The named side. People sign up with just a name and get a public profile (artists, sports teams and more) that private people vote on at events.",
+   "statusNote": "Running on staging (stg.ourwkrp.com). Production deploys only after staging passes. Spotify and DJ features are switched off for launch, and the code is kept.",
+   "details": [
+    "Registering is the consent. Profiles, short web addresses, and the right to be erased.",
+    "Stores no votes, voters or tallies. Votes live on ourSharedEvents.",
+    "Shown as ourSharedMosaics in the design system; the repo and code still say ourWKRP.",
+    "Spotify testing uses your personal account. A company account is needed before production.",
+    "The private showcase for one creator stays private until that person agrees."
+   ],
+   "sources": [
+    "ourWKRP/CLAUDE.md",
+    "transcripts/repos/ourWKRP.md",
+    "project memory (24 Nov 2026 launch scope)"
+   ]
+  },
+  "oaw": {
+   "label": "ourAirwaves",
+   "sub": "Your account: set up your own pages",
+   "kind": "product",
+   "side": "Plant your flag",
+   "status": "decided",
+   "plain": "The self-serve front door (decided by Matt, 26 Nov 2026). A business, sponsor or creator gets one account and sets up how its pages look on ourSharedEvents and ourWKRP, inside fixed rails.",
+   "details": [
+    "New role, Matt, 25 Nov 2026: people expect to take control of their own product; OCR provides the rails.",
+    "One account per business, holding one or more brands (ourSharedEvents only, ourWKRP only, or both).",
+    "Talks to ourSharedEvents and ourWKRP only through their APIs (links E11 to E14, decided), never their databases. Each product still checks every look itself.",
+    "The look editors already built (ourWKRP /look, ourSharedEvents Page layouts) stay as the engines. ourAirwaves opens them first, then gets its own editor on the same skin .md format.",
+    "Tiers with limits (posters, kinds of configuration, SharedReport levels), generous at Free, for every corner: sponsor, event and attendee. Anonymous attendees never need an account.",
+    "Never tier-gated: security, the under-5 floor, colours and contrast, required parts, code titles and UEC colours.",
+    "The old role stays at the top of the ladder: a full branded copy with its own domain.",
+    "A data link to ourEventRings is written down (E3): deployment facts only, no client data.",
+    "Decided 26 Nov 2026: Matt said yes to all seven decisions. Design: OCR-docs docs/proposals/PROPOSAL_ourAirwaves-self-serve.md. Work: Linear OCR-232 (OSE-2233, OW-230, OCR-233).",
+    "Config file (draft, 26 Nov 2026, ourAirwaves PR #55): config/airwaves.config.yaml holds the app's rules in one place: which APIs and links it may use, what must never be sent, tier limits, and what no tier can lock. Each client gets a brand file plus a skin .md. A check with 34 tests refuses anything that breaks a rule."
+   ],
+   "sources": [
+    "ourAirwaves/CLAUDE.md",
+    "transcripts/repos/ourAirwaves.md",
+    "OCR-docs PR #197",
+    "ourAirwaves PR #55 (draft)"
+   ]
+  },
+  "oer": {
+   "label": "ourEventRings",
+   "sub": "Counts only: the big picture",
+   "kind": "product",
+   "side": "Counts only",
+   "status": "partial",
+   "plain": "Gathers totals from the products so you can see how busy each neighbourhood is. It is never about a person.",
+   "statusNote": "Some code: it works out neighbourhood rings from exported files. No live answer service yet, and it is not yet in the nightly rules check (open question Q3).",
+   "details": [
+    "Uses Google BigQuery.",
+    "Everything arrives at neighbourhood size (a res-7 hexagon) or larger, with the under-5 rule.",
+    "Products send to it. Products never read each other's databases.",
+    "The payoff: how saturated each neighbourhood is, as measured numbers."
+   ],
+   "sources": [
+    "transcripts/repos/ourEventRings.md",
+    "ocr-docs-brain/data-edges.yaml"
+   ]
+  },
+  "osg": {
+   "label": "ourSharedGames",
+   "sub": "Game nights",
+   "kind": "product",
+   "side": "Formats and on-ramps",
+   "status": "docs",
+   "plain": "Game night formats: the anchor game, side activities and the shape of a night. The reason people show up.",
+   "details": [
+    "Inherits the anonymous model. Game data will flow through ourSharedEvents, not beside it.",
+    "First plans: Blue Island (RIPH, Eagles Hall) and Beverly (Open OutCry trivia).",
+    "A hybrid for local sports."
+   ],
+   "sources": [
+    "ourSharedGames/CLAUDE.md"
+   ]
+  },
+  "osr": {
+   "label": "ourSharedRecords",
+   "sub": "Stories and archive",
+   "kind": "product",
+   "side": "Formats and on-ramps",
+   "status": "docs",
+   "plain": "OurRecordSides: one person, five minutes, one story, one record. The community's record of itself.",
+   "details": [
+    "People are named only with their consent.",
+    "A hybrid for artists and spoken word.",
+    "Beverly is the archive anchor."
+   ],
+   "sources": [
+    "ourSharedRecords/CLAUDE.md"
+   ]
+  },
+  "osp": {
+   "label": "ourSharedPulse",
+   "sub": "The human on-ramp",
+   "kind": "product",
+   "side": "Formats and on-ramps",
+   "status": "docs",
+   "plain": "People, not apps. Helps leagues and rec programs with belts, trophies and recognition. Works with no phone at all.",
+   "details": [
+    "No anonymous id by design, so it must never get a data link to the anonymous side.",
+    "The on-ramp into Games: casual, serious, competitive and extra-fun leagues.",
+    "Programs it brings in move onto ourSharedEvents when they are ready."
+   ],
+   "sources": [
+    "ourSharedPulse/CLAUDE.md",
+    "ocr-docs-brain/data-edges.yaml"
+   ]
+  },
+  "attendees": {
+   "label": "Attendees",
+   "sub": "People who show up",
+   "kind": "people",
+   "status": "staging",
+   "plain": "Find events near them on a map, scan coloured codes, vote at the event, and add events to their calendar. No account needed, and never tracked as a person.",
+   "details": [
+    "The landing page asks \"where are you?\" with a zip box and shows nearby events, with list, map and distance search.",
+    "Voting happens only on site: scan the room's code at the event.",
+    "Forms are available in many languages, including Spanish, Polish and right-to-left Arabic.",
+    "Optional sign-ups go to the separate identified database, encrypted."
+   ],
+   "sources": [
+    "transcripts/repos/ourSharedEvents.md"
+   ]
+  },
+  "organizers": {
+   "label": "Event organizers",
+   "sub": "People who run events",
+   "kind": "people",
+   "status": "staging",
+   "plain": "Create an event in a step-by-step wizard, preview the page, poster and TV screen before publishing, and get a SharedReport afterwards.",
+   "details": [
+    "Publishing needs a start time and an event type.",
+    "See it before you publish: TV demo, draft poster and page preview beside the form.",
+    "A series of events can be declared once.",
+    "The SharedReport shows counts, with anything under 5 withheld."
+   ],
+   "sources": [
+    "transcripts/repos/ourSharedEvents.md"
+   ]
+  },
+  "sponsors": {
+   "label": "Sponsors",
+   "sub": "Local businesses",
+   "kind": "people",
+   "status": "staging",
+   "plain": "Show up on event pages and posters only when both they and the organizer said yes. They get a sponsor home page and the SharedReport as proof.",
+   "details": [
+    "Two-sided consent: the sponsor accepted and the organizer accepted.",
+    "The sponsor strip sits below the event title and date.",
+    "Poster sponsors link out to the sponsor.",
+    "Local sponsor covenant (ADR-013)."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md invariant 6"
+   ]
+  },
+  "venues": {
+   "label": "Venues",
+   "sub": "Bars, halls, shops",
+   "kind": "people",
+   "status": "built",
+   "plain": "A place can host many organizers. The place owner sees the activity of every operator held there. Bigger venues can get their own branded copy.",
+   "details": [
+    "Owners see every operator's activity at their place (PR #1540).",
+    "Founding venues: Eagles Hall and RIPH in Blue Island, Open OutCry in Beverly.",
+    "Music for venues only through licensed channels, never personal Spotify or Apple. A missing licence never stops a bar from signing.",
+    "Planned: dated history of who ran events at a venue (OSE-2229, when the first venue signs)."
+   ],
+   "sources": [
+    "ourSharedEvents git log",
+    "transcripts/entities/",
+    "project memory"
+   ]
+  },
+  "corridors": {
+   "label": "Neighbourhoods",
+   "sub": "Corridors on the map",
+   "kind": "people",
+   "status": "partial",
+   "plain": "The founding six: Blue Island (the proving ground, active), Beverly (the anchor), Gresham/Ashburn, Evergreen Park, Oak Lawn and Mt. Greenwood.",
+   "details": [
+    "Each neighbourhood is a set of map hexagons (H3), grouped into rings.",
+    "Blue Island is active. The others are planned.",
+    "Harbor Country is a network destination. Brainerd is a research comparison only.",
+    "A weekly corridor flow export reaches BigQuery for the ring layers (PR #1536)."
+   ],
+   "sources": [
+    "transcripts/entities/",
+    "ocr-docs-brain/corridor-definitions.yaml"
+   ]
+  },
+  "creators": {
+   "label": "Creators",
+   "sub": "Artists, teams, DJs",
+   "kind": "people",
+   "status": "staging",
+   "plain": "Plant their flag with a public profile, by name and by choice, and can have their own branded page through ourAirwaves.",
+   "details": [
+    "Sign up with just a name. Registering is the consent.",
+    "Profile types at launch: artists, sports and more.",
+    "DJ features are switched off for launch. DJ may become its own product with its own licensing.",
+    "They can ask to be erased at any time."
+   ],
+   "sources": [
+    "ourWKRP/CLAUDE.md",
+    "project memory"
+   ]
+  },
+  "operators": {
+   "label": "Partners and operators",
+   "sub": "New neighbourhoods, white label",
+   "kind": "people",
+   "status": "docs",
+   "plain": "People who want to run this in their own area or under their own brand. Magnets teaches them how; Airwaves sets it up.",
+   "details": [
+    "Pricing follows who does the work, not which features unlock.",
+    "Custom skins are sold; the base skin is free for everyone.",
+    "Bespoke front ends built fast on the API, for a fee."
+   ],
+   "sources": [
+    "transcripts/repos/ourAirwaves.md",
+    "project memory (skins business model)"
+   ]
+  },
+  "leagues": {
+   "label": "Leagues and rec programs",
+   "sub": "Belts, trophies, teams",
+   "kind": "people",
+   "status": "docs",
+   "plain": "Get human help to grow: recognition, layered leagues, then tournaments and trainings. No phone or app needed to start.",
+   "details": [
+    "Delivered by people through ourSharedPulse.",
+    "Grows into ourSharedGames formats."
+   ],
+   "sources": [
+    "ourSharedPulse/CLAUDE.md",
+    "transcripts/repos/ourCommunityRituals.md"
+   ]
+  },
+  "event": {
+   "label": "An event",
+   "sub": "Where it all meets",
+   "kind": "piece",
+   "status": "staging",
+   "plain": "Sponsor, event and attendee: the Triangle. Every shared piece below exists to serve one event.",
+   "details": [
+    "The Triangle: Sponsor to Event, Customer to Event, with the SharedReport worked out from them.",
+    "About 50 event types, grouped by category."
+   ],
+   "sources": [
+    "OCR-docs/CLAUDE.md (the Triangle)"
+   ]
+  },
+  "skins": {
+   "label": "Skins",
+   "sub": "The look a client picks",
+   "kind": "piece",
+   "status": "decided",
+   "plain": "One base look everyone gets for free, and custom skins for sale. One skin file format. Works for ourSharedEvents clients, ourWKRP clients and clients of both.",
+   "details": [
+    "Decided 25 Nov 2026.",
+    "A solution engineer can hand-edit a skin; a self-serve skin editor applies across the board.",
+    "Mockups of the look editor are in the project files (skin-editor/)."
+   ],
+   "sources": [
+    "project memory (25 Nov 2026)",
+    "project files skin-editor/"
+   ]
+  },
+  "layout": {
+   "label": "Layout rule",
+   "sub": "Same idea, own layout",
+   "kind": "piece",
+   "status": "decided",
+   "plain": "Posters, screens and SharedReports never share layouts. Each has its own required and optional parts that clients arrange their own way.",
+   "details": [
+    "Decided 25 Nov 2026.",
+    "Posters are designed first; then the idea is applied to SharedReports."
+   ],
+   "sources": [
+    "project memory (25 Nov 2026)"
+   ]
+  },
+  "posters": {
+   "label": "Posters",
+   "sub": "Print, with a QR code",
+   "kind": "piece",
+   "status": "staging",
+   "plain": "Printable posters with a coloured QR code. Every scan is counted on the code, never the phone.",
+   "details": [
+    "One-call poster bundle.",
+    "Sponsors on a poster link out.",
+    "At most 100 scans per poster per hour are counted (PR #1523).",
+    "A digital poster version uses the hub's sponsor panel."
+   ],
+   "sources": [
+    "ourSharedEvents git log",
+    "transcripts/repos/ourSharedEvents.md"
+   ]
+  },
+  "screens": {
+   "label": "TV screens",
+   "sub": "The display at the venue",
+   "kind": "piece",
+   "status": "staging",
+   "plain": "A big-screen view for the room. It never shows counts.",
+   "details": [
+    "Counts are for after the event, in the SharedReport."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md invariant 5"
+   ]
+  },
+  "report": {
+   "label": "SharedReport",
+   "sub": "After the event",
+   "kind": "piece",
+   "status": "staging",
+   "plain": "The after-event report: how many, never who. It is the proof for sponsors and venues, and the only way ourWKRP reads event results.",
+   "details": [
+    "Publishes scans of the code, never people (PR #1534).",
+    "Depth is enforced on the server (ADR-017).",
+    "Exports to BigQuery for ourEventRings."
+   ],
+   "sources": [
+    "transcripts/repos/ourSharedEvents.md",
+    "ourSharedEvents git log"
+   ]
+  },
+  "uec": {
+   "label": "UEC codes",
+   "sub": "7 colours, one meaning each",
+   "kind": "piece",
+   "status": "built",
+   "plain": "The colour of a code tells you what it does before you scan it. Every code also carries a plain title saying what it does.",
+   "details": [
+    "Green ENTER, Coral LIVE, Blue SPONSOR, Purple ARCHIVE, Pink HELP, Amber FEEDBACK, Charcoal UTILITY.",
+    "Applies to every code across the platform.",
+    "Plain, non-technical title on each code for accessibility (decided 25 Nov 2026)."
+   ],
+   "sources": [
+    "ourSharedEvents/docs/features/UEC-CODES.md",
+    "project memory"
+   ]
+  },
+  "voting": {
+   "label": "Voting",
+   "sub": "At the event only",
+   "kind": "piece",
+   "status": "staging",
+   "plain": "Three ways to vote, all anonymous. Room Pick is the official result: scan the room's code at the event. An Access Pass lets a host bring in someone who can't be there. Online Pick is a separate, for-fun vote that never changes the Room Pick.",
+   "statusNote": "Room Pick is switched on in staging only (PR #1552). Online Pick and the Access Pass were proposed and merged as a plan on 26 Nov 2026 (OCR-docs PR #200); next come ADR-040 decision 13 and a CCR review before anything goes live.",
+   "details": [
+    "A vote is a counter on a thing, never a record about the voter (ADR-040, accepted 18 Nov 2026).",
+    "Room Pick: in-room voting is the first layer and is never loosened.",
+    "Access Pass: given by the host, no reason asked, counts the same as a room vote. Proposed cap: 4 per vote (still open with Matt).",
+    "Online Pick: anyone with the event's link can vote. It is shown after the Room Pick and says it can be gamed. Room and online votes never mix.",
+    "Vote stuffing: flood detection only (Matt's choice, 26 Nov; OSE-2234).",
+    "A red-team and blue-team threat model for all three was written 26 Nov 2026.",
+    "ourWKRP can open a song for a vote by sending only its label (link E8, switched off)."
+   ],
+   "sources": [
+    "ourSharedEvents ADR-040",
+    "OCR-docs docs/proposals/PROPOSAL_online-voting-crowd-pick-and-access-pass.md (PR #200)",
+    "transcripts/security/THREAT-MODEL-voting-red-blue-2026-11-26.md"
+   ]
+  },
+  "map": {
+   "label": "The map",
+   "sub": "Place, not person",
+   "kind": "piece",
+   "status": "partial",
+   "plain": "Events shown on map hexagons, so attendees can see what is near. Never uses a person's location or IP address.",
+   "statusNote": "Hexagons and the area map are built. The drawn street map is waiting on a storage key only you can create.",
+   "details": [
+    "Public answers carry the hexagon, never latitude and longitude.",
+    "No Google Maps call for an event's place (ADR-039)."
+   ],
+   "sources": [
+    "transcripts/repos/ourSharedEvents.md",
+    "transcripts/open-with-you.md"
+   ]
+  },
+  "floor": {
+   "label": "Under-5 rule",
+   "sub": "Fewer than 5",
+   "kind": "piece",
+   "status": "built",
+   "plain": "Any published count below 5 is held back and reads \"Fewer than 5\", for everyone, at every tier, with no exceptions.",
+   "details": [
+    "Some known gaps are tracked (OSE-2087).",
+    "Applies to exports to ourEventRings too."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md invariant 2"
+   ]
+  },
+  "agents": {
+   "label": "Claude agents",
+   "sub": "Threads and helpers",
+   "kind": "infra",
+   "status": "built",
+   "plain": "Claude sessions write code and reviews, one story per session. A coordinator starts threads; role helpers (security, design, QA and more) review.",
+   "details": [
+    "Agents never deploy, merge to production, handle secrets or change repo settings.",
+    "Cloud sessions do not run the policy gate (security finding H4).",
+    "Agents keep Linear matched to what is on main, with evidence comments."
+   ],
+   "sources": [
+    "ourSharedEvents/CLAUDE.md",
+    "transcripts/security/ccr-security-sweep-2026-11-25.md"
+   ]
+  },
+  "pr": {
+   "label": "Pull request",
+   "sub": "A proposed change",
+   "kind": "infra",
+   "status": "built",
+   "plain": "Every change arrives as a pull request on GitHub and must pass the checks before it can merge.",
+   "details": [
+    "Says \"Part of OSE-###\" so a merge never closes a story by itself."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md"
+   ]
+  },
+  "t0": {
+   "label": "T0 Gate",
+   "sub": "Checks before merge",
+   "kind": "infra",
+   "status": "built",
+   "plain": "Lint, unit and integration tests, the rule (invariant) checks, security checks and the design check. Plus a local run of T2 and T3 on the change itself.",
+   "details": [
+    "Every new check is first watched failing on purpose (\"born red\") before it is trusted."
+   ],
+   "sources": [
+    "ourSharedEvents/.github/workflows/oursharedevents-ci.yml"
+   ]
+  },
+  "merge": {
+   "label": "Merge to main",
+   "sub": "You approve",
+   "kind": "infra",
+   "status": "you",
+   "plain": "A person merges. Governance files (rules, vision, standards) need a human review even when checks are green.",
+   "details": [
+    "Linear moves to In Progress at merge."
+   ],
+   "sources": [
+    "OCR-docs/CLAUDE.md human review gate"
+   ]
+  },
+  "t1": {
+   "label": "T1 Deploy",
+   "sub": "Out to staging",
+   "kind": "infra",
+   "status": "built",
+   "plain": "The merged code is deployed to the staging site automatically by CI.",
+   "details": [],
+   "sources": [
+    "oursharedevents-ci.yml"
+   ]
+  },
+  "t2": {
+   "label": "T2 Contract",
+   "sub": "API checks (Bruno)",
+   "kind": "infra",
+   "status": "built",
+   "plain": "Checks every API answer on staging has the right shape.",
+   "details": [],
+   "sources": [
+    "oursharedevents-ci.yml"
+   ]
+  },
+  "t3": {
+   "label": "T3 Smoke",
+   "sub": "Pages work (Playwright)",
+   "kind": "infra",
+   "status": "built",
+   "plain": "A robot browser opens the staging pages and checks they work.",
+   "details": [],
+   "sources": [
+    "oursharedevents-ci.yml"
+   ]
+  },
+  "t4": {
+   "label": "T4 Functional",
+   "sub": "Whole flows work",
+   "kind": "infra",
+   "status": "built",
+   "plain": "Runs full journeys on staging, such as creating and using a test event.",
+   "details": [],
+   "sources": [
+    "oursharedevents-ci.yml"
+   ]
+  },
+  "done": {
+   "label": "Done",
+   "sub": "Seen on staging",
+   "kind": "infra",
+   "status": "staging",
+   "plain": "A story is Done only when T1 to T4 are all green on staging for that commit. Staging is the place where work counts, never your own computer.",
+   "details": [
+    "Standing order, 14 Nov 2026: never ask you to run, build or check anything on your machine."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md Definition of Done",
+    "CLAUDE.md standing order"
+   ]
+  },
+  "staging": {
+   "label": "Staging",
+   "sub": "stg sites, where work counts",
+   "kind": "infra",
+   "status": "staging",
+   "plain": "stg.oursharedevents.com and stg.ourwkrp.com. Changes only through CI after a merge to main.",
+   "details": [],
+   "sources": [
+    "CLAUDE.md standing order"
+   ]
+  },
+  "prod": {
+   "label": "Production",
+   "sub": "The public sites",
+   "kind": "infra",
+   "status": "closed",
+   "plain": "oursharedevents.com and ourwkrp.com. Kept in step with staging, not announced, no clients yet.",
+   "statusNote": "The ourSharedEvents host still answers today; closing it fully is an owner setting (OSE-1353, OSE-1377).",
+   "details": [
+    "Production deploys only through CI.",
+    "Once live, every production change needs a Linear ticket."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md production posture"
+   ]
+  },
+  "liveswitch": {
+   "label": "Live switch",
+   "sub": "Off",
+   "kind": "infra",
+   "status": "you",
+   "plain": "Only you turn production on for customers. Agents never set it or plan a go-live.",
+   "details": [
+    "Owner decision, 12 Oct 2026."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md"
+   ]
+  },
+  "cf-ose": {
+   "label": "OSE Worker + D1",
+   "sub": "Two databases, never joined",
+   "kind": "infra",
+   "status": "staging",
+   "plain": "Cloudflare runs the ourSharedEvents app. The anonymous database and the identified database are kept apart, and a test fails if they ever join.",
+   "details": [
+    "R2 storage holds the street-map archive and uploads."
+   ],
+   "sources": [
+    "ourSharedEvents/AGENTS.md architecture"
+   ]
+  },
+  "cf-wkrp": {
+   "label": "ourWKRP Worker",
+   "sub": "D1 + KV, Doppler secrets",
+   "kind": "infra",
+   "status": "staging",
+   "plain": "Cloudflare runs the ourWKRP app with its own separate database. Secrets live in Doppler.",
+   "details": [
+    "Music switch: off on staging and production."
+   ],
+   "sources": [
+    "ourWKRP/CLAUDE.md"
+   ]
+  },
+  "bigquery": {
+   "label": "BigQuery",
+   "sub": "ourEventRings data",
+   "kind": "infra",
+   "status": "partial",
+   "plain": "Google's data store for neighbourhood totals. ourSharedEvents exports to it today.",
+   "details": [],
+   "sources": [
+    "ocr-docs-brain/data-edges.yaml E1"
+   ]
+  },
+  "linear": {
+   "label": "Linear",
+   "sub": "The work list",
+   "kind": "infra",
+   "status": "built",
+   "plain": "Where stories live. Agents keep it matched to what is on main, with evidence comments.",
+   "details": [],
+   "sources": [
+    "ourSharedEvents/AGENTS.md"
+   ]
+  },
+  "guards": {
+   "label": "Security gates",
+   "sub": "CCR, rules, policy gate",
+   "kind": "infra",
+   "status": "partial",
+   "plain": "CCR reviews, rule checks in every product, and a policy gate that blocks deploys, secrets and force pushes on your machine.",
+   "statusNote": "First full security sweep (25 Nov 2026): Held at 15%. The products held up; the weak layer is agents and CI around ourWKRP and OCR-docs. Decisions D1 to D7 are with you.",
+   "details": [
+    "The products and the links between them held up.",
+    "Work started on fixes, under parent story OCR-230.",
+    "Rule checks run inside the T0 gate; the policy gate limits what agents can run on your machine."
+   ],
+   "sources": [
+    "transcripts/security/ccr-security-sweep-2026-11-25.md",
+    "project memory"
+   ]
+  },
+  "playlists": {
+   "label": "Curated playlists",
+   "sub": "Music for events, from ourWKRP",
+   "kind": "product",
+   "side": "Plant your flag",
+   "status": "planned",
+   "plain": "Hand-picked playlists made by the ourWKRP community, offered to events and venues as their music. It is the human-curated answer to the growing flood of algorithm-picked music: small business, bottom up.",
+   "statusNote": "Planned, not live. The delivery rules are decided; the licensing kit is a draft waiting for an attorney's review. Spotify and DJ features in ourWKRP are switched off for launch.",
+   "details": [
+    "Positioning (Matt, 25 Nov 2026): the human-curated opposite of algorithmic music. Big providers mix in some human curation, but on platforms built around algorithms it gets washed out. ourWKRP is a small-business, bottom-up provider.",
+    "Competitor Matt named: \"Cloverfield\", Pandora-owned, an event music provider that mixes human and algorithm curation. The name and ownership are as Matt wrote them and are not verified yet.",
+    "Venues get the lists only through licensed channels: their own business music service, OCR's own licensed service (future), or a live DJ or band using the list as a set list.",
+    "Never through a personal Spotify or Apple Music account.",
+    "A missing licence never stops a venue from signing. Everything else starts right away, and the music starts once the venue's licences are in place.",
+    "Who pays for licences: the venue, or a local sponsor who gets credit.",
+    "The gap it fills: business music services sell licensed streams with algorithm curation, about $17 to $75 a month per location. None sells human, community curation, and small bars often can't afford them.",
+    "DJ features may become their own product with their own licensing.",
+    "Open with the attorney: the cheapest legal path for a small venue, and whether its existing song licences change the answer."
+   ],
+   "sources": [
+    "transcripts/outreach/research/curated-playlists-market.md",
+    "transcripts/outreach/venue-licensing-kit.md",
+    "project memory (venue music rule, 23 Nov; launch scope, 24 Nov 2026)"
+   ]
+  }
+ },
+ "edges": [
+  {
+   "id": "E1",
+   "from": "ose",
+   "to": "oer",
+   "kind": "data",
+   "status": "built",
+   "privacy": "A",
+   "label": "E1 totals",
+   "plain": "Batch exports of event index rows and neighbourhood totals.",
+   "floor": "Under-5 rule, neighbourhood size or larger.",
+   "since": "2026-05-15"
+  },
+  {
+   "id": "E2",
+   "from": "wkrp",
+   "to": "oer",
+   "kind": "data",
+   "status": "written",
+   "privacy": "B",
+   "label": "E2",
+   "plain": "Curation signals, engagement counts and named profile signals.",
+   "floor": "Totals only. If someone withdraws, it reaches ourEventRings within 24 hours.",
+   "since": "2026-08-02"
+  },
+  {
+   "id": "E3",
+   "from": "oaw",
+   "to": "oer",
+   "kind": "data",
+   "status": "written",
+   "privacy": "A",
+   "label": "E3",
+   "plain": "Deployment facts: which deployment, which neighbourhood, which tier, when it started.",
+   "floor": "No client data crosses.",
+   "since": "2026-08-02"
+  },
+  {
+   "id": "E4",
+   "from": "osm",
+   "to": "oer",
+   "kind": "data",
+   "status": "written",
+   "privacy": "A",
+   "label": "E4",
+   "plain": "As written for ourSharedMagnets in the boundary document.",
+   "floor": "As the boundary document sets.",
+   "since": "2026-08-02"
+  },
+  {
+   "id": "E5",
+   "from": "wkrp",
+   "to": "ose",
+   "kind": "data",
+   "status": "served",
+   "privacy": "B",
+   "label": "E5 music",
+   "plain": "An event's music: sets, top tracks and counts. ourWKRP offers it; ourSharedEvents does not call it yet.",
+   "floor": "Counts held back under 5; no listener names.",
+   "since": "2026-08-02"
+  },
+  {
+   "id": "E6",
+   "from": "ose",
+   "to": "wkrp",
+   "kind": "data",
+   "status": "served",
+   "privacy": "A",
+   "label": "E6 reports",
+   "plain": "SharedReports for a batch of events. ourSharedEvents offers it behind a service key; ourWKRP does not call it yet.",
+   "floor": "The SharedReport's own rules.",
+   "since": "2026-05-15"
+  },
+  {
+   "id": "E7",
+   "from": "ose",
+   "to": "wkrp",
+   "kind": "data",
+   "status": "built",
+   "privacy": "public",
+   "label": "E7 showcase",
+   "plain": "The private creator showcase reads public event pages, posters, calendar and area map from staging when it is built. Never production.",
+   "floor": "Only what public pages already show.",
+   "since": "2026-11-12"
+  },
+  {
+   "id": "E8",
+   "from": "wkrp",
+   "to": "ose",
+   "kind": "data",
+   "status": "off",
+   "privacy": "A",
+   "label": "E8 vote a song",
+   "plain": "When a DJ logs a play, ourWKRP sends only the song's label to open it for a vote. No ids or names cross; the vote stays on ourSharedEvents, on site.",
+   "floor": "A vote is a counter on a thing, never a row about a voter.",
+   "since": "2026-11-23"
+  },
+  {
+   "id": "E9",
+   "from": "ose",
+   "to": "oer",
+   "kind": "data",
+   "status": "decided",
+   "privacy": "A",
+   "label": "E9 keys",
+   "plain": "Two matching keys (venue and event) so ourWKRP and ourSharedEvents events can be lined up inside ourEventRings.",
+   "floor": "Keys only; no count at event or venue level.",
+   "since": "2026-10-04"
+  },
+  {
+   "id": "E10",
+   "from": "oer",
+   "to": "ose",
+   "kind": "data",
+   "status": "proposed",
+   "privacy": "A",
+   "label": "E10 answers",
+   "plain": "ourEventRings answering questions across products, through its own service.",
+   "floor": "Readers are internal and named.",
+   "since": "2026-08-02"
+  },
+  {
+   "id": "C1",
+   "from": "hub",
+   "to": [
+    "ose",
+    "wkrp",
+    "oer",
+    "oaw",
+    "osm",
+    "osg",
+    "osp",
+    "osr",
+    "ocr-docs"
+   ],
+   "kind": "code",
+   "status": "built",
+   "label": "C1 design system",
+   "plain": "Every product uses the hub's design system, pinned to an exact version.",
+   "since": "2026-07-01"
+  },
+  {
+   "id": "G1",
+   "from": "ocr-docs",
+   "to": [
+    "ose",
+    "wkrp",
+    "oaw",
+    "osm",
+    "osg",
+    "osp",
+    "osr"
+   ],
+   "kind": "rules",
+   "status": "built",
+   "label": "G1 rules check",
+   "plain": "The brain's rules are checked in seven products. ourEventRings is not in yet (open question Q3).",
+   "since": "2026-09-12"
+  },
+  {
+   "id": "P1",
+   "from": "attendees",
+   "to": "ose",
+   "kind": "uses",
+   "label": "find, scan, vote"
+  },
+  {
+   "id": "P2",
+   "from": "attendees",
+   "to": "wkrp",
+   "kind": "uses",
+   "label": "browse profiles"
+  },
+  {
+   "id": "P3",
+   "from": "organizers",
+   "to": "ose",
+   "kind": "uses",
+   "label": "create, preview, report"
+  },
+  {
+   "id": "P4",
+   "from": "sponsors",
+   "to": "ose",
+   "kind": "uses",
+   "label": "show up when both agree"
+  },
+  {
+   "id": "P5",
+   "from": "venues",
+   "to": "ose",
+   "kind": "uses",
+   "label": "host events"
+  },
+  {
+   "id": "P6",
+   "from": "venues",
+   "to": "oaw",
+   "kind": "uses",
+   "label": "own branded copy"
+  },
+  {
+   "id": "P7",
+   "from": "corridors",
+   "to": "oer",
+   "kind": "uses",
+   "label": "how busy, as numbers"
+  },
+  {
+   "id": "P8",
+   "from": "corridors",
+   "to": "ose",
+   "kind": "uses",
+   "label": "events on the map"
+  },
+  {
+   "id": "P9",
+   "from": "creators",
+   "to": "wkrp",
+   "kind": "uses",
+   "label": "public profile"
+  },
+  {
+   "id": "P10",
+   "from": "creators",
+   "to": "oaw",
+   "kind": "uses",
+   "label": "own page"
+  },
+  {
+   "id": "P11",
+   "from": "operators",
+   "to": "osm",
+   "kind": "uses",
+   "label": "learn how"
+  },
+  {
+   "id": "P12",
+   "from": "operators",
+   "to": "oaw",
+   "kind": "uses",
+   "label": "get set up"
+  },
+  {
+   "id": "P13",
+   "from": "leagues",
+   "to": "osp",
+   "kind": "uses",
+   "label": "human help"
+  },
+  {
+   "id": "S1",
+   "from": "skins",
+   "to": "posters",
+   "kind": "uses",
+   "label": ""
+  },
+  {
+   "id": "S2",
+   "from": "skins",
+   "to": "screens",
+   "kind": "uses",
+   "label": "dresses"
+  },
+  {
+   "id": "S3",
+   "from": "skins",
+   "to": "report",
+   "kind": "uses",
+   "label": ""
+  },
+  {
+   "id": "S4",
+   "from": "layout",
+   "to": "posters",
+   "kind": "uses",
+   "label": ""
+  },
+  {
+   "id": "S5",
+   "from": "layout",
+   "to": "screens",
+   "kind": "uses",
+   "label": "own parts each"
+  },
+  {
+   "id": "S6",
+   "from": "layout",
+   "to": "report",
+   "kind": "uses",
+   "label": ""
+  },
+  {
+   "id": "S7",
+   "from": "uec",
+   "to": "posters",
+   "kind": "uses",
+   "label": "colour = purpose"
+  },
+  {
+   "id": "S8",
+   "from": "posters",
+   "to": "event",
+   "kind": "uses",
+   "label": "scan in"
+  },
+  {
+   "id": "S9",
+   "from": "screens",
+   "to": "event",
+   "kind": "uses",
+   "label": "in the room"
+  },
+  {
+   "id": "S10",
+   "from": "voting",
+   "to": "event",
+   "kind": "uses",
+   "label": "on site only"
+  },
+  {
+   "id": "S11",
+   "from": "map",
+   "to": "event",
+   "kind": "uses",
+   "label": "where it is"
+  },
+  {
+   "id": "S12",
+   "from": "event",
+   "to": "report",
+   "kind": "uses",
+   "label": "afterwards"
+  },
+  {
+   "id": "S13",
+   "from": "floor",
+   "to": "report",
+   "kind": "uses",
+   "label": "holds back under 5"
+  },
+  {
+   "id": "I1",
+   "from": "agents",
+   "to": "pr",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I2",
+   "from": "pr",
+   "to": "t0",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I3",
+   "from": "t0",
+   "to": "merge",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I4",
+   "from": "merge",
+   "to": "t1",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I5",
+   "from": "t1",
+   "to": "t2",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I6",
+   "from": "t2",
+   "to": "t3",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I7",
+   "from": "t3",
+   "to": "t4",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I8",
+   "from": "t4",
+   "to": "done",
+   "kind": "flow",
+   "label": ""
+  },
+  {
+   "id": "I9",
+   "from": "done",
+   "to": "staging",
+   "kind": "uses",
+   "label": "seen on"
+  },
+  {
+   "id": "I10",
+   "from": "staging",
+   "to": "prod",
+   "kind": "uses",
+   "label": "kept in step"
+  },
+  {
+   "id": "I11",
+   "from": "liveswitch",
+   "to": "prod",
+   "kind": "uses",
+   "label": "opens it"
+  },
+  {
+   "id": "I12",
+   "from": "staging",
+   "to": "cf-ose",
+   "kind": "uses",
+   "label": ""
+  },
+  {
+   "id": "I13",
+   "from": "staging",
+   "to": "cf-wkrp",
+   "kind": "uses",
+   "label": ""
+  },
+  {
+   "id": "I14",
+   "from": "cf-ose",
+   "to": "bigquery",
+   "kind": "uses",
+   "label": "exports totals"
+  },
+  {
+   "id": "M1",
+   "from": "wkrp",
+   "to": "playlists",
+   "kind": "uses",
+   "label": "community curates"
+  },
+  {
+   "id": "M2",
+   "from": "playlists",
+   "to": "event",
+   "kind": "uses",
+   "label": "licensed music"
+  },
+  {
+   "id": "M3",
+   "from": "venues",
+   "to": "playlists",
+   "kind": "uses",
+   "label": "play legally"
+  },
+  {
+   "id": "M4",
+   "from": "organizers",
+   "to": "playlists",
+   "kind": "uses",
+   "label": "music for the night"
+  },
+  {
+   "id": "E11",
+   "from": "oaw",
+   "to": "ose",
+   "kind": "data",
+   "status": "decided",
+   "privacy": "A",
+   "label": "E11 set looks",
+   "plain": "ourAirwaves sends a brand's looks and tier limits to ourSharedEvents through its API. No name or email crosses.",
+   "floor": "No person data crosses.",
+   "since": "2026-11-25"
+  },
+  {
+   "id": "E12",
+   "from": "oaw",
+   "to": "wkrp",
+   "kind": "data",
+   "status": "decided",
+   "privacy": "B",
+   "label": "E12 set looks",
+   "plain": "ourAirwaves sends a brand's or profile's looks and tier limits to ourWKRP through its API.",
+   "floor": "Named side; ourWKRP checks every look.",
+   "since": "2026-11-25"
+  },
+  {
+   "id": "E13",
+   "from": "ose",
+   "to": "oaw",
+   "kind": "data",
+   "status": "decided",
+   "privacy": "A",
+   "label": "E13 read back",
+   "plain": "ourSharedEvents tells ourAirwaves the current looks and how much of each limit is used. Never attendee data or counts.",
+   "floor": "Allowance use only, never a count of people.",
+   "since": "2026-11-25"
+  },
+  {
+   "id": "E14",
+   "from": "wkrp",
+   "to": "oaw",
+   "kind": "data",
+   "status": "decided",
+   "privacy": "B",
+   "label": "E14 read back",
+   "plain": "ourWKRP tells ourAirwaves the current looks and how much of each limit is used.",
+   "floor": "Allowance use only.",
+   "since": "2026-11-25"
+  },
+  {
+   "id": "P14",
+   "from": "organizers",
+   "to": "oaw",
+   "kind": "uses",
+   "label": "set up my pages"
+  },
+  {
+   "id": "P15",
+   "from": "sponsors",
+   "to": "oaw",
+   "kind": "uses",
+   "label": "my sponsor look"
+  }
+ ],
+ "views": [
+  {
+   "id": "products",
+   "tab": "The products",
+   "title": "Two doors, one system",
+   "intro": "Every product sits on one side of the Choice. On the left, people stay anonymous and are only ever counted. On the right, people plant their flag by name, because they chose to. The lines are the only links allowed between products.",
+   "w": 1000,
+   "h": 660,
+   "bands": [
+    {
+     "x": 40,
+     "y": 16,
+     "w": 920,
+     "h": 112,
+     "label": "Shared by everything",
+     "tone": "shared"
+    },
+    {
+     "x": 40,
+     "y": 150,
+     "w": 330,
+     "h": 360,
+     "label": "Stay anonymous",
+     "tone": "anon"
+    },
+    {
+     "x": 630,
+     "y": 150,
+     "w": 330,
+     "h": 360,
+     "label": "Plant your flag",
+     "tone": "named"
+    },
+    {
+     "x": 40,
+     "y": 534,
+     "w": 920,
+     "h": 112,
+     "label": "Formats and on-ramps (documents today)",
+     "tone": "shared"
+    }
+   ],
+   "place": {
+    "ocr-docs": [
+     330,
+     76
+    ],
+    "hub": [
+     670,
+     76
+    ],
+    "ose": [
+     205,
+     250
+    ],
+    "osm": [
+     205,
+     430
+    ],
+    "wkrp": [
+     795,
+     250
+    ],
+    "oaw": [
+     795,
+     430
+    ],
+    "oer": [
+     500,
+     430
+    ],
+    "osg": [
+     250,
+     598
+    ],
+    "osr": [
+     500,
+     598
+    ],
+    "osp": [
+     750,
+     598
+    ],
+    "playlists": [
+     835,
+     345
+    ]
+   },
+   "edges": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "E7",
+    "E8",
+    "E9",
+    "E10",
+    "C1",
+    "G1",
+    "M1",
+    "E11",
+    "E12",
+    "E13",
+    "E14"
+   ],
+   "bend": {
+    "E5": -95,
+    "E6": -32,
+    "E7": 32,
+    "E8": 95,
+    "E1": 0,
+    "E9": -85,
+    "E10": 85,
+    "E2": 0,
+    "E11": 120,
+    "E12": -70,
+    "E13": 160,
+    "E14": -110
+   }
+  },
+  {
+   "id": "people",
+   "tab": "Who it serves",
+   "title": "Who uses it, and what they get",
+   "intro": "The people on the outside, the products in the middle. Tap anyone to see what they get.",
+   "w": 1000,
+   "h": 680,
+   "bands": [
+    {
+     "x": 380,
+     "y": 16,
+     "w": 240,
+     "h": 648,
+     "label": "Products",
+     "tone": "shared"
+    }
+   ],
+   "place": {
+    "oer": [
+     500,
+     70
+    ],
+    "ose": [
+     500,
+     182
+    ],
+    "wkrp": [
+     500,
+     294
+    ],
+    "oaw": [
+     500,
+     406
+    ],
+    "osm": [
+     500,
+     518
+    ],
+    "osp": [
+     500,
+     622
+    ],
+    "attendees": [
+     140,
+     120
+    ],
+    "organizers": [
+     140,
+     250
+    ],
+    "sponsors": [
+     140,
+     380
+    ],
+    "venues": [
+     140,
+     510
+    ],
+    "corridors": [
+     860,
+     110
+    ],
+    "creators": [
+     860,
+     280
+    ],
+    "operators": [
+     860,
+     450
+    ],
+    "leagues": [
+     860,
+     600
+    ]
+   },
+   "edges": [
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8",
+    "P9",
+    "P10",
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15"
+   ],
+   "bend": {}
+  },
+  {
+   "id": "pieces",
+   "tab": "Shared pieces",
+   "title": "The pieces every event uses",
+   "intro": "These pieces are shared across products and clients. The look can change; the structure and the privacy rules stay the same.",
+   "w": 1000,
+   "h": 640,
+   "bands": [],
+   "place": {
+    "skins": [
+     330,
+     60
+    ],
+    "layout": [
+     670,
+     60
+    ],
+    "posters": [
+     180,
+     230
+    ],
+    "screens": [
+     500,
+     230
+    ],
+    "report": [
+     820,
+     230
+    ],
+    "uec": [
+     180,
+     400
+    ],
+    "event": [
+     500,
+     430
+    ],
+    "floor": [
+     820,
+     400
+    ],
+    "voting": [
+     220,
+     580
+    ],
+    "map": [
+     500,
+     580
+    ],
+    "playlists": [
+     780,
+     580
+    ]
+   },
+   "edges": [
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5",
+    "S6",
+    "S7",
+    "S8",
+    "S9",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "M2"
+   ],
+   "bend": {
+    "S12": 0
+   }
+  },
+  {
+   "id": "runs",
+   "tab": "How it runs",
+   "title": "From an idea to the public site",
+   "intro": "Follow a change from left to right, then back along the second row. Work counts only when it is seen on staging. Production stays closed until you flip the live switch.",
+   "w": 1100,
+   "h": 680,
+   "bands": [
+    {
+     "x": 20,
+     "y": 30,
+     "w": 1060,
+     "h": 250,
+     "label": "The checks every change passes (ourSharedEvents)",
+     "tone": "shared"
+    },
+    {
+     "x": 20,
+     "y": 310,
+     "w": 1060,
+     "h": 210,
+     "label": "Cloudflare and data",
+     "tone": "anon"
+    },
+    {
+     "x": 20,
+     "y": 550,
+     "w": 1060,
+     "h": 116,
+     "label": "Guards and the work list",
+     "tone": "named"
+    }
+   ],
+   "place": {
+    "agents": [
+     110,
+     100
+    ],
+    "pr": [
+     330,
+     100
+    ],
+    "t0": [
+     550,
+     100
+    ],
+    "merge": [
+     770,
+     100
+    ],
+    "t1": [
+     990,
+     100
+    ],
+    "t2": [
+     990,
+     220
+    ],
+    "t3": [
+     770,
+     220
+    ],
+    "t4": [
+     550,
+     220
+    ],
+    "done": [
+     330,
+     220
+    ],
+    "staging": [
+     330,
+     370
+    ],
+    "prod": [
+     770,
+     370
+    ],
+    "liveswitch": [
+     990,
+     370
+    ],
+    "cf-ose": [
+     330,
+     470
+    ],
+    "cf-wkrp": [
+     110,
+     470
+    ],
+    "bigquery": [
+     620,
+     470
+    ],
+    "guards": [
+     330,
+     612
+    ],
+    "linear": [
+     770,
+     612
+    ]
+   },
+   "edges": [
+    "I1",
+    "I2",
+    "I3",
+    "I4",
+    "I5",
+    "I6",
+    "I7",
+    "I8",
+    "I9",
+    "I10",
+    "I11",
+    "I12",
+    "I13",
+    "I14"
+   ],
+   "bend": {}
+  }
+ ],
+ "audiences": {
+  "sales": {
+   "label": "Sales",
+   "pages": [
+    "people",
+    "pieces"
+   ],
+   "focus": [
+    "playlists",
+    "skins",
+    "uec",
+    "report",
+    "voting",
+    "oaw"
+   ],
+   "pitch": "What the system does for each customer and where it is available, in plain words. Functionality only: no names of places or people, no target lists, no counts, no technical detail.",
+   "rule": "Owner, 26 Nov 2026: the Sales and coverage views communicate functionality to the end user, not details."
+  },
+  "product": {
+   "label": "Product",
+   "pages": [
+    "products",
+    "pieces",
+    "people"
+   ],
+   "focus": [
+    "ose",
+    "wkrp",
+    "oaw",
+    "playlists",
+    "voting",
+    "skins",
+    "layout"
+   ],
+   "pitch": "What exists, what is decided but not built, and which shared pieces every product reuses."
+  },
+  "engineering": {
+   "label": "Engineering",
+   "pages": [
+    "runs",
+    "products"
+   ],
+   "focus": [
+    "t0",
+    "done",
+    "prod",
+    "liveswitch",
+    "cf-ose",
+    "guards",
+    "E1",
+    "E6",
+    "E7"
+   ],
+   "pitch": "How a change reaches staging, the allowed links and their privacy class, and the security gates."
+  }
+ }
+}
