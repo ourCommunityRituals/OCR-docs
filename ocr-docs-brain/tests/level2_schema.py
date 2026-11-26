@@ -951,9 +951,6 @@ for _k in ['schema_version', 'last_verified', 'nodes', 'edges']:
     check(f'data_edges_top_key:{_k}', _k in _de, 'present' if _k in _de else 'missing')
 _registry_ids = {p.get('product_id') for p in pr.get('products', [])}
 _extra_nodes = {'hub', 'oer'}  # not product records in product-registry.yaml
-# Agents are actors, not products (kind: agent, security re-sweep 2026-11-26).
-_agent_nodes = {n.get('id') for n in _de.get('nodes', []) if n.get('side') == 'agent'}
-_extra_nodes = _extra_nodes | _agent_nodes
 _node_ids = [n.get('id') for n in _de.get('nodes', [])]
 check('data_edges_node_ids_unique', len(_node_ids) == len(set(_node_ids)),
       f'{len(_node_ids)} nodes')
@@ -961,9 +958,9 @@ for _n in _node_ids:
     _ok = _n in _registry_ids or _n in _extra_nodes
     check(f'data_edges_node_registered:{_n}', _ok,
           'in product-registry.yaml' if _n in _registry_ids else
-          ('brain-local node' if _ok else 'not in product-registry.yaml and not hub/oer/an agent'))
+          ('brain-local node' if _ok else 'not in product-registry.yaml and not hub/oer'))
 _EDGE_REQ = ['id', 'from', 'to', 'kind', 'what', 'status', 'since', 'contract', 'enforced_by', 'evidence']
-_KIND = ['data', 'code', 'governance', 'agent']
+_KIND = ['data', 'code', 'governance']
 _STATUS = ['built', 'served_only', 'switched_off', 'contract_only', 'decided', 'proposed', 'retired']
 _PRIV = ['A', 'B', 'public']  # Class X never crosses (boundary doc section 3)
 _LIVE = {'built', 'served_only', 'switched_off'}
@@ -973,8 +970,8 @@ for _e in _de.get('edges', []):
     _edge_ids.append(_id)
     _miss = [k for k in _EDGE_REQ if k not in _e]
     check(f'data_edge_fields:{_id}', not _miss, f'missing {_miss}' if _miss else 'all present')
-    check(f'data_edge_id_form:{_id}', bool(re.match(r'^[ECGA][0-9]+$', str(_id))),
-          'E=data, C=code, G=governance, A=agent plus a number')
+    check(f'data_edge_id_form:{_id}', bool(re.match(r'^[ECG][0-9]+$', str(_id))),
+          'E=data, C=code, G=governance plus a number')
     check(f'data_edge_kind:{_id}', _e.get('kind') in _KIND, str(_e.get('kind')))
     check(f'data_edge_status:{_id}', _e.get('status') in _STATUS, str(_e.get('status')))
     _since = _e.get('since')
@@ -989,17 +986,6 @@ for _e in _de.get('edges', []):
         if _e.get('status') in _LIVE:
             check(f'data_edge_live_has_enforcement:{_id}', bool(_e.get('enforced_by')),
                   'a built link names what enforces it' if _e.get('enforced_by') else 'enforced_by is empty')
-    if _e.get('kind') == 'agent':
-        # An agent edge says what it can act with, and a live one names what
-        # limits it or an open question that says nothing does yet.
-        _cred = _e.get('credentials')
-        check(f'agent_edge_credentials:{_id}', isinstance(_cred, str) and bool(_cred.strip()),
-              'present' if isinstance(_cred, str) and _cred.strip() else 'credentials missing')
-        if _e.get('status') in _LIVE:
-            _asked = any(_id in (_q.get('about') or []) for _q in _de.get('open_questions', []))
-            check(f'agent_edge_live_limited:{_id}', bool(_e.get('enforced_by')) or _asked,
-                  'enforced_by named' if _e.get('enforced_by') else
-                  ('open question names it' if _asked else 'no enforced_by and no open question'))
 check('data_edges_ids_unique', len(_edge_ids) == len(set(_edge_ids)), f'{len(_edge_ids)} edges')
 for _q in _de.get('open_questions', []):
     _bad = [x for x in _q.get('about', []) if x not in _edge_ids]
