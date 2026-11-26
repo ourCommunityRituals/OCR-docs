@@ -1747,8 +1747,7 @@
    "label": "Sales",
    "pages": [
     "people",
-    "pieces",
-    "products"
+    "pieces"
    ],
    "focus": [
     "playlists",
@@ -1758,7 +1757,8 @@
     "voting",
     "oaw"
    ],
-   "pitch": "What each customer gets, what makes it different (human curation, counts never names), and what they can customise."
+   "pitch": "What the system does for each customer and where it is available, in plain words. Functionality only: no names of places or people, no target lists, no counts, no technical detail.",
+   "rule": "Owner, 26 Nov 2026: the Sales and coverage views communicate functionality to the end user, not details."
   },
   "product": {
    "label": "Product",

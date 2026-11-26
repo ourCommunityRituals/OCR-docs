@@ -81,9 +81,15 @@ engineering presentations. It is built so that is easy:
 the boxes and links to tap while talking, and the one-line point to make. A
 deck or dashboard can read it; the page itself does not use it yet.
 
+The Sales view and any coverage dashboard communicate functionality to the
+end user, not details (owner, 26 Nov 2026): what the system does and where it
+is available. They never name the places, people, sponsors or contacts on a
+launch-target list, and show no counts or technical detail. Target lists stay
+private and out of this repo.
+
 | Audience | Pages, in order | Tap these | The point |
 | --- | --- | --- | --- |
-| Sales | `#people`, `#pieces`, `#products` | Curated playlists, Skins, UEC codes, SharedReport, Voting, ourAirwaves | What each customer gets, what makes it different (human curation, counts never names), and what they can customise |
+| Sales | `#people`, `#pieces` | Curated playlists, Skins, UEC codes, SharedReport, Voting, ourAirwaves | What the system does for each customer and where it is available, in plain words |
 | Product | `#products`, `#pieces`, `#people` | ourSharedEvents, ourWKRP, ourAirwaves, Curated playlists, Voting, Skins, Layout rule | What exists, what is decided but not built, and which shared pieces every product reuses |
 | Engineering | `#runs`, `#products` | T0 Gate, Done, Production, Live switch, OSE Worker, Security gates, links E1, E6, E7 | How a change reaches staging, the allowed links and their privacy class, and the security gates |
 
