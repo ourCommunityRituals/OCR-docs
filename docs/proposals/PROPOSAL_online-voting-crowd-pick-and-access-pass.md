@@ -2,6 +2,7 @@
 
 **Status:** proposed, for Matt's decision. Lives in `docs/proposals/`, so it does not propagate to spokes.
 **Proposed:** 2026-11-26 · **Owner:** Matt
+**Permission to build Online Pick:** Matt, 2026-11-26 05:22 UTC (project thread): "If 'Online Pick' means voting from outside the room, please check it with Matt before building it. I give permission." Online Pick is voting from outside the room, kept apart from Room Pick, so this is that check. The build still follows section 7: ADR-040 decision 13, then the CCR, then stories.
 **Touches when built:** OSE ADR-040 (a new decision 13, amending decision 12's "remote or link voting is out").
 
 ## 1. What Matt asked for
