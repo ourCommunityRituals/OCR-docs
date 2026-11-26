@@ -13,12 +13,16 @@ on:
       - '.github/**'
       - 'tests/check_action_pins.py'
       - 'tests/check_workflow_injection.py'
+      - '.claude/settings.json'
+      - 'tests/check_agent_settings.py'
   push:
     branches: [main]
     paths:
       - '.github/**'
       - 'tests/check_action_pins.py'
       - 'tests/check_workflow_injection.py'
+      - '.claude/settings.json'
+      - 'tests/check_agent_settings.py'
   workflow_dispatch:
 
 permissions:
@@ -46,3 +50,7 @@ jobs:
         run: python3 tests/check_workflow_injection.py --self-test
       - name: No caller text in run scripts; exact repo scope (CCR F17)
         run: python3 tests/check_workflow_injection.py
+      - name: Agent settings self-test (CCR F1)
+        run: python3 tests/check_agent_settings.py --self-test
+      - name: Shared agent settings deny the dangerous commands (CCR F1)
+        run: python3 tests/check_agent_settings.py
