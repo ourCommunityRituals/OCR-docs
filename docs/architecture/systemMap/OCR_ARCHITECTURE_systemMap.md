@@ -5,9 +5,11 @@ allowed links between them, who it serves, the shared pieces every event uses,
 and how a change reaches staging. It was built on 25 Nov 2026 so the owner can
 see the system instead of holding it in his head, and updated on 26 Nov 2026.
 
-- **Open it:** download `infrastructure-map.html` and open it in a browser, or
-  use the private artifact link the owner keeps. GitHub shows HTML as source,
-  not as a page.
+- **Open it:** use the private artifact link the owner keeps. The page itself
+  is not stored in this repo: it carries its own colours and stylesheet, and
+  OCR-docs must hold no design of its own (the design-system check, ADR-008).
+  The page template and the built page live with the owner's project files,
+  in `transcripts/map/`.
 - **Source of truth for the map:** `infrastructure-map.json`.
 - **Scope:** only the ourCommunityRituals org repos. americanbocceco,
   zeventbook and MVP-EVENT-TOOLKIT are history only and stay off the map.
@@ -44,10 +46,11 @@ disagree.
    - `statuses`: the status words and colours.
    - `meta.checked`: the date the facts were last checked.
 2. Run `python3 build-map.py` in this folder. It checks that every line and
-   page names a real box and every status exists, then writes
-   `infrastructure-map.html`.
-3. Commit the JSON and the rebuilt HTML together, and republish the HTML to the
-   owner's artifact link.
+   page names a real box and every status exists.
+3. Commit the JSON here, copy it to `transcripts/map/` in the project files,
+   run `python3 build-map.py` there (where `template.html` sits, so it also
+   writes `infrastructure-map.html`), and republish that page to the owner's
+   artifact link.
 
 `template.html` holds the page's look and behaviour; `build-map.py` puts the
 JSON into it. The page needs no server and loads only fonts from Google Fonts.
@@ -88,7 +91,7 @@ deck or dashboard can read it; the page itself does not use it yet.
 
 | File | Role |
 | --- | --- |
-| `infrastructure-map.json` | The data: nodes, edges, views, statuses |
-| `template.html` | The page, with a placeholder for the data |
-| `build-map.py` | Checks the JSON and builds the page |
-| `infrastructure-map.html` | The built page (generated; do not edit by hand) |
+| `infrastructure-map.json` | The data: nodes, edges, views, statuses, audiences |
+| `build-map.py` | Checks the JSON; builds the page where `template.html` is present |
+| `template.html` (project files only) | The page, with a placeholder for the data |
+| `infrastructure-map.html` (project files only) | The built page (generated; do not edit by hand) |

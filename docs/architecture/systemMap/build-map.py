@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Build infrastructure-map.html from infrastructure-map.json and template.html.
+"""Check infrastructure-map.json, and build the page when template.html is present.
 
 Usage: python3 build-map.py [output.html]
-Edit the JSON (nodes, edges, views), run this, then republish the HTML to the same artifact link.
+In OCR-docs this only checks the JSON: the page template carries its own colours,
+so it lives with the owner's project files and artifact, not in this repo
+(the design-system check keeps OCR-docs free of its own styles).
+Where template.html sits next to this script, it also writes the page.
 """
 import json, sys, pathlib
 here = pathlib.Path(__file__).parent
@@ -19,8 +22,12 @@ for v in data["views"]:
         assert eid in ids, f"view {v['id']} lists unknown edge {eid}"
 for k, n in data["nodes"].items():
     assert n["status"] in data["statuses"], f"node {k} has unknown status {n['status']}"
+tpl = here / "template.html"
+if not tpl.exists():
+    print(f"checked {len(data['nodes'])} nodes, {len(data['edges'])} edges, {len(data['views'])} views: OK (no template.html here, so no page built)")
+    sys.exit(0)
 blob = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
-html = (here / "template.html").read_text().replace("/*__MAP_DATA__*/null", blob)
+html = tpl.read_text().replace("/*__MAP_DATA__*/null", blob)
 out = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else here / "infrastructure-map.html"
 out.write_text(html)
 print(f"wrote {out} ({len(html)//1024} KB)")
