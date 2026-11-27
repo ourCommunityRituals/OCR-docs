@@ -14,6 +14,7 @@ Visitors see a few plain, picture-first buckets ("Bargains", "Sports & Recreatio
 - **The guts stay the same.** Buckets are a display layer. Type ids, UEC codes, `category_code`, exports, BigQuery and reports do not change.
 - **Few words on screen.** Cards and buttons with pictures; a small arrow opens the longer explanation.
 - **Mobile first.** The category row stays where it is, at the top of the home screen; events start higher.
+- **Highlight the arrow when it matters.** If someone needs the detail to act (cash only, bring a chair, sign up first), the card's arrow is highlighted. Arrows with only extra reading stay plain (Matt, 2026-11-27).
 - **Easy to read.** Every name on screen reads at a 5th to 8th grade level, the reading level of most adults (Matt, 2026-11-27).
 - Drinking games are never a type. Soccer stays in.
 
