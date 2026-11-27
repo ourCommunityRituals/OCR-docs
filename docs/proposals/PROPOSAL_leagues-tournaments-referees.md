@@ -154,6 +154,32 @@ Proposed shape, in three layers:
 3. **Referees as people, on OW (opt-in).** A referee can plant a flag as an official: which sports,
    which leagues, how many seasons, and any certification a league grants. Leagues can find referees.
 
+**Matt's earlier referee design (found 2026-11-27).** The NextUp vision of 2025-11-01
+(`bereasonable13/robot-knowledge`, `strategy/NEXTUP_COMPLETE_VISION.md`, "Phase 3: Referee System")
+already set the shape: a referee page cloned from admin, several referees each with their own sign-in,
+simple score entry, **a photo of the scoreboard uploaded as verification**, the league manager watching
+live, and standings updating by themselves. Its test case was an eight-court tournament: eight
+referees, 64 players, about 100 spectators and a TV per court. This proposal keeps all of it:
+
+- **Scoreboard photo as evidence.** A referee (or a captain, where the ruleset allows) attaches a
+  photo of the court's scoreboard to a result. The photo is evidence for the organizer only: never on a
+  public page, never sent to ourWKRP or OER, and deleted once the result is final, the same lifetime as
+  vote receipts. It is stored in the brand's own space and shown only in that brand's admin. A photo can
+  catch people in frame, which is why it never leaves the organizer's view.
+- **Reading the score from the photo** is a later option, not phase 1. OSE's runtime stays free of
+  model calls (OSE AGENTS.md), so any automatic reading would sit behind the one sanctioned seam and need
+  its own decision.
+- **Live standings.** The old design updated standings live. OSE's rule that counts are post-event
+  covers counts of people, not scores, so a score can show as soon as it is confirmed. Whether the TV
+  display shows a live scoreboard is still Linear OSE-1635.
+- **Separate referee sign-in.** Phase 4 starts with a short-lived referee code (no account). A named
+  referee sign-in comes with the referee's ourWKRP profile.
+
+Note: OSE recorded on 2026-10-01 that drawing standings, schedules and brackets as tables would be a
+separate product, not OSE (OSE `docs/brain/role-state/frontend-integration.md`, "League pane = links
+out"). Matt's approval of this proposal on 2026-11-27 puts them in OSE; that older line should be
+updated when phase 1 lands.
+
 Decision D4 asks whether this is one "Referee" product with a kit per sport (my recommendation:
 the kits share most of their machinery) or a separate product per sport, as Matt described it.
 
