@@ -246,12 +246,38 @@ Each phase is useful on its own. Phase 1 is the smallest slice that helps a real
 | 6. Applied to ourSharedGames | Templates and rule packs as OSG data; bocce, cornhole, trivia first | OSG | new OSG story |
 | 7. Self-serve | "Start a league" in ourAirwaves; board on the display (OSE-528) | OA, OSE | later |
 | 8. Player stats | Per-person stats on OW, opt-in per event (OW-223) | OW | OW-223 |
+| 9. Business intelligence | Season-over-season league and venue trends for the parent company through ourEventRings | OER | later |
 
 **The first customer.** The Lakeside practice tree is the test bed: `lakeside-league` (seasonal bar
 league across bar venues, with a playoff), `lakeside-semipro` (seasonal, needs referees),
 `lakeside-club` (club league plus one-off tournaments), `lakeside-network` (a stream link per
 fixture), and `lakeside-co` seeing every competition in its roll-up. Real names are loaded only
 after the real groups agree (OSE-2218).
+
+## 8a. The enterprise picture (Matt, 2026-11-27)
+
+Every site in a sports company's family gets a front end built on OSE and OW. It either works beside the
+company's existing website (plain link-back buttons; no embedding, per the 2026-11-26 decision for the
+first customer) or stands alone as its own front end. Mapped onto the Lakeside practice brands:
+
+| Layer | Lakeside brand | What people see |
+|---|---|---|
+| 1. A league site, one-stop shopping for every team | `lakeside-league` | Every team in one place: schedule, standings, results, the map of venues. Each team links to its own page |
+| 1a. Each team, uniform yet unique | team profiles on OW | The league sets the frame (the required parts, laid out the same for every team); each team sets its own logo, colours and story inside that frame, through its skin |
+| 2. The club | `lakeside-club` | The club's buckets: league nights, lessons, member nights, private events, tournaments, each an OSE event type on the same front end |
+| 3. Each league | children of the club or the league brand | The same front end per league or division, so a player moves between them without learning a new site |
+| 4. The parent company | `lakeside-co` | Its own tournaments, leagues and events, plus the roll-up of every venture and everything on the map |
+
+How it is built with what exists:
+
+- **Looks** come from the one skin format and ourAirwaves self-serve (PROPOSAL_ourAirwaves-self-serve.md):
+  the parent can set a family look, each venture its own, and each team a team skin inside the league's
+  frame. Only the abstraction carries across surfaces; layouts never do.
+- **The map** is the existing OSE map (venues as H3 cells; ADR-033 and OCR ADR-013).
+- **The roll-up** is the existing brand tree and venue roll-up (OSE migrations 0118 and 0120).
+- **Business intelligence** is the long play: the same competitions and traffic feed ourEventRings
+  through the existing OSE feed, at brand and venue grain, floored, never people. It is a later phase,
+  not part of this build.
 
 ## 9. Decisions for Matt
 
