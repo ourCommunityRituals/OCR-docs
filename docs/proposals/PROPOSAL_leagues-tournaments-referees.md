@@ -140,48 +140,61 @@ year" Matt asked for, without OSE ever holding a name.
 
 ## 7. Referees
 
-Matt's idea: a product for each game that needs its own in-house referee, so people can referee it.
+### 7.1 How it works in a bocce league today (Matt, 2026-11-27)
 
-Proposed shape, in three layers:
+Say there are three courts with four games on each. A referee rotates between courts by
+availability, in half-hour slots. The referee shows up at their time, gets the game going, enforces
+every rule and keeps score by hand.
 
-1. **Referee role in OSE (shared by every sport).** An organizer assigns a fixture, a court or a whole
-   night to a referee with a short-lived referee code. Holding the code lets a phone enter and confirm
-   scores for those fixtures only, nothing else. Every entry is audited. A referee never needs an OW
-   account. The ruleset says whose word is final (the referee's, or both captains').
-2. **A per-sport referee kit** (lives with the format in ourSharedGames). The rules, the score screen
-   layout (bocce frames and points, cornhole cancellation scoring, darts legs), common calls, and a
-   short training card. A new sport is a new kit, not new platform code.
-3. **Referees as people, on OW (opt-in).** A referee can plant a flag as an official: which sports,
-   which leagues, how many seasons, and any certification a league grants. Leagues can find referees.
+What Matt wants:
 
-**Matt's earlier referee design (found 2026-11-27).** The NextUp vision of 2025-11-01
-(`bereasonable13/robot-knowledge`, `strategy/NEXTUP_COMPLETE_VISION.md`, "Phase 3: Referee System")
-already set the shape: a referee page cloned from admin, several referees each with their own sign-in,
-simple score entry, **a photo of the scoreboard uploaded as verification**, the league manager watching
-live, and standings updating by themselves. Its test case was an eight-court tournament: eight
-referees, 64 players, about 100 spectators and a TV per court. This proposal keeps all of it:
+1. **One referee site per league**, just for its referees. Every referee sees the schedule: which
+   court, which half-hour slot, and when they are available.
+2. **A community referee board.** A referee who will be late or cannot make a game posts it there and
+   asks for cover; another referee picks it up.
+3. **A photo as proof.** At the end of each game the referee takes a picture of the scoreboard and
+   uploads it. The photo is stored (Cloudflare storage, with its record in D1) and is the record of
+   what the score was.
+4. **No admin work.** The score flows into the standings and the report automatically. The photos are
+   the backup for any question or dispute, and they exist by the nature of what referees already do.
 
-- **Scoreboard photo as evidence.** A referee (or a captain, where the ruleset allows) attaches a
-  photo of the court's scoreboard to a result. The photo is evidence for the organizer only: never on a
-  public page, never sent to ourWKRP or OER, and deleted once the result is final, the same lifetime as
-  vote receipts. It is stored in the brand's own space and shown only in that brand's admin. A photo can
-  catch people in frame, which is why it never leaves the organizer's view.
-- **Reading the score from the photo** is a later option, not phase 1. OSE's runtime stays free of
-  model calls (OSE AGENTS.md), so any automatic reading would sit behind the one sanctioned seam and need
-  its own decision.
-- **Live standings.** The old design updated standings live. OSE's rule that counts are post-event
-  covers counts of people, not scores, so a score can show as soon as it is confirmed. Whether the TV
-  display shows a live scoreboard is still Linear OSE-1635.
-- **Separate referee sign-in.** Phase 4 starts with a short-lived referee code (no account). A named
-  referee sign-in comes with the referee's ourWKRP profile.
+This matches Matt's NextUp vision of 2025-11-01 (`bereasonable13/robot-knowledge`,
+`strategy/NEXTUP_COMPLETE_VISION.md`, "Phase 3: Referee System"), which was sized for an eight-court
+tournament with eight referees.
+
+### 7.2 How it fits the platform
+
+- **Referees are league staff, not attendees.** The referee site is a private, brand-scoped area of
+  ourSharedEvents, like the organizer's admin. Naming a referee there does not touch the anonymous side,
+  which is about the public in the room. Nothing on it is public.
+- **Schedule and availability.** Each fixture has a court and a half-hour slot. Referees mark when they
+  are available and take slots; the organizer can assign. The board shows open slots and cover requests.
+- **Cover requests** are posts on that board ("can't make 7:30 on court 2"). Taking one moves the slot
+  to the new referee and is audited.
+- **Score entry.** At the end of a game the referee enters the score and attaches the scoreboard photo
+  from their phone. The result is confirmed at once by the referee's word, unless the ruleset asks both
+  captains to confirm. Standings and the report update by themselves.
+- **The photo.** Stored in the brand's own storage space, with a row in D1 that links it to the
+  fixture. Seen only by the brand's organizers and referees, never on a public page, never sent to
+  ourWKRP or OER. A photo can catch people in frame, which is why it stays inside the league.
+  How long it is kept is decision D9.
+- **Reading the score from the photo** automatically is a later option. OSE's runtime stays free of
+  model calls (OSE AGENTS.md), so it would need its own decision.
+- **A per-sport kit** (in ourSharedGames) gives each sport its rules, its score screen (bocce frames
+  and points, cornhole cancellation scoring, darts legs), common calls and a short training card. A new
+  sport is a new kit, not new platform code.
+- **Referees as people, on OW (opt-in).** A referee can plant a flag as an official: which sports,
+  which leagues, how many seasons, and any certification a league grants. Leagues can find referees.
+
+Scores are not counts of people, so a confirmed score can show at once. Whether the TV display shows a
+live scoreboard is still Linear OSE-1635.
 
 Note: OSE recorded on 2026-10-01 that drawing standings, schedules and brackets as tables would be a
 separate product, not OSE (OSE `docs/brain/role-state/frontend-integration.md`, "League pane = links
-out"). Matt's approval of this proposal on 2026-11-27 puts them in OSE; that older line should be
-updated when phase 1 lands.
+out"). Matt's approval of this proposal on 2026-11-27 puts them in OSE; that older line is updated
+when phase 1 lands.
 
-Decision D4 asks whether this is one "Referee" product with a kit per sport (my recommendation:
-the kits share most of their machinery) or a separate product per sport, as Matt described it.
+D4 (approved): one Referee product, with a kit per sport.
 
 ## 8. Phased plan
 
@@ -192,7 +205,7 @@ Each phase is useful on its own. Phase 1 is the smallest slice that helps a real
 | **1. Seasonal round robin** | A seasonal competition with one round-robin stage; entries as public labels; fixtures on existing league-night events; host enters scores; public standings page. Shown on the `lakeside-league` staging brand | OSE | OSE-525, OSE-526, OSE-527, OSE-529 |
 | 2. Brackets and one-offs | Single elimination stage, playoffs after a season, one-off tournaments | OSE | OSE-530 |
 | 3. Teams that carry over | OW team profile, roster, claim code, history across seasons | OW (+ small OSE claim route) | new OW story |
-| 4. Referees | Referee code and score screen in OSE; bocce kit first | OSE, OSG | new stories |
+| 4. Referees | Referee site per league: schedule by court and half-hour slot, availability, cover board, score plus scoreboard photo, results straight into the report; bocce kit first | OSE, OSG | OSE-2239, OSG-10 |
 | 5. More stage kinds | Pools, double elimination, Swiss, ladder, divisions | OSE | under OSE-523 |
 | 6. Applied to ourSharedGames | Templates and rule packs as OSG data; bocce, cornhole, trivia first | OSG | new OSG story |
 | 7. Self-serve | "Start a league" in ourAirwaves; board on the display (OSE-528) | OA, OSE | later |
@@ -218,6 +231,7 @@ All eight were approved as recommended (Matt, 2026-11-27). D7's tier split is ap
 | D6 | Youth leagues: no OW team or person profiles for minors; youth play on OSE labels only | Yes, until a youth consent design exists |
 | D7 | Which tier unlocks what? | Free: one competition at a time, round robin. Paid: seasons with playoffs, divisions, referee tools, more competitions. Anchor/Enterprise: brand-tree roll-up across ventures. Security and the floor are never tier-gated. First guess, awaiting Matt's numbers |
 | D8 | Phase 1 first, on the `lakeside-league` staging brand? | Yes |
+| D9 | How long is a scoreboard photo kept? (added 2026-11-27, after approval) | Open: see the thread. Recommendation: kept as the record for the season plus 90 days for disputes, organizers and referees only, then deleted; the score itself is kept |
 
 ## 10. Standing rules this design keeps
 
