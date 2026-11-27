@@ -142,5 +142,5 @@ New types take a home `category_code` from today's 15 (for example Soccer → RE
 - **D2. Add the 20 new types.** Recommended: yes, except the ones in D3 wait.
 - **D3. Types that may need a permit or licence.** Bingo, charity nights with raffles, parades and camps can need a licence or permit, so they would sit above today's launch clearance tier (tier 1) and stay hidden until cleared. Recommended: add them now at a higher tier, so they appear when the tier opens.
 - **D4. Craft Fair under Bargains.** It is shopping, so it fits, but it could sit in Music & Shows with the art. Recommended: Bargains.
-- **D6. Plain type names** (table above). Recommended: yes, as a display-name change only.
 - **D5. Row or grid.** The tuned row keeps today's position. A 3 × 3 grid (second mockup) shows every bucket at once but pushes events down. Recommended: the tuned row.
+- **D6. Plain type names** (table above). Recommended: yes, as a display-name change only.
