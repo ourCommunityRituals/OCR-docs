@@ -75,6 +75,41 @@ each rule set says; a blank means the rule set does not say.
 | Standings tiebreak | | | | | | Point differential, then coin toss; position weeks pair teams by standing | Game record, head to head, fewest forfeits, match record, opponents' win %, earliest sign-up |
 | Who referees | Official if present; director decides variations | Referee at every lane, nods every throw | End captains without an official | Referee plus tournament director | Referee has final say | No referee; club officers and a rules committee | An official; duties not described |
 
+## 4a. US regional variants (read 2026-11-27)
+
+Each row is one published rule set. Most are a change or two on a national preset, so each becomes an
+override, not a whole new preset.
+
+| Region | Rule set | Team and balls | Points to win | What differs most | Referee |
+|---|---|---|---|---|---|
+| Ohio | Special Olympics Ohio manual, rev. 10-2026 | Doubles, 2 balls each | 12 or 20 minutes | Volo banned (warning, then disqualified); walls live, back wall first is dead | Official measures |
+| Ohio | Bocce Bros, Youngstown (a group to watch, Matt 2026-11-27) | Not published | | Young players who cover and host tournaments in the Mahoning Valley; no rulebook found | |
+| Pennsylvania | Special Olympics PA, unified school bocce 2021-22 | 2 athletes + 2 partners, 1 ball each | 16 or 30 minutes | Back wall and back 10 ft stay live; foot fault = dead ball | Independent adult official |
+| Maryland | Howard County Rec and Parks (adapted from BSA) | 2 per end, 2 balls each; short side loses balls | 16 | Hits declared to the referee; no volo; switch ends between games | End captains if no referee |
+| Florida | Grand Harbor club, Vero Beach | 2 per end, 2 balls each | 10; 2-game match | 3-player rotation; foot fault warning, then ball removed | Captains measure |
+| Florida | Camelot East Village, Sarasota | 4 players, 1 ball each | 15 | 3-player team rotates the 4th ball; nothing above the waist | Captains measure |
+| N. California | Special Olympics NorCal, 2026 | 4 at one end, 1 ball each, all walk | 12 or time | All walls live; tie = one extra frame | Court official |
+| California | Solvang city league, 2025 | 2 per end, 2 balls each | 8; best of 3 | **Baci**: pallino touching a ball scores 1 extra; no volo; 21+ | Teams self-referee |
+| California | Foster City league, 2023 | 2 per end, 2 balls each | 12 or 60 minutes | Ties allowed (win 2, tie 1); back wall dead, sides live | No officials; league director |
+| Hawaii | Special Olympics Hawaii, 2025 | Singles or doubles | 12 or 20 minutes | No walls (lined court); short court for ramps | 1 or 2 referees |
+| Unstated | Ferry Bocce League | 4 to 8 players, 4 balls | 13 or 50 minutes | 3 at one end throw 1, 1, 2 | Official if in doubt |
+| New York | Not found | | | One New York-area league page had no rules text | |
+
+**Ohio, to watch.** The Bocce Bros host tournaments at Youngstown-area clubs. Nearby, a semi-pro
+**Ohio Bocce League** formed in 2025 (six drafted teams from Youngstown, Cleveland and Western
+Pennsylvania; team owners and sponsors sought; streamed games). News reports do not tie it to the
+Bocce Bros, and neither publishes rules. A league with franchise owners, sponsors and drafted rosters
+is the full shape this design serves, so it is worth a look when sales reach Ohio.
+
+**New things the engine must allow, found here:**
+- **A time limit as well as a target score** ("12 or 20 minutes", finish the frame).
+- **Ties allowed** in standings (Foster City: win 2, tie 1, loss 0).
+- **Bonus points** (Solvang's baci).
+- **Three-player rotations:** AB, BC, CA across frames (Foster City), the single swaps ends each frame
+  (Grand Harbor), or 1-1-2 balls at one end (Ferry).
+- **Walls as a setting per wall:** side, back, and "back 10 ft live" (Pennsylvania).
+- **Who measures:** official, end captains, any captain, or self-refereed.
+
 ## 5. How the engine uses it
 
 - **Presets.** The bocce kit ships each rule set above as a preset: "USBF Open", "CBI international",
@@ -101,10 +136,10 @@ each rule set says; a blank means the rule set does not say.
   (Matt, 2026-11-27): Ohio, New York, Pennsylvania and the East Coast down the seaboard, and the West
   from California to Hawaii. Each becomes a preset or an override on the nearest national one. Found,
   not yet read:
-  - Special Olympics state chapters: Ohio (manual rev. 10-2026), Pennsylvania (indoor bocce guide
-    2021-22), Northern California (2026), Hawaii (2025).
-  - City leagues: Solvang, California (co-ed league rules 2025).
-  - The bocce map's facility list, to find the clubs and leagues in each region.
+  - Read on 2026-11-27, now in section 4a: Ohio, Pennsylvania, Maryland, two Florida clubs, Northern
+    California, Solvang, Foster City, Hawaii, Ferry Bocce League.
+  - Still missing: New York and New England (no published league rules found yet), Sausalito (the
+    city page had no rules), the Bocce Bros' own formats, and the bocce map's facility list.
 
 ## 7. Questions for Matt
 
@@ -131,4 +166,11 @@ each rule set says; a blank means the rule set does not say.
 - Special Olympics Northern California: https://sonc.org/wp-content/uploads/2026/01/SONorCal-Bocce-Rules.pdf
 - Special Olympics Hawaii: https://sohawaii.org/wp-content/uploads/2025/08/2025-Bocce-Rules-and-Sports-Information-Guide.pdf
 - Solvang, California league rules: https://www.cityofsolvang.com/DocumentCenter/View/4517/Bocce-Coed-Rules-2025
+- Maryland, Howard County: https://cdn2.sportngin.com/attachments/document/2e0a-3521957/HoCtyRecParksBocceLeagueRules.pdf
+- Florida, Grand Harbor: https://leagues.teamlinkt.com/grandharborbocce/LeagueGuidelines
+- Florida, Camelot East: https://sites.google.com/site/cameloteastboccesrq/bocce-2014/bocce-2022/league-rules
+- Foster City, California: https://www.fostercity.org/sites/default/files/fileattachments/parks_and_recreation/page/6631/revised_bocce_ball_rules_march_6_2023_clean_format.pdf
+- Ferry Bocce League: https://www.ferrybocce.com/rules/
+- Bocce Bros (WFMJ): https://www.wfmj.com/story/42798465/the-bocce-bros-bring-new-life-to-an-old-sport
+- Ohio Bocce League (WFMJ): https://www.wfmj.com/story/52949514/the-valleys-first-semipro-bocce-league-set-to-form
 - Bocce and bolas criollas overviews: https://en.wikipedia.org/wiki/Bocce, https://en.wikipedia.org/wiki/Bolas_criollas
