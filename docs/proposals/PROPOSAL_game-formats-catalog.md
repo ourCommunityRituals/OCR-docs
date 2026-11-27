@@ -55,16 +55,16 @@ read from the rule set (already planned for bocce).
 | Bolas criollas | 2v2 | Frames to 20 | Venezuelan federation | Venezuela (already in the bocce doc) |
 | Skee-ball | 1v1, teams | Total score over games | Brewskee-Ball (bar league) | US bars |
 | Card and table games | Pairs or tables | Rounds or hands to a target | Euchre, dominoes, mahjong, chess clubs | Midwest euchre, Caribbean and Latin dominoes, Asian mahjong clubs |
-| Beer pong | 2v2 | Clear all cups | World Series of Beer Pong | Bars; 21+ only, and drinking games need a venue policy |
 
 ## 5. What to add to the taxonomy (needs review)
 
 Proposed new activities, in a separate brain PR flagged "Needs human review": shuffleboard,
 pétanque, kubb, mölkky, foosball, tejo, skee-ball, euchre, dominoes, mahjong. Bocce, bowling and
-chess keep their own event types. Beer pong stays out until Matt decides on drinking games.
+chess keep their own event types.
+
+**No drinking games** (Matt, 2026-11-27): beer pong and similar games are never listed as a type or preset.
 
 ## 6. Questions for Matt
 
 - **Q1.** Which games after bocce come first? Recommended: **soccer, cornhole, darts, trivia**, the
   four Matt named, each read against its rulebook like the bocce matrix.
-- **Q2.** Should drinking games (beer pong and similar) be listed at all?
