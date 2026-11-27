@@ -22,6 +22,26 @@ Matt, 2026-11-27 (lightly edited from voice):
 And: the model customer is a bocce company running its different ventures as spokes, which already
 exists as a practice brand tree on staging under the stand-in name **Lakeside**.
 
+## 1a. The headline outcome (Matt, 2026-11-27)
+
+> The main part here is to have one shared report that sits as the parent company over all of their
+> entities, so they can see all of the traffic, all of the reporting, and all of the sponsor traffic,
+> and then be able to say: this is what we are capable of, and this is what our one company brings to
+> the table from a corporate sponsorship market footprint.
+
+Everything else in this proposal (leagues, referees, team pages, the spreadsheet mirror) feeds that one
+report. For the practice brands it is a SharedReport for `lakeside-co` that covers every venture beneath
+it: traffic on every code, every event and competition, and all sponsor traffic, with a footprint map.
+The parent shares it with a corporate sponsor as one signed link.
+
+It reuses what exists: the brand tree (OSE migration 0118, OSE-1532), the portfolio roll-up strip
+(OSE `handlers/portfolio-rollup.ts`), the venue roll-up (OSE-2221), the SharedReport and its tiers, and
+the map. Every venture's counts are floored on their own before they are added, so the total never
+reveals a small venture. Sponsors appear only where both sides agreed. It shows traffic, never people.
+
+**When:** it does not wait for leagues. It can be built now from traffic and sponsor data that exists
+today (phase 0 in section 8), and competitions, results and referee records join it as their phases land.
+
 ## 2. What exists today (checked 2026-11-27)
 
 | Piece | Where | What it gives us |
@@ -237,6 +257,7 @@ Each phase is useful on its own. Phase 1 is the smallest slice that helps a real
 
 | Phase | What ships | Where | Linear |
 |---|---|---|---|
+| **0. One parent report** | A SharedReport for the parent brand over every venture: traffic, events, sponsor traffic, footprint map, shareable with a corporate sponsor. Built from today's data | OSE | new story |
 | **1. Seasonal round robin** | A seasonal competition with one round-robin stage; entries as public labels; fixtures on existing league-night events; host enters scores; public standings page. Shown on the `lakeside-league` staging brand | OSE | OSE-525, OSE-526, OSE-527, OSE-529 |
 | 1b. Mirror a spreadsheet | One-way mirror of a league's Google Sheet into the phase 1 tables, column mapping, one source per competition | OSE | new story |
 | 2. Brackets and one-offs | Single elimination stage, playoffs after a season, one-off tournaments | OSE | OSE-530 |
