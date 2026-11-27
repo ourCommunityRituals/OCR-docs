@@ -177,7 +177,7 @@ tournament with eight referees.
 - **The photo.** Stored in the brand's own storage space, with a row in D1 that links it to the
   fixture. Seen only by the brand's organizers and referees, never on a public page, never sent to
   ourWKRP or OER. A photo can catch people in frame, which is why it stays inside the league.
-  How long it is kept is decision D9.
+  It is kept for the season plus 90 days, then deleted; the score itself is kept (D9, Matt, 2026-11-27).
 - **Reading the score from the photo** automatically is a later option. OSE's runtime stays free of
   model calls (OSE AGENTS.md), so it would need its own decision.
 - **A per-sport kit** (in ourSharedGames) gives each sport its rules, its score screen (bocce frames
@@ -231,7 +231,7 @@ All eight were approved as recommended (Matt, 2026-11-27). D7's tier split is ap
 | D6 | Youth leagues: no OW team or person profiles for minors; youth play on OSE labels only | Yes, until a youth consent design exists |
 | D7 | Which tier unlocks what? | Free: one competition at a time, round robin. Paid: seasons with playoffs, divisions, referee tools, more competitions. Anchor/Enterprise: brand-tree roll-up across ventures. Security and the floor are never tier-gated. First guess, awaiting Matt's numbers |
 | D8 | Phase 1 first, on the `lakeside-league` staging brand? | Yes |
-| D9 | How long is a scoreboard photo kept? (added 2026-11-27, after approval) | Open: see the thread. Recommendation: kept as the record for the season plus 90 days for disputes, organizers and referees only, then deleted; the score itself is kept |
+| D9 | How long is a scoreboard photo kept? (added 2026-11-27, after approval) | Decided (Matt, 2026-11-27): kept as the record for the season plus 90 days for disputes, organizers and referees only, then deleted; the score itself is kept |
 
 ## 10. Standing rules this design keeps
 
