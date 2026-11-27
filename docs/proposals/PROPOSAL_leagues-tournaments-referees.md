@@ -1,7 +1,7 @@
 # PROPOSAL: Leagues, tournaments and referees
 
-**Status:** proposed. Design only. No feature code until Matt says yes to the decisions in section 9.
-**Proposed:** 2026-11-27 · **Owner:** Matt
+**Status:** decided. Matt approved D1 to D8 as recommended on 2026-11-27 (19:53 UTC, project thread). Phase 1 may start.
+**Proposed:** 2026-11-27 · **Decided:** 2026-11-27 · **Owner:** Matt
 **Lives in** `docs/proposals/`, so it does not propagate to spokes.
 **Builds on:** OSE epic OSE-523 (League & Tournament Container) and its children OSE-524 to OSE-531,
 which this proposal widens rather than replaces.
@@ -180,7 +180,9 @@ after the real groups agree (OSE-2218).
 
 ## 9. Decisions for Matt
 
-| # | Question | Recommendation |
+All eight were approved as recommended (Matt, 2026-11-27). D7's tier split is approved as a shape; the numbers are still a first guess.
+
+| # | Question | Decision |
 |---|---|---|
 | D1 | Is the split right: OSE runs competitions anonymously, OW holds teams and people by opt-in, OSG holds formats and rule packs? | Yes |
 | D2 | What is "temporal" versus "seasonal"? | Seasonal repeats each year as a new edition; temporal is a one-time window (a six-week ladder) |
