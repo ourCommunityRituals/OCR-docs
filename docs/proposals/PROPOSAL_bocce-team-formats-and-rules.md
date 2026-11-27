@@ -97,7 +97,14 @@ each rule set says; a blank means the rule set does not say.
 - **South America:** the continental bochas rulebook found online was a dead link; Argentine,
   Chilean and Brazilian federation rules still to read.
 - **FIB** volo rules, and Italian federation league variants (the 50 cm displacement limit).
-- **Regional and league house rules**, starting with the first customer's own.
+- **Regional and league house rules**, starting with the first customer's own, then across the US
+  (Matt, 2026-11-27): Ohio, New York, Pennsylvania and the East Coast down the seaboard, and the West
+  from California to Hawaii. Each becomes a preset or an override on the nearest national one. Found,
+  not yet read:
+  - Special Olympics state chapters: Ohio (manual rev. 10-2026), Pennsylvania (indoor bocce guide
+    2021-22), Northern California (2026), Hawaii (2025).
+  - City leagues: Solvang, California (co-ed league rules 2025).
+  - The bocce map's facility list, to find the clubs and leagues in each region.
 
 ## 7. Questions for Matt
 
@@ -119,4 +126,9 @@ each rule set says; a blank means the rule set does not say.
 - BocceLabs on the bocce map: https://boccelabs.beehiiv.com/p/play-bocce
 - A members' club's league rules, 2025: https://americanbocceclub.com/wp-content/uploads/2025/05/ABC_League_Rules-1.pdf
 - A Chicago social league's bocce rules, 2023: https://www.playerssports.net/page/bocce-rules
+- Special Olympics Ohio: https://sooh.org/wp-content/uploads/2026/10/SOOH-Bocce-Rules-Manual-Rev.-10-2026.pdf
+- Special Olympics Pennsylvania: https://specialolympicspa.org/images/Sports_Competitions/2021-2022_Indoor_Bocce_Coaches_Resource_Guide.pdf
+- Special Olympics Northern California: https://sonc.org/wp-content/uploads/2026/01/SONorCal-Bocce-Rules.pdf
+- Special Olympics Hawaii: https://sohawaii.org/wp-content/uploads/2025/08/2025-Bocce-Rules-and-Sports-Information-Guide.pdf
+- Solvang, California league rules: https://www.cityofsolvang.com/DocumentCenter/View/4517/Bocce-Coed-Rules-2025
 - Bocce and bolas criollas overviews: https://en.wikipedia.org/wiki/Bocce, https://en.wikipedia.org/wiki/Bolas_criollas
