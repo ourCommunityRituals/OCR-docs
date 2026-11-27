@@ -162,7 +162,19 @@ This matches Matt's NextUp vision of 2025-11-01 (`bereasonable13/robot-knowledge
 `strategy/NEXTUP_COMPLETE_VISION.md`, "Phase 3: Referee System"), which was sized for an eight-court
 tournament with eight referees.
 
-### 7.2 How it fits the platform
+### 7.2 An add-on, tied into the report (Matt, 2026-11-27)
+
+Referees are an **add-on a league chooses** (OSE already has per-brand add-ons, migration 0121,
+`lib/brand-addons.ts`). A league that does not take it enters scores itself. A league that does gets the
+referee site, and everything the referees do is attached to that league's report: which referee covered
+which court and slot, every score, cover requests, and the scoreboard photo behind each result. That
+gives the league one record, and the **managing owner above it** (the parent brand in a brand tree, such
+as `lakeside-co` over `lakeside-league`) can follow every venture's games from its roll-up.
+
+The report section is private to the brand and its parent: referee names and photos never reach a
+public page, a sponsor's view or OER. The public report shows scores and standings only.
+
+### 7.3 How it fits the platform
 
 - **Referees are league staff, not attendees.** The referee site is a private, brand-scoped area of
   ourSharedEvents, like the organizer's admin. Naming a referee there does not touch the anonymous side,
@@ -175,7 +187,7 @@ tournament with eight referees.
   from their phone. The result is confirmed at once by the referee's word, unless the ruleset asks both
   captains to confirm. Standings and the report update by themselves.
 - **The photo.** Stored in the brand's own storage space, with a row in D1 that links it to the
-  fixture. Seen only by the brand's organizers and referees, never on a public page, never sent to
+  fixture. Seen only by the brand's organizers and referees, and the managing owner above the brand, never on a public page, never sent to
   ourWKRP or OER. A photo can catch people in frame, which is why it stays inside the league.
   It is kept for the season plus 90 days, then deleted; the score itself is kept (D9, Matt, 2026-11-27).
 - **Reading the score from the photo** automatically is a later option. OSE's runtime stays free of
