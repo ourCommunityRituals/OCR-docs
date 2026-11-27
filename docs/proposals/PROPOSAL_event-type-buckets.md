@@ -14,7 +14,7 @@ Visitors see a few plain, picture-first buckets ("Bargains", "Sports & Recreatio
 - **The guts stay the same.** Buckets are a display layer. Type ids, UEC codes, `category_code`, exports, BigQuery and reports do not change.
 - **Few words on screen.** Cards and buttons with pictures; a small arrow opens the longer explanation.
 - **Mobile first.** The category row stays where it is, at the top of the home screen; events start higher.
-- **Highlight the arrow when it matters.** If someone needs the detail to act (cash only, bring a chair, sign up first), the card's arrow is highlighted. Arrows with only extra reading stay plain (Matt, 2026-11-27).
+- **One "Deeper Dive" component.** An arrow icon with the label "Deeper Dive". Tapping it opens a short paragraph; anything that would clutter the card goes behind it. It is highlighted when someone needs the detail to act (cash only, bring a chair, sign up first) and plain otherwise (Matt, 2026-11-27).
 - **Easy to read.** Every name on screen reads at a 5th to 8th grade level, the reading level of most adults (Matt, 2026-11-27).
 - Drinking games are never a type. Soccer stays in.
 
@@ -44,7 +44,7 @@ Matt likes where the row sits and the cards, "more" buttons, footer and top-left
 
 Today's look in the mockup is drawn from the code (`.icon-slider` in the hub's `styles.ts`: 120 px tiles, 40 px icons, arrows below), because staging could not be opened from this session.
 
-Tapping a bucket opens its list: type chips across the top (Flea, Yard sales, Swaps), then event cards. A card's arrow opens a two-line description and an "Open event" button.
+Tapping a bucket opens its list: type chips across the top (Flea, Yard sales, Swaps), then event cards. A card's "Deeper Dive" opens a two-line description and an "Open event" button.
 
 ## Plain names for today's types (display only)
 
@@ -70,7 +70,7 @@ The name people see changes; the type's id and code do not. Names over a 6th gra
 | Garden Harvest Festival | Harvest Festival |
 | Neighborhood Potluck | Potluck |
 
-New types use plain names from the start (Yard Sale, Bingo Night, Kids' Party). Proper game names (Pétanque, Kubb) stay, with a one-line "what it is" behind the arrow.
+New types use plain names from the start (Yard Sale, Bingo Night, Kids' Party). Proper game names (Pétanque, Kubb) stay, with a one-line "what it is" behind "Deeper Dive".
 
 ## Before and after
 
