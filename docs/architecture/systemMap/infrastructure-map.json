@@ -1,8 +1,8 @@
 {
  "meta": {
   "title": "OCR System Map",
-  "checked": "2026-11-26",
-  "checkedNote": "Checked against the repos on 25 Nov 2026 and updated 26 Nov 2026 with the voting passes and the ourAirwaves and ourSharedMagnets config files. Product links copy OCR-docs data-edges.yaml.",
+  "checked": "2026-11-27",
+  "checkedNote": "Checked against the repos and CI on 27 Nov 2026 (audit thread \"Audit threads against Linear and infra drift\"). Product links copy OCR-docs data-edges.yaml.",
   "scope": "Only the ourCommunityRituals repos. americanbocceco, zeventbook and MVP-EVENT-TOOLKIT are history only and are left out.",
   "howToUpdate": "Edit this file, then run: python3 build-map.py. It writes infrastructure-map.html, which is republished to the same link."
  },
@@ -158,15 +158,16 @@
    "sub": "Plant your flag: ourSharedMosaics",
    "kind": "product",
    "side": "Plant your flag",
-   "status": "staging",
+   "status": "partial",
    "plain": "The named side. People sign up with just a name and get a public profile (artists, sports teams and more) that private people vote on at events.",
-   "statusNote": "Running on staging (stg.ourwkrp.com). Production deploys only after staging passes. Spotify and DJ features are switched off for launch, and the code is kept.",
+   "statusNote": "Built on main, but not seen on staging: stg.ourwkrp.com has no working certificate, so every main run deploys and then fails its staging check (OW-114, last green run 9 June 2026). Fixing it is a Cloudflare step only you can take. Spotify and DJ features are switched off for launch, and the code is kept.",
    "details": [
     "Registering is the consent. Profiles, short web addresses, and the right to be erased.",
     "Stores no votes, voters or tallies. Votes live on ourSharedEvents.",
     "Shown as ourSharedMosaics in the design system; the repo and code still say ourWKRP.",
     "Spotify testing uses your personal account. A company account is needed before production.",
-    "The private showcase for one creator stays private until that person agrees."
+    "The private showcase for one creator stays private until that person agrees.",
+    "Merged 23 to 26 Nov: profile types (artist, sports), \"people may vote for me\" (off by default), the /look editor, tokens never stored in plain text. All wait on staging (OW-232, OW-233, OW-234)."
    ],
    "sources": [
     "ourWKRP/CLAUDE.md",
@@ -179,7 +180,7 @@
    "sub": "Your account: set up your own pages",
    "kind": "product",
    "side": "Plant your flag",
-   "status": "decided",
+   "status": "partial",
    "plain": "The self-serve front door (decided by Matt, 26 Nov 2026). A business, sponsor or creator gets one account and sets up how its pages look on ourSharedEvents and ourWKRP, inside fixed rails.",
    "details": [
     "New role, Matt, 25 Nov 2026: people expect to take control of their own product; OCR provides the rails.",
@@ -198,7 +199,8 @@
     "transcripts/repos/ourAirwaves.md",
     "OCR-docs PR #197",
     "ourAirwaves PR #55 (draft)"
-   ]
+   ],
+   "statusNote": "The React app shell and its config file are on main (ourAirwaves PRs 55 and 58, 26 Nov), with CI green. It is not hosted yet: where it lives and its web address are your decision. It does not call ourSharedEvents or ourWKRP yet."
   },
   "oer": {
    "label": "ourEventRings",
@@ -355,13 +357,14 @@
    "label": "Creators",
    "sub": "Artists, teams, DJs",
    "kind": "people",
-   "status": "staging",
+   "status": "partial",
    "plain": "Plant their flag with a public profile, by name and by choice, and can have their own branded page through ourAirwaves.",
    "details": [
     "Sign up with just a name. Registering is the consent.",
     "Profile types at launch: artists, sports and more.",
     "DJ features are switched off for launch. DJ may become its own product with its own licensing.",
-    "They can ask to be erased at any time."
+    "They can ask to be erased at any time.",
+    "Profiles are built on main but not reachable on staging yet (OW-114)."
    ],
    "sources": [
     "ourWKRP/CLAUDE.md",
@@ -417,12 +420,13 @@
    "label": "Skins",
    "sub": "The look a client picks",
    "kind": "piece",
-   "status": "decided",
+   "status": "staging",
    "plain": "One base look everyone gets for free, and custom skins for sale. One skin file format. Works for ourSharedEvents clients, ourWKRP clients and clients of both.",
    "details": [
     "Decided 25 Nov 2026.",
     "A solution engineer can hand-edit a skin; a self-serve skin editor applies across the board.",
-    "Mockups of the look editor are in the project files (skin-editor/)."
+    "Mockups of the look editor are in the project files (skin-editor/).",
+    "Built 25 to 26 Nov: ourSharedEvents report skins and the .md skin file on staging (OSE-2232, Done); ourWKRP /look on main, waiting on staging (OW-233). Standard is free; other looks are the skins add-on."
    ],
    "sources": [
     "project memory (25 Nov 2026)",
@@ -433,11 +437,12 @@
    "label": "Layout rule",
    "sub": "Same idea, own layout",
    "kind": "piece",
-   "status": "decided",
+   "status": "partial",
    "plain": "Posters, screens and SharedReports never share layouts. Each has its own required and optional parts that clients arrange their own way.",
    "details": [
     "Decided 25 Nov 2026.",
-    "Posters are designed first; then the idea is applied to SharedReports."
+    "Posters are designed first; then the idea is applied to SharedReports.",
+    "SharedReport and the host vote screen use it on staging (ourSharedEvents PR 1555). Posters are not on it yet."
    ],
    "sources": [
     "project memory (25 Nov 2026)"
@@ -719,10 +724,11 @@
    "label": "ourWKRP Worker",
    "sub": "D1 + KV",
    "kind": "infra",
-   "status": "staging",
+   "status": "partial",
    "plain": "Cloudflare runs the ourWKRP app with its own separate database.",
    "details": [
-    "Music switch: off on staging and production."
+    "Music switch: off on staging and production.",
+    "The staging Worker deploys, but stg.ourwkrp.com fails TLS, so nothing on it can be checked (OW-114)."
    ],
    "sources": [
     "ourWKRP/CLAUDE.md"

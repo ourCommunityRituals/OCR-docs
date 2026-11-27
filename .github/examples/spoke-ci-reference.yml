@@ -42,11 +42,11 @@ jobs:
     name: Universal checks
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run OCR universal checks
-        uses: ourCommunityRituals/OCR-docs/.github/actions/universal-checks@v1
+        uses: ourCommunityRituals/OCR-docs/.github/actions/universal-checks@7924ba0913b0b53fbcf86e2071f80daae389a153 # v1
         with:
-          node-version: '20'
+          node-version: '22'
           run-typecheck: 'true'
           run-lint: 'true'
 
@@ -56,9 +56,9 @@ jobs:
     needs: universal-checks
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run OCR identity contract
-        uses: ourCommunityRituals/OCR-docs/.github/actions/identity-contract@v1
+        uses: ourCommunityRituals/OCR-docs/.github/actions/identity-contract@7924ba0913b0b53fbcf86e2071f80daae389a153 # v1
         with:
           # OW is a named-identity product. Use 'auto' to read identity_mode
           # straight from this repo's CLAUDE.md instead of hard-coding it.
@@ -70,9 +70,9 @@ jobs:
     needs: identity-contract
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run OCR brain conformance
-        uses: ourCommunityRituals/OCR-docs/.github/actions/brain-conformance@v1
+        uses: ourCommunityRituals/OCR-docs/.github/actions/brain-conformance@7924ba0913b0b53fbcf86e2071f80daae389a153 # v1
         with:
           product-id: wkrp                # <-- EDIT: this spoke's id in product-registry.yaml
 
@@ -85,10 +85,10 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install dependencies
         run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
       - name: Run tests
@@ -101,9 +101,9 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Deploy spoke worker
-        uses: ourCommunityRituals/OCR-docs/.github/actions/deploy-spoke@v1
+        uses: ourCommunityRituals/OCR-docs/.github/actions/deploy-spoke@7924ba0913b0b53fbcf86e2071f80daae389a153 # v1
         with:
           environment: production
           worker-name: ourwkrp            # <-- EDIT: this spoke's worker name

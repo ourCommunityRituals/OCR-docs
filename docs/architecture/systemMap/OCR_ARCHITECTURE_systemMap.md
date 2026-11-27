@@ -3,7 +3,7 @@
 A clickable map of the whole ourCommunityRituals system: the products and the
 allowed links between them, who it serves, the shared pieces every event uses,
 and how a change reaches staging. It was built on 25 Nov 2026 so the owner can
-see the system instead of holding it in his head, and updated on 26 Nov 2026.
+see the system instead of holding it in his head, and updated on 26 and 27 Nov 2026.
 
 - **Open it:** use the private artifact link the owner keeps. The page itself
   is not stored in this repo: it carries its own colours and stylesheet, and
