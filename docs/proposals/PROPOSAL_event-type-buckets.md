@@ -14,6 +14,7 @@ Visitors see a few plain, picture-first buckets ("Bargains", "Sports & Recreatio
 - **The guts stay the same.** Buckets are a display layer. Type ids, UEC codes, `category_code`, exports, BigQuery and reports do not change.
 - **Few words on screen.** Cards and buttons with pictures; a small arrow opens the longer explanation.
 - **Mobile first.** The category row stays where it is, at the top of the home screen; events start higher.
+- **Easy to read.** Every name on screen reads at a 5th to 8th grade level, the reading level of most adults (Matt, 2026-11-27).
 - Drinking games are never a type. Soccer stays in.
 
 ## The buckets (9, plus "Everything")
@@ -43,6 +44,32 @@ Matt likes where the row sits and the cards, "more" buttons, footer and top-left
 Today's look in the mockup is drawn from the code (`.icon-slider` in the hub's `styles.ts`: 120 px tiles, 40 px icons, arrows below), because staging could not be opened from this session.
 
 Tapping a bucket opens its list: type chips across the top (Flea, Yard sales, Swaps), then event cards. A card's arrow opens a two-line description and an "Open event" button.
+
+## Plain names for today's types (display only)
+
+The name people see changes; the type's id and code do not. Names over a 6th grade level today:
+
+| Today | Plain name |
+|-------|------------|
+| Professional Development Workshop | Job Skills Class |
+| Business Networking Meetup | Business Meetup |
+| Industry Mixer | Work Mixer |
+| Mutual Aid Distribution | Free Supplies Giveaway |
+| Neighborhood Association Meeting | Neighborhood Meeting |
+| Block Captain Election | Block Captain Vote |
+| Community Faith Service | Faith Service |
+| Interfaith Community Gathering | Many Faiths Together |
+| Art Show & Gallery Opening | Art Show |
+| Community Mural Unveiling | New Mural Reveal |
+| Photography Exhibition | Photo Show |
+| Tabletop RPG Session | Role-Playing Game Night |
+| Silent Auction Fundraiser | Silent Auction |
+| Walkathon / Fun Run Fundraiser | Fun Run or Walk for a Cause |
+| Community Garden Planting Day | Garden Planting Day |
+| Garden Harvest Festival | Harvest Festival |
+| Neighborhood Potluck | Potluck |
+
+New types use plain names from the start (Yard Sale, Bingo Night, Kids' Party). Proper game names (Pétanque, Kubb) stay, with a one-line "what it is" behind the arrow.
 
 ## Before and after
 
@@ -115,4 +142,5 @@ New types take a home `category_code` from today's 15 (for example Soccer → RE
 - **D2. Add the 20 new types.** Recommended: yes, except the ones in D3 wait.
 - **D3. Types that may need a permit or licence.** Bingo, charity nights with raffles, parades and camps can need a licence or permit, so they would sit above today's launch clearance tier (tier 1) and stay hidden until cleared. Recommended: add them now at a higher tier, so they appear when the tier opens.
 - **D4. Craft Fair under Bargains.** It is shopping, so it fits, but it could sit in Music & Shows with the art. Recommended: Bargains.
+- **D6. Plain type names** (table above). Recommended: yes, as a display-name change only.
 - **D5. Row or grid.** The tuned row keeps today's position. A 3 × 3 grid (second mockup) shows every bucket at once but pushes events down. Recommended: the tuned row.
