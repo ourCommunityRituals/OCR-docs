@@ -208,6 +208,29 @@ when phase 1 lands.
 
 D4 (approved): one Referee product, with a kit per sport.
 
+## 7a. Mirroring a league's existing spreadsheet (Matt, 2026-11-27)
+
+Many leagues already publish every schedule and result in a Google Sheet. It works, but it is
+cumbersome to read. A league should be able to **keep its sheet** and let ourSharedEvents and ourWKRP be
+the sleeker, configurable front end, in its own look.
+
+- **One-way mirror.** OSE reads the league's sheet on a schedule and fills the same competitions,
+  entries, fixtures and results tables as native entry. Nothing is ever written back to the sheet.
+- **One source per competition.** A competition is either mirrored or entered natively, never both, so
+  two sources cannot disagree. The page says where its results come from.
+- **Column mapping, set once.** The organizer maps the sheet's columns (date, court, team A, team B,
+  scores) when connecting it. A tab whose layout changes stops the mirror and tells the organizer rather
+  than guessing.
+- **Teams only on OSE.** A column of player names is never imported into OSE. Player stats, where a
+  league wants them, go to ourWKRP by each player's opt-in (OW-223).
+- **The league's look.** Once mirrored, the pages use the league's skin (ourAirwaves), the same as
+  natively entered leagues.
+- **Matt owns how the sheet is reached and logged**, working directly with each league. That detail
+  is kept out of this public document.
+
+This fits the existing "export first, integrate later" rule on the league epic (OSE-523, OSE-531): we
+meet the league where its data already lives.
+
 ## 8. Phased plan
 
 Each phase is useful on its own. Phase 1 is the smallest slice that helps a real bar league.
@@ -215,6 +238,7 @@ Each phase is useful on its own. Phase 1 is the smallest slice that helps a real
 | Phase | What ships | Where | Linear |
 |---|---|---|---|
 | **1. Seasonal round robin** | A seasonal competition with one round-robin stage; entries as public labels; fixtures on existing league-night events; host enters scores; public standings page. Shown on the `lakeside-league` staging brand | OSE | OSE-525, OSE-526, OSE-527, OSE-529 |
+| 1b. Mirror a spreadsheet | One-way mirror of a league's Google Sheet into the phase 1 tables, column mapping, one source per competition | OSE | new story |
 | 2. Brackets and one-offs | Single elimination stage, playoffs after a season, one-off tournaments | OSE | OSE-530 |
 | 3. Teams that carry over | OW team profile, roster, claim code, history across seasons | OW (+ small OSE claim route) | new OW story |
 | 4. Referees | Referee site per league: schedule by court and half-hour slot, availability, cover board, score plus scoreboard photo, results straight into the report; bocce kit first | OSE, OSG | OSE-2239, OSG-10 |
