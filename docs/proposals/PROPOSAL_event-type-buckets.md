@@ -14,7 +14,7 @@ Visitors see a few plain, picture-first buckets ("Bargains", "Sports & Recreatio
 - **The guts stay the same.** Buckets are a display layer. Type ids, UEC codes, `category_code`, exports, BigQuery and reports do not change.
 - **Few words on screen.** Cards and buttons with pictures; a small arrow opens the longer explanation.
 - **Mobile first.** The category row stays where it is, at the top of the home screen; events start higher.
-- **One "Deeper Dive" component.** An arrow icon with the label "Deeper Dive". Tapping the arrow opens a short paragraph and tapping it again closes it; anything that would clutter the card goes behind it. It is highlighted when someone needs the detail to act (cash only, bring a chair, sign up first) and plain otherwise (Matt, 2026-11-27).
+- **One "Deeper Dive" component.** An arrow icon with the label "Deeper Dive". Tapping the arrow opens a short paragraph and tapping it again closes it; anything that would clutter the card goes behind it. It is highlighted when someone needs the longer detail to act, and plain otherwise. Must-knows (price, cash only, sign up first) are never hidden: they show on the card itself. Accessible: at least 44 px to tap, a real button with `aria-expanded`, works with the keyboard (Matt, 2026-11-27).
 - **Easy to read.** Every name on screen reads at a 5th to 8th grade level, the reading level of most adults (Matt, 2026-11-27).
 - Drinking games are never a type. Soccer stays in.
 
