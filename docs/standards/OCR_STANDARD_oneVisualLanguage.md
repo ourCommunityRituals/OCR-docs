@@ -125,6 +125,8 @@ Hub rules read from `packages/ui/design-system/README.md` and `src/styles.ts`, h
 
 The same three layers in every app, so a person always knows where they are and how to get back.
 
+**Simple is better** (owner). Three layers and no more. Every move is a visible tap; swipes and gestures are extras, never the only way. When two designs both work, pick the one with fewer parts.
+
 | Layer | What | Rules |
 |---|---|---|
 | **1. Bottom bar** | Moving between the big parts of an app | 3 to 5 slots, icon plus a word, always visible, in thumb reach. Same slot order in every app; only the words change |
