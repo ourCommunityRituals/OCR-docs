@@ -119,7 +119,7 @@ New types take a home `category_code` from today's 15 (for example Soccer → RE
   - Landing "Type" slider (`lib/landing-area.ts`, `lib/category-slider.ts`): shows 9 buckets instead of 15 categories; 9 new icons.
   - The row's sizes and arrow place in the hub's `.icon-slider` (sizes only; no colours change).
   - Create Event picker (`lib/event-type-catalog.ts`): "Bucket > Type" instead of "Category > Type".
-  - Spanish names for the 9 buckets (i18n catalog).
+  - Names for the 9 buckets and every new or renamed type in every page language (Spanish, Polish, Arabic), in OSE `lib/i18n/event-type-names.ts` (added by OSE#1592). Its test fails if any language misses one.
 - **Does not change:**
   - QR code colours. UEC colours follow what a code does (enter, vote, live), not the event type.
   - Posters, TV display, voting: none of them read the event type.
