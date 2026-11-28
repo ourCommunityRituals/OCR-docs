@@ -136,6 +136,15 @@ The same three layers in every app, so a person always knows where they are and 
 - **Motion tells direction:** going deeper slides in from the right, back slides out to the right, top tabs slide toward the tab you tapped, and bottom-bar switches fade (they are siblings, not a path).
 - **The bottom bar slots** (proposed, every app): **Home · Find · Mine · More**. Find holds the map and search; Mine holds what you signed up for, your shifts or your profile; More holds settings and help. Labels are translated and may change per app (for example "My shifts"), but the order stays.
 
+**Staying oriented in the flow**
+
+- **Every screen says where you are:** a short title, plus one context line above it ("Juniper Grove boosters · Friday game").
+- **The bottom bar and top tab always show which one you are in.**
+- **Steps show progress:** a flow of more than one screen shows "Step 1 of 2" and dots; going back never loses what you typed.
+- **The picture you tapped comes with you:** the card picture grows into the page header, so you see what you opened.
+- **Back returns you to the same spot:** the same tab, the same place in the list, the same filters (chips) still picked.
+- **Every flow ends on a done screen** that says what happened and gives one next step ("You're signed up · Add to calendar").
+
 <details>
 <summary>Deeper Dive: navigation next to modern practice</summary>
 
