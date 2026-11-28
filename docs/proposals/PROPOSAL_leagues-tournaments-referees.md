@@ -251,6 +251,9 @@ the sleeker, configurable front end, in its own look.
 This fits the existing "export first, integrate later" rule on the league epic (OSE-523, OSE-531): we
 meet the league where its data already lives.
 
+**Team formats and rule sets** (1v1 to 4v4, the 3v3 split, and the rules matrix) are in
+`PROPOSAL_bocce-team-formats-and-rules.md`.
+
 ## 8. Phased plan
 
 Each phase is useful on its own. Phase 1 is the smallest slice that helps a real bar league.
