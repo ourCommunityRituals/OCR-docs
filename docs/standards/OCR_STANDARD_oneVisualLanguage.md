@@ -81,6 +81,46 @@ The person who learned one already knows the other two.
 - **One layer map** (ADR-013): maps follow that ADR; a map sits inside a tab like any other block.
 </details>
 
+## Space and flow (owner, 2026-11-28)
+
+Keep the clean, modern look. Use more of the screen, keep the breathing room, and make moving from screen to screen feel like one smooth app.
+
+- **Pictures go edge to edge;** text keeps a 16 px side margin. The picture gets more room without crowding words.
+- **Space by grouping, not boxes.** 8 px inside a group, 16 to 24 px between groups. Fewer borders inside cards.
+- **One spacing scale:** 4 · 8 · 12 · 16 · 24 · 32 px, as named hub tokens. The 12 px gap between taps never shrinks.
+- **Fit the real screen:** size one-screen tabs with `svh`/`dvh` and the phone's safe areas, so browser bars and notches never push the button off screen.
+- **Thin, sticky top and bottom:** the header shrinks once you move; tabs stay pinned; the main button sits at the bottom, in thumb reach.
+- **Screens flow into each other:** the event picture on a card grows into the event page header; tabs slide left or right in the direction you tapped; Deeper Dive opens smoothly.
+- **Quick and calm motion:** 150 to 250 ms, easing out. Instant for anyone who turns motion off. Nothing moves under a finger.
+- **Fresh comes from the content:** event art, photos and short muted loops change; the blocks, colours and layout rules do not. Event lists may mix card sizes; sponsor cards stay the same size (fairness covenant).
+
+<details>
+<summary>Deeper Dive: our rules next to modern web practice</summary>
+
+Hub rules read from `packages/ui/design-system/README.md` and `src/styles.ts`, hub main `2c6699c`.
+
+| Topic | Ours today | Modern practice (2026) | Gap and recommendation |
+|---|---|---|---|
+| Spacing | Exact values: page 16 to 20 px, section 24, card 16 | A 4 px base scale held as tokens | Add named space tokens (4 to 32) so every app spaces alike |
+| Taps | 48 px, 56 px primary, 12 px gap | 44 to 48 px, spacing between taps matters as much as size | Ahead of practice. Keep |
+| Screen height | `100dvh` in one place | `svh`/`dvh`/`lvh` plus safe-area insets | Use `svh` for one-screen tabs, `dvh` for full-screen panels |
+| Pictures | Fixed frame, crop photos, fit flyers | Full-bleed media, fixed aspect ratio while loading | Make the frame full-bleed on phones |
+| Separation | Lines and radius, no shadows | Flat with lines, or light elevation | Keep lines (it is the modern flat look); optional later: one soft shadow for sheets only |
+| Screen-to-screen | Plain page loads | View Transitions: shared pictures morph, tabs slide | Add it. Works with no framework |
+| Open/close | Deeper Dive snaps open | Smooth height (`interpolate-size`, `@starting-style`) | Animate open and close, instant under reduced motion |
+| Lists of pictures | Scroll-snap in one place | Snap rows for galleries | Use snap rows for photos only, never for must-knows |
+| Reduced motion | Honoured | Honoured | Keep |
+</details>
+
+<details>
+<summary>Deeper Dive: screen-to-screen motion, who gets it</summary>
+
+- **Cross-page View Transitions** (`@view-transition { navigation: auto; }`): Chrome and Edge 126+, Safari and iPhone 18.2+, about 90% of users (caniuse, October 2026). Firefox and Samsung Internet do not have it yet: they just load the page normally, so nothing breaks.
+- **Same-page transitions** (tabs, Deeper Dive, React in ourAirwaves): in every major browser since October 2025.
+- **How a shared picture morphs:** the card picture and the page header carry the same `view-transition-name` (one per event). One CSS rule in the hub, no script.
+- Sources: [caniuse](https://caniuse.com/cross-document-view-transitions), [web.dev](https://web.dev/blog/same-document-view-transitions-are-now-baseline-newly-available), [Chrome docs](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document), [web.dev tap targets](https://web.dev/articles/accessible-tap-targets).
+</details>
+
 ## Where apps differ today
 
 Read on default branches, 2026-11-28. Method in the PR description.
@@ -98,4 +138,5 @@ Read on default branches, 2026-11-28. Method in the PR description.
 3. Bump ourWKRP's hub pin; swap `.filter-chip` for the shared chips.
 4. Move ourSharedEvents' hand-built tabs onto the shared ones, page by page.
 5. Decide (owner): top tabs vs the ourAirwaves bottom nav. See ADR-014, open question Q1.
-6. A design check that fails a page using a non-hub tab, chip or "Learn more" label, once the blocks exist.
+6. Add the space tokens, full-bleed frame, View Transitions and smooth Deeper Dive to the hub (one hub PR), then show them on one ourSharedEvents page on staging before rolling out.
+7. A design check that fails a page using a non-hub tab, chip or "Learn more" label, once the blocks exist.
