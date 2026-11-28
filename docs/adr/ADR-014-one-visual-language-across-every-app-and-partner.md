@@ -35,7 +35,8 @@ from a bar night to a school fundraiser has to learn a new screen.
 3. **Only labels change** between apps, partners and roles. A new screen copies an existing pattern.
 4. **One home:** every block lives in the hub (`@ocr/ui`), in both the shared stylesheet and the React kit.
    Apps never build their own versions.
-5. **Skins and tiers never change the blocks.** A skin may change accent, images and words, not structure,
+5. **One navigation model:** bottom bar, top tabs, drill in and back, with the same slots and motion everywhere.
+6. **Skins and tiers never change the blocks.** A skin may change accent, images and words, not structure,
    order, tap sizes or screen rules.
 
 ## Alternatives Considered
@@ -72,7 +73,10 @@ differ today"). Only an org rule binds ourAirwaves, ourWKRP and the docs-only pr
 ## Open questions for the owner
 
 - **Q1. Top tabs or bottom nav?** ourAirwaves uses a bottom nav today; the rule says tabs across the top.
-  Recommendation: bottom nav for moving between whole sections of an app, top tabs inside a page.
+  Recommendation: both, as layers: a shared bottom bar for moving between whole parts of an app, top tabs
+  inside a page (standard, "Navigation").
+- **Q2. Bottom bar slots.** Proposed: Home · Find · Mine · More, the same order in every app.
+- **Q3. Screen-to-screen motion.** Proposed: View Transitions, 150 to 250 ms, off under reduced motion.
 
 ## Implementation Notes
 

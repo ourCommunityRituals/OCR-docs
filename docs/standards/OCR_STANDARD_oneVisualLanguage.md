@@ -121,6 +121,36 @@ Hub rules read from `packages/ui/design-system/README.md` and `src/styles.ts`, h
 - Sources: [caniuse](https://caniuse.com/cross-document-view-transitions), [web.dev](https://web.dev/blog/same-document-view-transitions-are-now-baseline-newly-available), [Chrome docs](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document), [web.dev tap targets](https://web.dev/articles/accessible-tap-targets).
 </details>
 
+## Navigation (owner, 2026-11-28)
+
+The same three layers in every app, so a person always knows where they are and how to get back.
+
+| Layer | What | Rules |
+|---|---|---|
+| **1. Bottom bar** | Moving between the big parts of an app | 3 to 5 slots, icon plus a word, always visible, in thumb reach. Same slot order in every app; only the words change |
+| **2. Top tabs** | Parts of one page | Sticky under the header; the selected tab is marked by more than colour |
+| **3. Drill in and back** | Opening one item (an event, a shift, a game) | A back arrow top left; the phone's back button and swipe always work |
+
+- **Never hide the main places in a hamburger menu.** Hidden menus get used far less; the bottom bar keeps them in sight.
+- **Every tab and item has its own web address.** Back, refresh and sharing a link all land on the same screen.
+- **Motion tells direction:** going deeper slides in from the right, back slides out to the right, top tabs slide toward the tab you tapped, and bottom-bar switches fade (they are siblings, not a path).
+- **The bottom bar slots** (proposed, every app): **Home · Find · Mine · More**. Find holds the map and search; Mine holds what you signed up for, your shifts or your profile; More holds settings and help. Labels are translated and may change per app (for example "My shifts"), but the order stays.
+
+<details>
+<summary>Deeper Dive: navigation next to modern practice</summary>
+
+| Topic | Ours today | Modern practice (2026) | Recommendation |
+|---|---|---|---|
+| Main places | ourAirwaves: bottom bar. ourSharedEvents and ourWKRP: links per page, no shared bar | Bottom navigation bar, 3 to 5 places (Material 3, Apple tab bar) | One shared bottom bar in the hub, used by every app |
+| Inside a page | Hand-built tabs per page | Sticky top tabs or a segmented control | Shared hub tabs (next step 1) |
+| Hidden menus | Some pages | Avoid for main places; fine for rarely used items | Main places in the bar; rare items under More |
+| Back | Browser back, varies by page | Every screen has a real address; back always works | Rule above; test it in CI |
+| Direction | No motion | Forward and back slide; sibling switches fade | View Transitions with direction (works without a framework) |
+| Where am I | Varies | Active slot shows icon, word and a filled marker | Hub marks the active slot one way for all apps |
+
+Sources: [Material 3 navigation bar](https://m3.material.io/components/navigation-bar/guidelines), [Apple tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars), [NN/g on hidden navigation](https://www.nngroup.com/articles/find-navigation-mobile-even-hamburger/), [Chrome view transition types](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document).
+</details>
+
 ## Where apps differ today
 
 Read on default branches, 2026-11-28. Method in the PR description.
