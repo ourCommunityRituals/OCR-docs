@@ -187,6 +187,8 @@ The same flow on a phone for everyone who puts on an event: a backyard party, a 
 - **Why one app:** today these steps are spread over separate tools that each cover one slice. ourSharedEvents covers the whole circle: create, campaign, launch, share, the landing page people find it on, the door, and the report. That is what speeds up every organizer, whatever size their event.
 - **Who sees the footprint and the report** (owner, 2026-11-28): whoever uses the service, the client who hired it. If the bar is the client, the bar sees every event on its account and gets the report. Events someone else runs on their own account stay theirs.
 
+- **Sponsors on an anchor's events** (owner, 2026-11-28): local sponsors attached to an event are in, at the local tier; the anchor is at least mid-level, possibly premium. Higher tiers get more advertising as **more often** (more rotations, more events), never a bigger or better spot: same size, same spots for every sponsor, and locals keep at least 30% of the rotation.
+
 - **Two kinds of behaviour, kept apart:** *interest before* the event and *taking part at* the event. Seen side by side over a season, they show how the local economy behaves.
 - **Never who, only how many.** Every number is a count with the under-5 floor ("Fewer than 5"). Interest is never a list of people.
 
