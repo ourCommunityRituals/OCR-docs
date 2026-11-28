@@ -175,6 +175,18 @@ The same flow on a phone for everyone who puts on an event: a backyard party, a 
 7. **Watch the response, counts only:** interest from the posters going up until the event (scans, link opens); then the door (check-ins); then inside the event (scans of the QR codes there).
 8. **Come back to Mine:** only your own events, campaigns and seasons, with draft, live and finished marked.
 
+**Depth grows with the layer** (owner, 2026-11-28). Same screens, more of them switched on as the host grows. Nobody sees steps they do not need.
+
+| Layer | Who | What they see |
+|---|---|---|
+| Single | A person, a backyard party, a park meetup | Steps 1, 6, 7 and 8: create, share, counts, Mine. No campaigns, no review |
+| Organizer | A league, a booth, a regular night | Adds campaigns (2) and the draft calendar and map (3) |
+| Anchor | The bar, the rec center, the art fair, the owner of the property | Everything: seasons, the full draft review, the detailed preview, one Launch, and the **property footprint**: every event happening on their place, on one calendar and map |
+
+- **The framework does the organizing.** The columns, states (draft, approved, live, finished) and groupings are set for the anchor, so they just fill them in.
+- **Why one app:** today these steps are spread over separate tools that each cover one slice. ourSharedEvents covers the whole circle: create, campaign, launch, share, the landing page people find it on, the door, and the report. That is what speeds up every organizer, whatever size their event.
+- **Open, for the owner:** an event someone else holds at a property shows in the anchor's footprint only when both sides accept, the same two-sided consent as sponsors.
+
 - **Two kinds of behaviour, kept apart:** *interest before* the event and *taking part at* the event. Seen side by side over a season, they show how the local economy behaves.
 - **Never who, only how many.** Every number is a count with the under-5 floor ("Fewer than 5"). Interest is never a list of people.
 
@@ -189,6 +201,7 @@ Read from ourSharedEvents main `adde6ff`, route table in `src/router.ts` and `mi
 | 2 Campaign | `event_series` (migration 0033): declare a series, attach events; "repeat" makes one draft copy (OSE-1531) | Make all the dates of a series as drafts in one step |
 | 3 See drafts | Brand calendar feed `/brands/:brand/calendar.ics` (published events); attendee map | A private draft preview on a calendar and the map |
 | 4 Season | Nothing | A season that groups campaigns and one-offs |
+| Footprint | Venues and booths per event | One anchor view of every event on its property |
 | 5 Launch | Publish one event at a time | Review list and one Launch for many drafts (audited) |
 | 6 Share | Share links `/e` `/p` `/r` `/c`, posters with QR (OSE-1684) | One share kit per launch or season |
 | 7 Watch | Poster scans `/q`, share opens, check-ins, booth scans, SharedReport | One timeline per campaign: interest before, door, inside |
