@@ -197,6 +197,7 @@ The same flow on a phone for everyone who puts on an event: a backyard party, a 
 - **With 2 spots:** one always holds a paying sponsor (anchor, mid or premium); the other rotates through the locals.
 - **Who comes next is picked by the math:** whoever is furthest behind their paid share so far goes next. The shares are the ones already live in `ocr-docs-brain/sponsor-allocation.yaml` (`share_of_voice`): mid buys 3x, premium 7x base frequency; locals hold at least 30% together; no premium above 40%, no mid above 20%; nobody below 2%.
 - **The anchor is at least mid** for this math.
+- **Paying also buys a fuller SharedReport** (owner, 2026-11-28): the features per tier are in `ocr-docs-brain/tier-gates.yaml`. Every tier keeps the same privacy rules and the under-5 floor.
 - **Open, for the owner:** with only 1 spot, "a paying sponsor always shows" would leave no room for locals, so the spot takes turns by the shares above.
 - Changing `sponsor-allocation.yaml` is a separate governance PR.
 </details>
