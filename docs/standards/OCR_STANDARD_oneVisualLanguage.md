@@ -185,7 +185,7 @@ The same flow on a phone for everyone who puts on an event: a backyard party, a 
 
 - **The framework does the organizing.** The columns, states (draft, approved, live, finished) and groupings are set for the anchor, so they just fill them in.
 - **Why one app:** today these steps are spread over separate tools that each cover one slice. ourSharedEvents covers the whole circle: create, campaign, launch, share, the landing page people find it on, the door, and the report. That is what speeds up every organizer, whatever size their event.
-- **Open, for the owner:** an event someone else holds at a property shows in the anchor's footprint only when both sides accept, the same two-sided consent as sponsors.
+- **Who sees the footprint and the report** (owner, 2026-11-28): whoever uses the service, the client who hired it. If the bar is the client, the bar sees every event on its account and gets the report. Events someone else runs on their own account stay theirs.
 
 - **Two kinds of behaviour, kept apart:** *interest before* the event and *taking part at* the event. Seen side by side over a season, they show how the local economy behaves.
 - **Never who, only how many.** Every number is a count with the under-5 floor ("Fewer than 5"). Interest is never a list of people.
