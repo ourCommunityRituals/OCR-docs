@@ -233,6 +233,42 @@ the entry: it only marks the code used. Next season, a new entry is claimed onto
 and the history carries on. This is the "carry from league to league, season to season, year to
 year" Matt asked for, without OSE ever holding a name.
 
+### 5.2a What ourWKRP carries, sport by sport, and outside systems (Matt, 2026-11-28)
+
+Matt: ourWKRP can carry league and tournament information, and what it carries depends on the sport
+and the event type, with the option to connect to outside systems.
+
+**What OW carries depends on the sport.** The sport's kit in ourSharedGames (OSG-10) lists which
+history a team or player may show. Everything is opt-in, and only for teams and people who claimed
+their entry.
+
+| Kind of game | Team page shows | A player may also show |
+|---|---|---|
+| Team sports (soccer, softball, volleyball) | Seasons, divisions, records, titles | Teams played for, seasons, shirt number |
+| Small-team target games (bocce, cornhole, pétanque) | Seasons, tournament finishes, Gold or Silver bracket | Partners and formats played (1v1 to 4v4) |
+| Individual games (darts, pool, chess) | Club or bar team seasons | Personal records the sport defines, such as darts averages |
+| Quiz and social (trivia) | Team name history, wins, streaks | Teams played with |
+| One-off events (draw tournaments) | Finishes at each event | Events played |
+
+Player stats stay with OW-223 (opt-in per event). Youth play stays off OW (D6).
+
+**Connecting outside systems.** Many leagues already run on another system: a spreadsheet, a league
+app, a national body's ranking, or a tournament bracket site. Four kinds of link, each chosen per
+competition:
+
+1. **Bring results in.** Results flow one way into OSE, the same way as the spreadsheet mirror
+   (section 7a): team names only, one source per competition.
+2. **Send results out.** A public feed of fixtures and standings, the same data the public page
+   shows, plus a calendar file.
+3. **A player links an outside profile.** On OW, a player may link a profile on a sport's own system
+   (for example a national ranking). Their choice, removable any time.
+4. **Team history in.** A team can bring its past seasons onto its OW page from an outside system, as
+   long as the team admin confirms them.
+
+Each outside system needs its own entry in `data-edges.yaml` before it is built, with what it may
+carry. OSE never receives player names from any of them. Which systems come first is decided per
+customer, starting with the first customer's spreadsheet.
+
 ### 5.3 New data links (added to `data-edges.yaml` only when built)
 
 - OW → OSE: redeem a claim code (sends the code, gets back an entry id). Class A.
