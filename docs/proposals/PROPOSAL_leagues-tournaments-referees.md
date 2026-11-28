@@ -173,6 +173,10 @@ come in, the organizer's screen updates as each person signs up: the pool count,
 teams so far. The organizer can answer a sign-up (for example a "play with" request) and place them
 straight away, instead of sorting everyone on the night. Teams stay provisional until published.
 
+New tables (on the identified side, organizer only): `competition_pool` (sign-up, private skill
+note, "play with" request, checked-in) and `team_draws` (seed, mode, time, actor, and each manual
+move). Linear: a new story under OSE-523.
+
 ### 5.1b Who runs which phase (Matt, 2026-11-28)
 
 A tournament or league has three phases, and different people can run each one under the main admin.
@@ -212,10 +216,6 @@ A plain guide for a new organizer. It moves to ourSharedMagnets (the playbook ho
 6. **Operations:** start play. Referees score; standings update live.
 7. **Main admin:** after the night, review the change log and the SharedReport, and share it with
    sponsors. Sign-ups and skill letters are deleted when the tournament ends.
-
-New tables (on the identified side, organizer only): `competition_pool` (sign-up, private skill
-note, "play with" request, checked-in) and `team_draws` (seed, mode, time, actor, and each manual
-move). Linear: a new story under OSE-523.
 
 ### 5.2 ourWKRP (the named side, all opt-in)
 
