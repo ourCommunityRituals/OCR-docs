@@ -189,6 +189,18 @@ The same flow on a phone for everyone who puts on an event: a backyard party, a 
 
 - **Sponsors on an anchor's events** (owner, 2026-11-28): local sponsors attached to an event are in, at the local tier; the anchor is at least mid-level, possibly premium. Higher tiers get more advertising as **more often** (more rotations, more events), never a bigger or better spot: same size, same spots for every sponsor, and locals keep at least 30% of the rotation.
 
+<details>
+<summary>Deeper Dive: how sponsors rotate on screens (owner, 2026-11-28; proposed)</summary>
+
+- **Every screen change is a fresh sponsor turn:** each TV display cycle and each phone page that opens.
+- **1 or 2 sponsor spots per turn,** all the same size.
+- **With 2 spots:** one always holds a paying sponsor (anchor, mid or premium); the other rotates through the locals.
+- **Who comes next is picked by the math:** whoever is furthest behind their paid share so far goes next. The shares are the ones already live in `ocr-docs-brain/sponsor-allocation.yaml` (`share_of_voice`): mid buys 3x, premium 7x base frequency; locals hold at least 30% together; no premium above 40%, no mid above 20%; nobody below 2%.
+- **The anchor is at least mid** for this math.
+- **Open, for the owner:** with only 1 spot, "a paying sponsor always shows" would leave no room for locals, so the spot takes turns by the shares above.
+- Changing `sponsor-allocation.yaml` is a separate governance PR.
+</details>
+
 - **Two kinds of behaviour, kept apart:** *interest before* the event and *taking part at* the event. Seen side by side over a season, they show how the local economy behaves.
 - **Never who, only how many.** Every number is a count with the under-5 floor ("Fewer than 5"). Interest is never a list of people.
 
