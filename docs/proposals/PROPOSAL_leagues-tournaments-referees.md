@@ -125,6 +125,53 @@ posters, codes, sponsors, the map and the SharedReport all work as they do today
   tiebreak order. First version: a small list in OSE code. Later it moves to ourSharedGames as data
   (section 6).
 
+### 5.1a From sign-ups to teams (Matt, 2026-11-28)
+
+Matt: when people register, their names must sort into teams. A random team maker serves draw
+tournaments, and the organizer can always step in and build or balance teams by hand, for example
+spreading the strongest players, so tournaments stay fair and people keep coming back.
+
+**How a player gets on a team (a setting per competition):**
+- **Team sign-up:** a captain registers a whole team. No team maker needed.
+- **Individual sign-up:** each person registers alone into a **player pool**. The organizer makes
+  the teams.
+- **Mixed:** teams sign up, and solo players join the pool to fill short teams.
+
+**The team maker (organizer only):**
+- **Random:** a fair draw. Every player is equally likely to land on any team.
+- **Balanced:** the same draw, spread by skill so no team stacks the strong players.
+- **By hand:** move or swap any player, lock a team, then **redraw only the unlocked teams**.
+- **Who is drawn:** everyone who signed up, or only those **checked in** on the night (the usual way
+  for draw tournaments, so no-shows don't leave a team short). Late arrivals go to the weakest team
+  that still has room, with one tap.
+- **"Play with" requests:** two people can ask to be together. The draw keeps them together when
+  there is room, and tells the organizer when it can't.
+
+**Skill is the organizer's private note.** A simple A, B or C (strong, middle, newer) per player,
+set by the organizer, optionally suggested by the player at sign-up. It is never shown to players
+or the public, never leaves the organizer screen, and is deleted when the competition ends.
+
+**Fair and visible.** Each draw records its seed and time, and every manual change records who made
+it. Players can see a plain line such as "Balanced draw at 7:02 PM, then 2 changes by the organizer",
+so a random tournament can be trusted not to be rigged.
+
+**Privacy stays as it is.** The pool and names live on the identified side (`FORMS_DB`), with the
+sign-ups. Publishing teams creates the `competition_entries` on the anonymous side with **team
+names only**. Each player sees their own team on their sign-up confirmation. Names appear in public
+only on ourWKRP, for players who opt in. Today sign-ups are deleted after the event ends; for a
+competition they are kept until the **competition** ends, then deleted the same way.
+
+**Proven.** A throwaway test (28 Nov 2026) ran the team maker 8,264 ways, from singles to 11-a-side
+soccer and up to 200 players: 112,752 checks, 0 failures. Every player lands on exactly one team,
+team sizes differ by at most one, locks and pairs hold, the same seed gives the same teams, balanced
+teams sit within one skill step of each other, and the random draw is fair (40,000 draws, chi-square
+3.0, well under the 16.3 limit). A planted fault was caught. Mockup:
+`leagues-prototypes/team-maker-*-MOCKUP.png` in the project files.
+
+New tables (on the identified side, organizer only): `competition_pool` (sign-up, private skill
+note, "play with" request, checked-in) and `team_draws` (seed, mode, time, actor, and each manual
+move). Linear: a new story under OSE-523.
+
 ### 5.2 ourWKRP (the named side, all opt-in)
 
 | Addition | Holds |
@@ -263,6 +310,7 @@ Each phase is useful on its own. Phase 1 is the smallest slice that helps a real
 | **0. One parent report** | A SharedReport for the parent brand over every venture: traffic, events, sponsor traffic, footprint map, shareable with a corporate sponsor. Built from today's data | OSE | new story |
 | **1. Seasonal round robin** | A seasonal competition with one round-robin stage; entries as public labels; fixtures on existing league-night events; host enters scores; public standings page. Shown on the `lakeside-league` staging brand | OSE | OSE-525, OSE-526, OSE-527, OSE-529 |
 | 1b. Mirror a spreadsheet | One-way mirror of a league's Google Sheet into the phase 1 tables, column mapping, one source per competition | OSE | new story |
+| 1c. Team maker | Individual sign-ups into a player pool; random, balanced and by-hand team making; check-in draw; late arrivals; audit line (section 5.1a) | OSE | new story under OSE-523 |
 | 2. Brackets and one-offs | Single elimination stage, playoffs after a season, one-off tournaments | OSE | OSE-530 |
 | 3. Teams that carry over | OW team profile, roster, claim code, history across seasons | OW (+ small OSE claim route) | new OW story |
 | 4. Referees | Referee site per league: schedule by court and half-hour slot, availability, cover board, score plus scoreboard photo, results straight into the report; bocce kit first | OSE, OSG | OSE-2239, OSG-10 |
@@ -317,6 +365,7 @@ All eight were approved as recommended (Matt, 2026-11-27). D7's tier split is ap
 | D6 | Youth leagues: no OW team or person profiles for minors; youth play on OSE labels only | Yes, until a youth consent design exists |
 | D7 | Which tier unlocks what? | Free: one competition at a time, round robin. Paid: seasons with playoffs, divisions, referee tools, more competitions. Anchor/Enterprise: brand-tree roll-up across ventures. Security and the floor are never tier-gated. First guess, awaiting Matt's numbers |
 | D8 | Phase 1 first, on the `lakeside-league` staging brand? | Yes |
+| D10 | Do the organizer's skill notes (A, B, C) carry to the next season? (added 2026-11-28) | Recommended: no. Deleted when the competition ends; the organizer sets them again, or copies last season's in one tap while both competitions are open |
 | D9 | How long is a scoreboard photo kept? (added 2026-11-27, after approval) | Decided (Matt, 2026-11-27): kept as the record for the season plus 90 days for disputes, organizers and referees only, then deleted; the score itself is kept |
 
 ## 10. Standing rules this design keeps
