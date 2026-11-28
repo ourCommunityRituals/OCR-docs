@@ -162,6 +162,39 @@ The same three layers in every app, so a person always knows where they are and 
 Sources: [Material 3 navigation bar](https://m3.material.io/components/navigation-bar/guidelines), [Apple tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars), [NN/g on hidden navigation](https://www.nngroup.com/articles/find-navigation-mobile-even-hamburger/), [Chrome view transition types](https://developer.chrome.com/docs/web-platform/view-transitions/cross-document).
 </details>
 
+## One flow for every layer (owner, 2026-11-28)
+
+The same flow on a phone for everyone who puts on an event: a backyard party, a park meetup, a regular at a bar, the bar itself, the rec center, an art fair booth and the art fair. Only the size changes.
+
+1. **Create one event** (the two-screen create flow). On the map or off it: the host chooses.
+2. **Make it a campaign if it repeats:** "every Friday for 8 months", "once a month". All the dates appear as **drafts**.
+3. **See the drafts right away** on a calendar and on the map, before anyone else can.
+4. **Group campaigns into a season** ("Fall season": trivia, pinball, Saturday one-offs).
+5. **Review and launch together:** look over every draft, approve, then **Launch**. Everything goes live on the map at once.
+6. **Share it:** each launch comes with a ready share kit (links, QR posters, a short post) for the host's own social channels.
+7. **Watch the response, counts only:** interest from the posters going up until the event (scans, link opens); then the door (check-ins); then inside the event (scans of the QR codes there).
+8. **Come back to Mine:** only your own events, campaigns and seasons, with draft, live and finished marked.
+
+- **Two kinds of behaviour, kept apart:** *interest before* the event and *taking part at* the event. Seen side by side over a season, they show how the local economy behaves.
+- **Never who, only how many.** Every number is a count with the under-5 floor ("Fewer than 5"). Interest is never a list of people.
+
+<details>
+<summary>Deeper Dive: what ourSharedEvents already has, and what is missing</summary>
+
+Read from ourSharedEvents main `adde6ff`, route table in `src/router.ts` and `migrations/`.
+
+| Step | Have today | Missing |
+|---|---|---|
+| 1 Create | Two-screen create, save as draft or publish (PR 1593) | Off-map choice in the same flow (check) |
+| 2 Campaign | `event_series` (migration 0033): declare a series, attach events; "repeat" makes one draft copy (OSE-1531) | Make all the dates of a series as drafts in one step |
+| 3 See drafts | Brand calendar feed `/brands/:brand/calendar.ics` (published events); attendee map | A private draft preview on a calendar and the map |
+| 4 Season | Nothing | A season that groups campaigns and one-offs |
+| 5 Launch | Publish one event at a time | Review list and one Launch for many drafts (audited) |
+| 6 Share | Share links `/e` `/p` `/r` `/c`, posters with QR (OSE-1684) | One share kit per launch or season |
+| 7 Watch | Poster scans `/q`, share opens, check-ins, booth scans, SharedReport | One timeline per campaign: interest before, door, inside |
+| 8 Mine | Admin dashboard per brand | A "Mine" view of your own seasons, campaigns and drafts |
+</details>
+
 ## Where apps differ today
 
 Read on default branches, 2026-11-28. Method in the PR description.
