@@ -223,6 +223,32 @@ Read from ourSharedEvents main `adde6ff`, route table in `src/router.ts` and `mi
 | 8 Mine | Admin dashboard per brand | A "Mine" view of your own seasons, campaigns and drafts |
 </details>
 
+## How it is tested (the test pyramid)
+
+A rule counts only when a test fails if an app breaks it. Each new test is watched failing on purpose first (born red).
+
+**Checks that already run today**
+
+- **Hub design check** (`check-spoke-styles.mjs`, ourSharedEvents and ourWKRP CI, blocking): colours only from tokens; a page's own CSS may only shrink.
+- **Mobile workability** (invariant #14, ourSharedEvents `tests/playwright/mobile-workability.spec.ts`): no sideways scroll, 44 px taps, 16 px inputs, main button visible at 375 × 812.
+- **One screen per create step** (ourSharedEvents `tests/playwright/admin-wizard-isolation.spec.ts`).
+- **Accessibility scans** (ourSharedEvents `a11y-axe` specs).
+- **This PR itself** is docs: docs CI and the ADR edge check run on it. Docs cannot be unit-tested; the rules become tests as the blocks are built.
+
+<details>
+<summary>Deeper Dive: which layer tests which rule, once built</summary>
+
+| Layer | Where | What it proves |
+|---|---|---|
+| **L0 structure** | Hub check, every app's CI | No app ships its own tab, chip or Deeper Dive class; no "Learn more" / "Details ›" labels; no raw colour; only hub space tokens |
+| **Unit** | Hub (`@ocr/ui`) | Tabs, chips, Deeper Dive, bottom bar, More: 44 px+, `aria-selected`/`aria-expanded`, Enter and Space work; sponsor turn picker keeps locals ≥ 30% and caps over thousands of turns |
+| **Contract** | Each app vs the hub | The page uses the pinned hub's markup (snapshot of class names); every tab and item answers at its own address |
+| **Component / visual** | Hub, light and dark | Screenshots of each block at 375 px; reduced motion turns transitions off |
+| **E2E on staging** | Playwright, each app | Every tab fits one phone screen; back returns to the same tab and filters; bottom bar same order in every app; create → drafts → Launch → Mine works |
+| **Mutation** | Hub and the turn picker | A changed tap size, floor or share math is caught by a failing test |
+| **Cross-app** | Brain check (`check_brain_contract.py`) | Every app's pin includes the shared blocks; a lagging pin is flagged |
+</details>
+
 ## Where apps differ today
 
 Read on default branches, 2026-11-28. Method in the PR description.
@@ -241,4 +267,4 @@ Read on default branches, 2026-11-28. Method in the PR description.
 4. Move ourSharedEvents' hand-built tabs onto the shared ones, page by page.
 5. Decide (owner): top tabs vs the ourAirwaves bottom nav. See ADR-014, open question Q1.
 6. Add the space tokens, full-bleed frame, View Transitions and smooth Deeper Dive to the hub (one hub PR), then show them on one ourSharedEvents page on staging before rolling out.
-7. A design check that fails a page using a non-hub tab, chip or "Learn more" label, once the blocks exist.
+7. Build the tests in "How it is tested", starting with the L0 hub check and the unit tests for each block.
