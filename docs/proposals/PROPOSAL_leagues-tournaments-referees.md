@@ -168,6 +168,51 @@ teams sit within one skill step of each other, and the random draw is fair (40,0
 3.0, well under the 16.3 limit). A planted fault was caught. Mockup:
 `leagues-prototypes/team-maker-*-MOCKUP.png` in the project files.
 
+**Teams form live, before the event (Matt, 2026-11-28).** While the posters are out and sign-ups
+come in, the organizer's screen updates as each person signs up: the pool count, who is new, and the
+teams so far. The organizer can answer a sign-up (for example a "play with" request) and place them
+straight away, instead of sorting everyone on the night. Teams stay provisional until published.
+
+### 5.1b Who runs which phase (Matt, 2026-11-28)
+
+A tournament or league has three phases, and different people can run each one under the main admin.
+
+| Role | Phase | Does | Can't |
+|---|---|---|---|
+| **Main admin** (owner) | All | Everything; assigns the roles below; reviews or undoes any change | |
+| **Promotions admin** (junior) | 1. Promote | The campaign: posters and QR codes, the calendar, sign-up form, sponsor slots, planned posts | Make teams, enter scores |
+| **Operations admin** (junior) | 2. Teams, 3. Play | Team maker, schedule, courts, referees, the night itself | Change the campaign or sponsors |
+| **Referee** (junior) | 3. Play | Score games on duty (section 7) | Anything else |
+
+- Roles are set **per competition**, so one person can promote one league and run another.
+- Every step hangs off one **campaign** (OSE campaigns already group events and poster placements),
+  so posters, QR scans, sign-ups, teams, scores and sponsors all land in the same **SharedReport**.
+- The same roles work at every size. A solo organizer holds all four. A club splits promotions and
+  operations. A parent company (the Lakeside tree) runs promotions centrally across its ventures and
+  lets each league run its own nights, and sees it all in the parent roll-up.
+- **Planned posts** across social media are a calendar of what to post and when, with the poster and
+  its QR code ready to share. OSE does not post to social media today; posting for the organizer is a
+  later step, through ourAirwaves.
+- Account roles (owner, editor, viewer) live in ourAirwaves (its D1). These duties narrow an editor
+  to one phase of one competition; they never widen anyone's access.
+
+### 5.1c Runbook: a draw tournament, step by step
+
+A plain guide for a new organizer. It moves to ourSharedMagnets (the playbook home) when built.
+
+1. **Main admin:** create the tournament and pick the rule set. Assign a promotions admin and an
+   operations admin (or keep both roles yourself).
+2. **Promotions:** make the campaign, print the poster with its QR code, set the sign-up form
+   (individual or team), add sponsors, and set the dates for planned posts.
+3. **Promotions:** post and hang the posters. Sign-ups start arriving.
+4. **Operations:** watch the team screen fill live. Answer "play with" requests. Set skill letters
+   for players you know.
+5. **Operations:** on the night, check people in, then draw teams (random or balanced) from those
+   checked in. Lock, swap or move anyone, add late arrivals, then publish.
+6. **Operations:** start play. Referees score; standings update live.
+7. **Main admin:** after the night, review the change log and the SharedReport, and share it with
+   sponsors. Sign-ups and skill letters are deleted when the tournament ends.
+
 New tables (on the identified side, organizer only): `competition_pool` (sign-up, private skill
 note, "play with" request, checked-in) and `team_draws` (seed, mode, time, actor, and each manual
 move). Linear: a new story under OSE-523.
@@ -310,7 +355,7 @@ Each phase is useful on its own. Phase 1 is the smallest slice that helps a real
 | **0. One parent report** | A SharedReport for the parent brand over every venture: traffic, events, sponsor traffic, footprint map, shareable with a corporate sponsor. Built from today's data | OSE | new story |
 | **1. Seasonal round robin** | A seasonal competition with one round-robin stage; entries as public labels; fixtures on existing league-night events; host enters scores; public standings page. Shown on the `lakeside-league` staging brand | OSE | OSE-525, OSE-526, OSE-527, OSE-529 |
 | 1b. Mirror a spreadsheet | One-way mirror of a league's Google Sheet into the phase 1 tables, column mapping, one source per competition | OSE | new story |
-| 1c. Team maker | Individual sign-ups into a player pool; random, balanced and by-hand team making; check-in draw; late arrivals; audit line (section 5.1a) | OSE | new story under OSE-523 |
+| 1c. Team maker and phase roles | Individual sign-ups into a player pool that fills live; random, balanced and by-hand team making; check-in draw; late arrivals; audit line; promotions and operations roles per competition; runbook (sections 5.1a to 5.1c) | OSE | new story under OSE-523 |
 | 2. Brackets and one-offs | Single elimination stage, playoffs after a season, one-off tournaments | OSE | OSE-530 |
 | 3. Teams that carry over | OW team profile, roster, claim code, history across seasons | OW (+ small OSE claim route) | new OW story |
 | 4. Referees | Referee site per league: schedule by court and half-hour slot, availability, cover board, score plus scoreboard photo, results straight into the report; bocce kit first | OSE, OSG | OSE-2239, OSG-10 |
